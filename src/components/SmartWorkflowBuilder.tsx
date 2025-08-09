@@ -50,7 +50,7 @@ interface WorkflowCanvas {
   offset: { x: number; y: number };
 }
 
-const categoryIcons = {
+const categoryIcons: Record<string, React.ComponentType<any>> = {
   productivity: Clock,
   automation: Zap,
   communication: Mail,
@@ -58,7 +58,7 @@ const categoryIcons = {
   health: Calendar
 };
 
-const categoryColors = {
+const categoryColors: Record<string, string> = {
   productivity: 'from-blue-500 to-indigo-600',
   automation: 'from-purple-500 to-pink-600',
   communication: 'from-green-500 to-emerald-600',
@@ -82,6 +82,10 @@ export default function SmartWorkflowBuilder({ className }: WorkflowBuilderProps
     offset: { x: 0, y: 0 }
   });
   
+  // Status and error handling
+  const [status, setStatus] = useState<string>('');
+  const [error, setError] = useState<string>('');
+  
   // Voice recording
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
@@ -90,6 +94,14 @@ export default function SmartWorkflowBuilder({ className }: WorkflowBuilderProps
   useEffect(() => {
     loadWorkflowTemplates();
   }, []);
+
+  // Clear error after 5 seconds
+  useEffect(() => {
+    if (error) {
+      const timer = setTimeout(() => setError(''), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [error]);
 
   const loadWorkflowTemplates = async () => {
     try {
@@ -295,8 +307,8 @@ export default function SmartWorkflowBuilder({ className }: WorkflowBuilderProps
   };
 
   const renderTemplateCard = (template: WorkflowTemplate) => {
-    const IconComponent = categoryIcons[template.category];
-    const colorClass = categoryColors[template.category];
+    const IconComponent = categoryIcons[template.category] || Clock;
+    const colorClass = categoryColors[template.category] || 'from-gray-500 to-gray-600';
 
     return (
       <ModernCard
@@ -426,6 +438,18 @@ export default function SmartWorkflowBuilder({ className }: WorkflowBuilderProps
 
   return (
     <div className={cn('smart-workflow-builder', className)}>
+      {/* Status Messages */}
+      {status && (
+        <div className="mb-4 p-3 bg-green-100 border border-green-300 rounded-lg text-green-700">
+          {status}
+        </div>
+      )}
+      {error && (
+        <div className="mb-4 p-3 bg-red-100 border border-red-300 rounded-lg text-red-700">
+          {error}
+        </div>
+      )}
+      
       {/* Header */}
       <ModernCard gradient="blue" blur="lg" className="mb-8">
         <div className="p-6">
@@ -442,9 +466,9 @@ export default function SmartWorkflowBuilder({ className }: WorkflowBuilderProps
           {/* Tabs */}
           <div className="flex gap-2">
             {[
-              { id: 'templates', label: 'Templates', icon: FileText },
-              { id: 'builder', label: 'Visual Builder', icon: Workflow },
-              { id: 'voice', label: 'Voice Control', icon: Mic }
+              { id: 'templates' as const, label: 'Templates', icon: FileText },
+              { id: 'builder' as const, label: 'Visual Builder', icon: Workflow },
+              { id: 'voice' as const, label: 'Voice Control', icon: Mic }
             ].map((tab) => (
               <Button
                 key={tab.id}
@@ -453,7 +477,7 @@ export default function SmartWorkflowBuilder({ className }: WorkflowBuilderProps
                   'flex items-center gap-2',
                   activeTab === tab.id && 'bg-gradient-to-r from-purple-500 to-indigo-600'
                 )}
-                onClick={() => setActiveTab(tab.id as any)}
+                onClick={() => setActiveTab(tab.id)}
               >
                 <tab.icon className="h-4 w-4" />
                 {tab.label}
