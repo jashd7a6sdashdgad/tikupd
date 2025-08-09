@@ -4,15 +4,19 @@ import { verifyToken, COOKIE_OPTIONS } from '@/lib/auth';
 const N8N_WEBHOOK_URL = process.env.N8N_WEBHOOK_URL;
 
 interface N8nWebhookPayload {
-  type: 'shopping-list' | 'expense' | 'contact' | 'hotel-expense' | 'diary' | 'calendar' | 'email' | 'chat' | 'firecrawl' | 'voice_message' | 'file_upload' | 'expense_ocr';
-  action?: 'create' | 'update' | 'delete' | 'message' | 'scrape' | 'crawl' | 'search' | 'voice' | 'upload' | 'extract_data';
+  type: 'shopping-list' | 'expense' | 'contact' | 'hotel-expense' | 'diary' | 'calendar' | 'email' | 'chat' | 'firecrawl' | 'voice_message' | 'text_message' | 'file_upload' | 'expense_ocr';
+  action?: 'create' | 'update' | 'delete' | 'message' | 'scrape' | 'crawl' | 'search' | 'voice' | 'upload' | 'extract_data' | 'send' | 'process';
   data?: any;
+  content?: string; // text content for text messages
   audio?: string; // base64 encoded audio
+  audioBase64?: string; // alternative naming for audio
   file?: string; // base64 encoded file
   mimeType?: string;
   size?: number;
   fileName?: string;
+  duration?: number;
   userId?: string;
+  userName?: string;
   timestamp?: string;
 }
 
@@ -69,10 +73,17 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    // Special validation for voice messages and file uploads
-    if (body.type === 'voice_message' && !body.audio) {
+    // Special validation for voice messages, text messages, and file uploads
+    if (body.type === 'voice_message' && !body.audio && !body.audioBase64) {
       return NextResponse.json(
         { success: false, message: 'Audio data is required for voice messages' },
+        { status: 400 }
+      );
+    }
+    
+    if (body.type === 'text_message' && !body.content) {
+      return NextResponse.json(
+        { success: false, message: 'Content is required for text messages' },
         { status: 400 }
       );
     }
@@ -104,7 +115,7 @@ export async function POST(request: NextRequest) {
     }
     
     // For other types, require action and data
-    if (!['voice_message', 'file_upload', 'expense_ocr'].includes(body.type)) {
+    if (!['voice_message', 'text_message', 'file_upload', 'expense_ocr'].includes(body.type)) {
       if (!body.action || !body.data) {
         return NextResponse.json(
           { success: false, message: 'Action and data are required' },
@@ -174,6 +185,21 @@ export async function POST(request: NextRequest) {
           hasExtractedData: !!n8nResult.extractedData,
           hasOcrResult: !!n8nResult.ocrResult,
           hasData: !!n8nResult.data,
+          responseKeys: Object.keys(n8nResult)
+        });
+      } else if (body.type === 'voice_message' || body.type === 'text_message') {
+        // Voice and text message specific response extraction
+        responseText = n8nResult.aiResponse ||
+                      n8nResult.response || 
+                      n8nResult.message || 
+                      n8nResult.text || 
+                      n8nResult.output ||
+                      (typeof n8nResult === 'string' ? n8nResult : null);
+        
+        console.log('🎤 Voice/Text response extraction:', {
+          hasAiResponse: !!n8nResult.aiResponse,
+          hasTranscription: !!n8nResult.transcription,
+          hasAudioResponse: !!n8nResult.audioResponse,
           responseKeys: Object.keys(n8nResult)
         });
       } else {

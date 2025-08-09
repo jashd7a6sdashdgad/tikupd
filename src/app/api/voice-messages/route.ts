@@ -103,9 +103,16 @@ export async function POST(request: NextRequest) {
       
       console.log(`📁 Processing voice message: ${body.fileName} (${body.size} bytes, ${body.duration}s)`);
       
-      // Send to N8N for processing (transcription + AI response)
+      // Send to N8N for processing (transcription + AI response) - SINGLE CALL
       const n8nResponse = await sendToN8N({
-        ...body,
+        type: 'voice_message',
+        action: 'send', 
+        audioBase64: body.audioBase64,
+        fileName: body.fileName,
+        mimeType: body.mimeType,
+        duration: body.duration,
+        size: body.size,
+        timestamp: body.timestamp,
         userId: user.id,
         userName: (user as any).name || 'User'
       });
@@ -168,22 +175,31 @@ async function sendToN8N(payload: any) {
   }
   
   try {
-    console.log('📡 Sending to N8N webhook...');
+    console.log('📡 Sending to N8N webhook - SINGLE REQUEST...');
     const startTime = Date.now();
     
-    // Structure data exactly as N8N workflow expects
+    // Clean payload structure for N8N
     const n8nPayload = {
-      type: payload.type || 'voice_message',
-      action: 'process',
-      data: payload, // Send the full payload as data
-      timestamp: new Date().toISOString()
+      type: payload.type,
+      action: payload.action,
+      audioBase64: payload.audioBase64,
+      fileName: payload.fileName,
+      mimeType: payload.mimeType,
+      duration: payload.duration,
+      size: payload.size,
+      content: payload.content, // Add content for text messages
+      userId: payload.userId,
+      userName: payload.userName,
+      timestamp: payload.timestamp
     };
     
-    console.log('📦 N8N payload structure:', {
+    console.log('📦 Clean N8N payload:', {
       type: n8nPayload.type,
-      hasAudioBase64: !!n8nPayload.data.audioBase64,
-      fileName: n8nPayload.data.fileName,
-      audioSize: n8nPayload.data.audioBase64?.length || 0
+      action: n8nPayload.action,
+      fileName: n8nPayload.fileName,
+      hasAudio: !!n8nPayload.audioBase64,
+      audioSize: n8nPayload.audioBase64?.length || 0,
+      userId: n8nPayload.userId
     });
 
     const response = await fetch(N8N_WEBHOOK_URL, {

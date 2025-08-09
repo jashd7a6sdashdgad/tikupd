@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+/* Modern glassmorphism effects */
+@import '../styles/modern.css';
+
 :root {
   /* Custom color palette - HSL values for Tailwind v4 */
   --color-primary: 0 0% 100%;           /* White #ffffff */

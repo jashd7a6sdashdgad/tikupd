@@ -1,7 +1,6 @@
 'use client';
 
 import CulturalSettings from '@/components/Islamic/CulturalSettings';
-import VoiceAssistantWidget from '@/components/VoiceAssistantWidget';
 import { useSettings } from '@/contexts/SettingsContext';
 import { useTranslation } from '@/lib/translations';
 import { Moon, Star } from 'lucide-react';
@@ -29,12 +28,6 @@ export default function IslamicSettingsPage() {
         </div>
 
         <CulturalSettings />
-        
-        <VoiceAssistantWidget 
-          page="islamic-settings" 
-          position="fixed"
-          size="md"
-        />
       </div>
     </div>
   );

@@ -13,7 +13,6 @@ import {
 } from 'lucide-react';
 import Image from 'next/image';
 import PhotoDashboard from '@/components/PhotoDashboard';
-import VoiceAssistantWidget from '@/components/VoiceAssistantWidget';
 
 // --- Fix: Add the necessary imports for PhotoIntelligence and useVoiceInput ---
 import { PhotoIntelligence } from '@/lib/photoIntelligence';
@@ -712,12 +711,6 @@ export default function PhotosPage() {
         className="hidden"
       />
 
-        {/* Voice Assistant Widget */}
-        <VoiceAssistantWidget 
-          page="photos" 
-          position="fixed"
-          size="md"
-        />
       </div>
     </div>
   );

@@ -28,7 +28,8 @@ import {
   Building2,
   ArrowRight,
   Brain,
-  Camera
+  Camera,
+  Bell
 } from 'lucide-react';
 
 // Import new smart components
@@ -37,7 +38,10 @@ import UnifiedStats from '@/components/UnifiedStats';
 import SmartNotifications from '@/components/SmartNotifications';
 import SmartQuickActions from '@/components/SmartQuickActions';
 import ActivityTimeline from '@/components/ActivityTimeline';
-// import VoiceAssistantWidget from '@/components/VoiceAssistantWidget'; // Removed for stability
+import { CollapsibleSidebar } from '@/components/ui/CollapsibleSidebar';
+import { ModernCard } from '@/components/ui/ModernCard';
+import { NotificationPanel } from '@/components/ui/NotificationPanel';
+import { ModernVoiceWidget } from '@/components/ui/ModernVoiceWidget';
 
 interface CalendarEvent {
   start?: {
@@ -93,6 +97,7 @@ export default function DashboardPage() {
     expenses: 'loading',
     photos: 'loading'
   });
+  const [isVoiceCollapsed, setIsVoiceCollapsed] = useState(true);
 
   // Helper function to safely parse JSON responses
   const safeJsonParse = async (response: Response | null) => {
@@ -546,7 +551,7 @@ if (calendarResponse && calendarResponse.ok) {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 p-4 lg:p-8">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 p-4 lg:p-8 relative">
       <div className="max-w-7xl mx-auto">
         {/* Modern Header Card */}
         <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/20 p-6 mb-8 hover:shadow-3xl transition-all duration-300">
@@ -1351,6 +1356,24 @@ if (calendarResponse && calendarResponse.ok) {
         </div>
 
       </div>
+
+      {/* Modern Collapsible Right Sidebar */}
+      <CollapsibleSidebar
+        side="right"
+        title="Smart Notifications"
+        icon={<Bell className="w-5 h-5 text-white" />}
+        defaultOpen={false}
+        className="lg:block hidden"
+      >
+        <NotificationPanel />
+      </CollapsibleSidebar>
+
+      {/* Modern Voice Widget */}
+      <ModernVoiceWidget
+        collapsed={isVoiceCollapsed}
+        onToggleCollapse={() => setIsVoiceCollapsed(!isVoiceCollapsed)}
+      />
+
     </div>
   );
 }

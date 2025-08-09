@@ -57,6 +57,12 @@ const getNavigation = (t: (key: string) => string) => [
     icon: Brain
   },
   {
+    key: 'workflow-builder',
+    name: 'Workflow Builder',
+    href: '/workflow-builder',
+    icon: Brain
+  },
+  {
     key: 'calendar',
     name: t('calendar'),
     href: '/calendar',

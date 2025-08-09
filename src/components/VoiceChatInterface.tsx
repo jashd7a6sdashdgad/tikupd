@@ -53,6 +53,7 @@ export default function VoiceChatInterface({
   const audioChunksRef = useRef<Blob[]>([]);
   const durationRef = useRef<number>(0);
   const durationTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const processingRef = useRef<boolean>(false); // Prevent duplicate calls
 
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -84,7 +85,7 @@ export default function VoiceChatInterface({
       const payload = {
         type: 'voice_message',
         action: 'send',
-        audio: audioBase64,
+        audioBase64: audioBase64, // Use consistent naming
         fileName: `voiceMessage_${Date.now()}.webm`,
         mimeType: audioBlob.type,
         duration: duration,
@@ -93,7 +94,13 @@ export default function VoiceChatInterface({
       };
 
       // Logging for debugging
-      console.log('Sending voice payload:', payload);
+      console.log('🎤 Sending voice payload once:', {
+        type: payload.type,
+        fileName: payload.fileName,
+        duration: payload.duration,
+        size: payload.size,
+        audioLength: audioBase64.length
+      });
 
       const sentMessage: ChatMessage = {
         id: `sent-${Date.now()}`,
@@ -108,7 +115,8 @@ export default function VoiceChatInterface({
       setMessages(prev => [...prev, sentMessage]);
       scrollToBottom();
 
-      const response = await fetch(webhookUrl, {
+      // Single request to voice-messages endpoint (which handles N8N internally)
+      const response = await fetch('/api/voice-messages', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -142,7 +150,8 @@ export default function VoiceChatInterface({
         setTimeout(() => {
           setMessages(prev => [...prev, receivedMessage]);
           if (isAutoPlayEnabled && receivedMessage.audioBase64) {
-             // Logic to auto-play would go here
+             // Auto-play AI response audio
+             console.log('🔊 Auto-playing AI response');
           }
           scrollToBottom();
         }, 1000);
@@ -152,6 +161,7 @@ export default function VoiceChatInterface({
       setError(err.message || t('failedToProcessVoice'));
       setMessages(prev => prev.filter(msg => msg.transcription !== 'Processing...'));
     } finally {
+      processingRef.current = false;
       setIsProcessing(false);
     }
   }, [blobToBase64, scrollToBottom, webhookUrl, isAutoPlayEnabled, t]);
@@ -239,7 +249,8 @@ export default function VoiceChatInterface({
 
       setMessages(prev => [...prev, sentMessage]);
 
-      const response = await fetch(webhookUrl, {
+      // Single request to voice-messages endpoint (which handles N8N internally)
+      const response = await fetch('/api/voice-messages', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
