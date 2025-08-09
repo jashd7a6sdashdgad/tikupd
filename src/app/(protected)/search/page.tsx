@@ -117,7 +117,7 @@ export default function SearchPage() {
             <div className="flex items-center space-x-4">
               <Button
                 onClick={() => setActiveTab('search')}
-                variant={activeTab === 'search' ? 'default' : 'outline'}
+                variant={activeTab === 'search' ? 'primary' : 'outline'}
                 size="sm"
               >
                 <Search className="h-4 w-4 mr-2" />
@@ -125,7 +125,7 @@ export default function SearchPage() {
               </Button>
               <Button
                 onClick={() => setActiveTab('analytics')}
-                variant={activeTab === 'analytics' ? 'default' : 'outline'} 
+                variant={activeTab === 'analytics' ? 'primary' : 'outline'} 
                 size="sm"
               >
                 <BarChart3 className="h-4 w-4 mr-2" />
