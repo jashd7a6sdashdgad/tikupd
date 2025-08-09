@@ -1,0 +1,1553 @@
+@import "tailwindcss";
+
+:root {
+  /* Custom color palette - HSL values for Tailwind v4 */
+  --color-primary: 0 0% 100%;           /* White #ffffff */
+  --color-background: 47 71% 91%;       /* Cream #FBF5DE */
+  --color-secondary: 35 39% 80%;        /* Tan #EAC8A6 */
+  --color-accent: 8 74% 49%;            /* Red #DC3C22 */
+  --color-foreground: 0 0% 10%;         /* #1a1a1a */
+  
+  /* Derived colors */
+  --color-primary-foreground: 0 0% 100%;     /* white */
+  --color-secondary-foreground: 0 0% 10%;    /* #1a1a1a */
+  --color-accent-foreground: 0 0% 100%;      /* white */
+  --color-background-foreground: 0 0% 10%;   /* #1a1a1a */
+  
+  /* UI colors using palette */
+  --color-card: 0 0% 100%;                   /* white */
+  --color-card-foreground: 0 0% 0%;          /* black */
+  --color-border: var(--color-secondary);
+  --color-input: var(--color-background);
+  --color-ring: var(--color-primary);
+  --color-muted: var(--color-secondary);
+  --color-muted-foreground: 0 0% 40%;        /* #666666 */
+  --color-destructive: 0 84% 60%;
+  --color-destructive-foreground: 0 0% 100%;
+  --color-popover: 0 0% 100%;
+  --color-popover-foreground: 0 0% 10%;
+  
+  /* Font families */
+  --font-geist-sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+  --font-geist-mono: ui-monospace, SFMono-Regular, "SF Mono", Monaco, "Cascadia Code", "Roboto Mono", Consolas, "Courier New", monospace;
+  --font-noto-arabic: 'Noto Sans Arabic', 'Tahoma', 'Arial', sans-serif;
+}
+
+
+[data-theme="dark"]:not([data-color-scheme]) {
+  --color-background: 0 0% 10%;        /* #1a1a1a */
+  --color-foreground: 0 0% 100%;       /* white */
+  --color-card: 0 0% 17%;              /* #2a2a2a */
+  --color-card-foreground: 0 0% 100%;  /* white */
+  --color-border: 0 0% 25%;            /* #404040 */
+  --color-input: 0 0% 17%;             /* #2a2a2a */
+  --color-muted: 0 0% 15%;             /* #262626 */
+  --color-muted-foreground: 0 0% 63%;  /* #a1a1aa */
+  --color-popover: 0 0% 17%;
+  --color-popover-foreground: 0 0% 100%;
+}
+
+/* Dark theme with color schemes - only darken backgrounds, not primaries */
+[data-theme="dark"][data-color-scheme] {
+  --color-background: 220 13% 9%;      /* Darker but not black */
+  --color-foreground: 0 0% 100%;       /* white text */
+  --color-card: 220 13% 11%;           /* Dark cards */
+  --color-card-foreground: 0 0% 100%;  /* white */
+  --color-border: 220 13% 20%;         /* Dark borders */
+  --color-input: 220 13% 11%;          /* Dark inputs */
+  --color-muted: 220 13% 15%;          /* Dark muted */
+  --color-muted-foreground: 0 0% 63%;  /* Light muted text */
+  --color-popover: 220 13% 11%;
+  --color-popover-foreground: 0 0% 100%;
+  /* Keep primary, secondary, accent from color scheme */
+}
+
+/* Color scheme variants */
+[data-color-scheme="blue"] {
+  --color-primary: 217 91% 60%;       /* Blue 600 #2563eb */
+  --color-secondary: 214 95% 93%;     /* Blue 100 #dbeafe */
+  --color-accent: 0 84% 50%;          /* Red 600 #dc2626 */
+  --color-background: 214 100% 97%;   /* Blue 50 #eff6ff */
+}
+
+[data-color-scheme="green"] {
+  --color-primary: 142 76% 36%;       /* Green 600 #16a34a */
+  --color-secondary: 138 76% 97%;     /* Green 100 #dcfce7 */
+  --color-accent: 0 84% 50%;          /* Red 600 #dc2626 */
+  --color-background: 151 81% 96%;    /* Green 50 #f0fdf4 */
+}
+
+[data-color-scheme="default"] {
+  --color-primary: 271 81% 56%;       /* Purple #8b5cf6 */
+  --color-secondary: 35 39% 80%;      /* Original tan #EAC8A6 */
+  --color-accent: 8 74% 49%;          /* Original red #DC3C22 */
+  --color-background: 47 71% 91%;     /* Original cream #FBF5DE */
+}
+
+[data-color-scheme="ocean"] {
+  --color-primary: 202 91% 47%;       /* Ocean Blue #0ea5e9 */
+  --color-secondary: 199 89% 48%;     /* Sky Blue #0284c7 */
+  --color-accent: 202 91% 47%;        /* Ocean accent */
+  --color-background: 199 100% 96%;   /* Light blue bg */
+}
+
+[data-color-scheme="forest"] {
+  --color-primary: 160 84% 39%;       /* Forest Green #059669 */
+  --color-secondary: 160 84% 39%;     /* Green secondary */
+  --color-accent: 158 64% 52%;        /* Green accent */
+  --color-background: 152 81% 96%;    /* Light green bg */
+}
+
+[data-color-scheme="sunset"] {
+  --color-primary: 20 91% 48%;        /* Sunset Orange #ea580c */
+  --color-secondary: 0 84% 60%;       /* Red secondary */
+  --color-accent: 0 84% 60%;          /* Red accent */
+  --color-background: 24 100% 88%;    /* Light orange bg */
+}
+
+[data-color-scheme="royal"] {
+  --color-primary: 262 83% 58%;       /* Royal Purple #7c3aed */
+  --color-secondary: 258 90% 66%;     /* Violet secondary */
+  --color-accent: 258 90% 66%;        /* Violet accent */
+  --color-background: 270 100% 98%;   /* Light purple bg */
+}
+
+[data-color-scheme="rose"] {
+  --color-primary: 343 75% 51%;       /* Rose Pink #e11d48 */
+  --color-secondary: 351 83% 61%;     /* Pink secondary */
+  --color-accent: 351 83% 61%;        /* Pink accent */
+  --color-background: 351 100% 95%;   /* Light pink bg */
+}
+
+[data-color-scheme="cyber"] {
+  --color-primary: 188 94% 43%;       /* Cyber Cyan #06b6d4 */
+  --color-secondary: 186 94% 57%;     /* Teal secondary */
+  --color-accent: 186 94% 57%;        /* Teal accent */
+  --color-background: 180 100% 97%;   /* Light cyan bg */
+}
+
+[data-color-scheme="gold"] {
+  --color-primary: 45 93% 47%;        /* Golden #f59e0b */
+  --color-secondary: 36 84% 55%;      /* Orange secondary */
+  --color-accent: 36 84% 55%;         /* Orange accent */
+  --color-background: 48 100% 88%;    /* Light yellow bg */
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-background: 0 0% 10%;      /* #1a1a1a */
+    --color-foreground: 0 0% 100%;     /* white */
+  }
+}
+
+body {
+  background: hsl(var(--color-background));
+  color: hsl(var(--color-foreground));
+  font-family: var(--font-geist-sans);
+  font-weight: 600 !important;
+  font-size: 16px !important;
+}
+
+/* Ensure all text elements have proper colors */
+* {
+  color: inherit;
+}
+
+/* Improved text styling - Allow color inheritance for themed elements */
+p, span, div, h1, h2, h3, h4, h5, h6, 
+label, a, td, th, li, ul, ol,
+input, textarea, select, option,
+strong, em, b, i, u, small, sub, sup,
+code, pre, blockquote, cite, q,
+time, abbr, address, dfn, del, ins,
+mark, s, kbd, samp, var,
+figcaption, caption, summary, details,
+article, section, header, footer, main,
+.dropdown *, .modal *, .tooltip *,
+.alert *, .badge *, .tab *, 
+.accordion *, .carousel *,
+.form *, .table *,
+react-select *, .select *, 
+.input *, .textarea * {
+  color: #000000 !important;
+  font-weight: 600 !important;
+  font-size: inherit !important;
+}
+
+/* Allow navigation and buttons to use theme colors */
+nav, nav *, aside, aside *, 
+button, button *, .btn, .btn *, 
+.nav *, .card *,
+[role="button"], [role="link"], [role="tab"], [role="option"],
+[class*="text-primary"], [class*="text-secondary"], [class*="bg-"] {
+  /* Removed forced black color - inherit from color scheme */
+  font-weight: 600 !important;
+  font-size: inherit !important;
+}
+
+/* Make all text elements bigger and bolder */
+p, span, div, label, button, a, td, th, li, small {
+  font-size: 16px !important;
+  font-weight: 600 !important;
+  line-height: 1.6 !important;
+}
+
+/* Specific sizes for headings - make them bigger and bolder */
+h1 {
+  font-size: 3rem !important;
+  font-weight: 800 !important;
+  line-height: 1.2 !important;
+}
+
+h2 {
+  font-size: 2.5rem !important;
+  font-weight: 700 !important;
+  line-height: 1.3 !important;
+}
+
+h3 {
+  font-size: 2rem !important;
+  font-weight: 700 !important;
+  line-height: 1.4 !important;
+}
+
+h4 {
+  font-size: 1.75rem !important;
+  font-weight: 600 !important;
+  line-height: 1.4 !important;
+}
+
+h5 {
+  font-size: 1.5rem !important;
+  font-weight: 600 !important;
+  line-height: 1.5 !important;
+}
+
+h6 {
+  font-size: 1.25rem !important;
+  font-weight: 600 !important;
+  line-height: 1.5 !important;
+}
+
+/* Make buttons, inputs, and form elements bigger and bolder */
+button, input, textarea, select {
+  font-size: 16px !important;
+  font-weight: 600 !important;
+  padding: 12px 16px !important;
+}
+
+/* Make table text bigger */
+table, th, td {
+  font-size: 16px !important;
+  font-weight: 600 !important;
+}
+
+/* Make card content bigger */
+.card, [class*="card"] {
+  font-size: 16px !important;
+  font-weight: 600 !important;
+}
+
+/* Make navigation items bigger */
+nav, .nav, [class*="nav"] {
+  font-size: 18px !important;
+  font-weight: 600 !important;
+}
+
+/* Only allow white text in specific dark mode contexts - also bold and bigger */
+@media (prefers-color-scheme: dark) {
+  body, html {
+    background-color: #1a1a1a !important;
+    font-weight: 600 !important;
+    font-size: 16px !important;
+  }
+  
+  body *, p, span, div, h1, h2, h3, h4, h5, h6, label, button, a, td, th, li, ul, ol {
+    color: #ffffff !important;
+    font-weight: 600 !important;
+  }
+}
+
+/* Override Tailwind text utilities - force black text, bold, and bigger */
+.text-muted-foreground {
+  color: #666666 !important;
+  font-weight: 600 !important;
+  font-size: 16px !important;
+}
+
+.text-foreground {
+  color: #000000 !important;
+  font-weight: 600 !important;
+  font-size: 16px !important;
+}
+
+.text-primary {
+  color: hsl(var(--color-primary)) !important;
+  font-weight: 600 !important;
+  font-size: 16px !important;
+}
+
+.text-secondary {
+  color: hsl(var(--color-secondary)) !important;
+  font-weight: 600 !important;
+  font-size: 16px !important;
+}
+
+.text-gray-900 {
+  color: #000000 !important;
+  font-weight: 600 !important;
+  font-size: 16px !important;
+}
+
+.text-gray-800 {
+  color: #1f2937 !important;
+  font-weight: 600 !important;
+  font-size: 16px !important;
+}
+
+.text-gray-700 {
+  color: #374151 !important;
+}
+
+.text-gray-600 {
+  color: #4b5563 !important;
+}
+
+.text-gray-500 {
+  color: #6b7280 !important;
+}
+
+.text-gray-400 {
+  color: #9ca3af !important;
+}
+
+/* Force black text in cards */
+.card, .card * {
+  color: #000000 !important;
+}
+
+/* Allow buttons to use theme colors */
+/* Removed forced black color for buttons */
+
+/* Force black text in inputs */
+input, textarea, select {
+  color: #000000 !important;
+}
+
+/* Navigation color overrides - Force theme colors */
+nav, nav *, .navigation, .navigation *, aside, aside * {
+  background: inherit !important;
+}
+
+/* Specific navigation color classes */
+.bg-secondary {
+  background-color: hsl(var(--color-secondary)) !important;
+}
+
+/* .text-primary defined elsewhere */
+
+.text-black {
+  color: #000000 !important;
+}
+
+.border-primary {
+  border-color: hsl(var(--color-primary)) !important;
+}
+
+/* Navigation buttons and links */
+nav button, nav a, aside button, aside a {
+  color: inherit !important;
+}
+
+nav .bg-gradient-to-r, aside .bg-gradient-to-r {
+  background: linear-gradient(to right, hsl(var(--color-primary)), hsl(var(--color-primary) / 0.8)) !important;
+}
+
+/* Force sidebar to use proper theme colors - override dark theme */
+.lg\\:w-72 .bg-secondary {
+  background-color: hsl(var(--color-secondary)) !important;
+  border-color: hsl(var(--color-primary)) !important;
+}
+
+/* Navigation links in sidebar - override dark theme */
+.lg\\:w-72 nav a {
+  color: #000000 !important;
+}
+
+.lg\\:w-72 nav a:hover,
+.lg\\:w-72 nav a[class*="text-primary"] {
+  color: hsl(var(--color-primary)) !important;
+}
+
+/* Sidebar text colors - override dark theme completely */
+[data-theme="dark"] .lg\\:w-72 .bg-secondary {
+  background-color: hsl(var(--color-secondary)) !important;
+  color: #000000 !important;
+}
+
+[data-theme="dark"] .lg\\:w-72 nav a,
+[data-theme="dark"] .lg\\:w-72 nav span,
+[data-theme="dark"] .lg\\:w-72 h1 {
+  color: #000000 !important;
+}
+
+[data-theme="dark"] .lg\\:w-72 nav a:hover,
+[data-theme="dark"] .lg\\:w-72 nav a[class*="text-primary"],
+[data-theme="dark"] .lg\\:w-72 .text-primary {
+  color: hsl(var(--color-primary)) !important;
+}
+
+/* Additional comprehensive text color overrides */
+.text-white, .text-gray-50, .text-gray-100, .text-gray-200, 
+.text-gray-300, .text-gray-400, .text-gray-500, .text-gray-600,
+.text-slate-50, .text-slate-100, .text-slate-200, .text-slate-300,
+.text-slate-400, .text-slate-500, .text-slate-600,
+.text-zinc-50, .text-zinc-100, .text-zinc-200, .text-zinc-300,
+.text-zinc-400, .text-zinc-500, .text-zinc-600,
+.text-neutral-50, .text-neutral-100, .text-neutral-200,
+.text-neutral-300, .text-neutral-400, .text-neutral-500, .text-neutral-600 {
+  color: #000000 !important;
+}
+
+/* Force black text on common component classes */
+.text-muted, .muted, .text-muted-foreground,
+.text-disabled, .disabled, .placeholder,
+.text-subtle, .subtitle, .subtext,
+.text-light, .light, .faded,
+.description, .hint, .help-text {
+  color: #333333 !important;
+}
+
+/* Override any remaining light text */
+[class*="opacity-"], [class*="text-opacity-"] {
+  color: #000000 !important;
+}
+
+/* Force black text in shadcn/ui components */
+[data-radix-select-content] *,
+[data-radix-dropdown-menu-content] *,
+[data-radix-popover-content] *,
+[data-radix-dialog-content] *,
+[data-radix-alert-dialog-content] *,
+[data-radix-toast] *, 
+[data-radix-tooltip-content] * {
+  color: #000000 !important;
+}
+
+/* Dark mode overrides for specific components */
+@media (prefers-color-scheme: dark) {
+  .text-foreground {
+    color: #ffffff !important;
+  }
+  
+  .text-secondary {
+    color: #ffffff !important;
+  }
+  
+  .card, .card * {
+    color: #ffffff !important;
+  }
+  
+  button, .btn, button * {
+    color: #ffffff !important;
+  }
+  
+  input, textarea, select {
+    color: #ffffff !important;
+  }
+  
+  nav, nav *, .navigation, .navigation * {
+    /* Removed forced white color to allow palette changes */
+  }
+
+  /* Override black text in dark mode */
+  .text-white, .text-gray-50, .text-gray-100, .text-gray-200, 
+  .text-gray-300, .text-gray-400, .text-gray-500, .text-gray-600,
+  .text-slate-50, .text-slate-100, .text-slate-200, .text-slate-300,
+  .text-slate-400, .text-slate-500, .text-slate-600,
+  .text-zinc-50, .text-zinc-100, .text-zinc-200, .text-zinc-300,
+  .text-zinc-400, .text-zinc-500, .text-zinc-600,
+  .text-neutral-50, .text-neutral-100, .text-neutral-200,
+  .text-neutral-300, .text-neutral-400, .text-neutral-500, .text-neutral-600 {
+    color: #ffffff !important;
+  }
+
+  .text-muted, .muted, .text-muted-foreground,
+  .text-disabled, .disabled, .placeholder,
+  .text-subtle, .subtitle, .subtext,
+  .text-light, .light, .faded,
+  .description, .hint, .help-text {
+    color: #cccccc !important;
+  }
+
+  [data-radix-select-content] *,
+  [data-radix-dropdown-menu-content] *,
+  [data-radix-popover-content] *,
+  [data-radix-dialog-content] *,
+  [data-radix-alert-dialog-content] *,
+  [data-radix-toast] *, 
+  [data-radix-tooltip-content] * {
+    color: #ffffff !important;
+  }
+}
+
+/* Glassmorphism effects with custom palette */
+.glass {
+  background: rgba(251, 245, 222, 0.8); /* Background color with transparency */
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(139, 92, 246, 0.3); /* Purple primary color border */
+}
+
+.glass-dark {
+  background: rgba(234, 200, 166, 0.3); /* Secondary color with transparency */
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(220, 60, 34, 0.3); /* Accent color border */
+}
+
+/* Solid Layered Glassmorphism like the Screenshot */
+.glass-widget {
+  background: #f8f9fa;
+  border: 1px solid #e0e0e0;
+  border-radius: 20px;
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.12),
+    0 4px 16px rgba(0, 0, 0, 0.08);
+  position: relative;
+  overflow: visible;
+  transition: all 0.3s ease;
+}
+
+/* Layer 1 - Outer layer */
+.glass-widget::before {
+  content: '';
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  right: 8px;
+  bottom: 8px;
+  background: #f0f1f3;
+  border: 1px solid #d4d4d8;
+  border-radius: 16px;
+  pointer-events: none;
+  z-index: -1;
+}
+
+/* Layer 2 - Inner layer */
+.glass-widget::after {
+  content: '';
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  right: 16px;
+  bottom: 16px;
+  background: #e8e9eb;
+  border: 1px solid #c4c4c7;
+  border-radius: 12px;
+  pointer-events: none;
+  z-index: -2;
+}
+
+.glass-widget:hover {
+  transform: translateY(-4px);
+  box-shadow: 
+    0 16px 48px rgba(0, 0, 0, 0.15),
+    0 8px 24px rgba(0, 0, 0, 0.1);
+  border-color: #d0d0d5;
+}
+
+.glass-widget:hover::before {
+  background: #eeeff1;
+  border-color: #c8c8cc;
+}
+
+.glass-widget:hover::after {
+  background: #e4e5e7;
+  border-color: #b8b8bc;
+}
+
+/* Dark mode glassmorphism */
+[data-theme="dark"] .glass-widget {
+  background: rgba(26, 26, 26, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 
+    0 20px 40px rgba(0, 0, 0, 0.3),
+    0 8px 16px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="dark"] .glass-widget:hover {
+  box-shadow: 
+    0 32px 64px rgba(0, 0, 0, 0.4),
+    0 16px 32px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Solid layered glassmorphism variants */
+.glass-widget-dark {
+  background: #f5f6f8;
+  border: 1px solid #dcdcdf;
+  border-radius: 24px;
+  box-shadow: 
+    0 12px 40px rgba(0, 0, 0, 0.14),
+    0 6px 20px rgba(0, 0, 0, 0.1);
+  position: relative;
+  overflow: visible;
+  transition: all 0.3s ease;
+}
+
+.glass-widget-dark::before {
+  content: '';
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  right: 10px;
+  bottom: 10px;
+  background: #eeeff2;
+  border: 1px solid #d0d0d4;
+  border-radius: 20px;
+  pointer-events: none;
+  z-index: -1;
+}
+
+.glass-widget-dark::after {
+  content: '';
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  right: 20px;
+  bottom: 20px;
+  background: #e6e7ea;
+  border: 1px solid #c0c0c4;
+  border-radius: 16px;
+  pointer-events: none;
+  z-index: -2;
+}
+
+.glass-widget-dark:hover {
+  transform: translateY(-6px);
+  box-shadow: 
+    0 35px 70px rgba(0, 0, 0, 0.18),
+    0 20px 40px rgba(0, 0, 0, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.95);
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+.glass-widget-light {
+  background: #fafbfc;
+  border: 1px solid #e8e8eb;
+  border-radius: 16px;
+  box-shadow: 
+    0 6px 24px rgba(0, 0, 0, 0.08),
+    0 3px 12px rgba(0, 0, 0, 0.05);
+  position: relative;
+  overflow: visible;
+  transition: all 0.3s ease;
+}
+
+.glass-widget-light::before {
+  content: '';
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  right: 6px;
+  bottom: 6px;
+  background: #f2f3f5;
+  border: 1px solid #d8d8db;
+  border-radius: 12px;
+  pointer-events: none;
+  z-index: -1;
+}
+
+.glass-widget-light::after {
+  content: '';
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  right: 12px;
+  bottom: 12px;
+  background: #eaebee;
+  border: 1px solid #c8c8cb;
+  border-radius: 8px;
+  pointer-events: none;
+  z-index: -2;
+}
+
+.glass-widget-light:hover {
+  transform: translateY(-3px) scale(1.01);
+  box-shadow: 
+    0 20px 40px rgba(0, 0, 0, 0.08),
+    0 8px 16px rgba(0, 0, 0, 0.04),
+    inset 0 1px 0 rgba(255, 255, 255, 0.85),
+    inset 0 0 20px rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+.glass-widget-light:hover::before {
+  background: rgba(255, 255, 255, 0.4);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.glass-widget-light:hover::after {
+  background: rgba(255, 255, 255, 0.25);
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
+/* Smooth animations */
+.smooth-transition {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--muted);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--primary);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--accent);
+}
+
+/* Loading animations */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.animate-bounce {
+  animation: bounce 1s infinite;
+}
+
+/* Voice input animation */
+@keyframes voice-pulse {
+  0% { transform: scale(1); opacity: 0.8; }
+  50% { transform: scale(1.1); opacity: 1; }
+  100% { transform: scale(1); opacity: 0.8; }
+}
+
+.voice-active {
+  animation: voice-pulse 1.5s ease-in-out infinite;
+}
+
+/* Custom color utilities */
+.bg-primary { background-color: hsl(var(--color-primary)); }
+.bg-secondary { background-color: hsl(var(--color-secondary)); }
+.bg-accent { background-color: hsl(var(--color-accent)); }
+.bg-background { background-color: hsl(var(--color-background)); }
+
+.text-primary { color: hsl(var(--color-primary)); }
+.text-secondary { color: hsl(var(--color-secondary)); }
+.text-accent { color: hsl(var(--color-accent)); }
+.text-background { color: hsl(var(--color-background)); }
+
+.border-primary { border-color: hsl(var(--color-primary)); }
+.border-secondary { border-color: hsl(var(--color-secondary)); }
+.border-accent { border-color: hsl(var(--color-accent)); }
+
+/* Color combinations for better readability */
+.primary-button {
+  background-color: hsl(var(--color-primary));
+  color: white;
+  border: 1px solid hsl(var(--color-primary));
+}
+
+.secondary-button {
+  background-color: hsl(271 81% 95%); /* Light purple */
+  color: hsl(271 81% 25%); /* Dark purple text */
+  border: 1px solid hsl(271 81% 80%);
+}
+
+.accent-button {
+  background-color: hsl(271 81% 45%); /* Medium purple */
+  color: white;
+  border: 1px solid hsl(271 81% 45%);
+}
+
+/* Card styling with palette and enhanced shadows */
+.palette-card {
+  background: white;
+  border: 2px solid var(--secondary);
+  box-shadow: 0 4px 6px rgba(139, 92, 246, 0.1), 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+/* Light shadow utilities */
+.shadow-light {
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+
+.shadow-light-md {
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07), 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.shadow-light-lg {
+  box-shadow: 0 8px 15px rgba(0, 0, 0, 0.08), 0 4px 6px rgba(0, 0, 0, 0.05);
+}
+
+/* Hover shadow effects */
+.shadow-hover {
+  transition: box-shadow 0.3s ease;
+}
+
+.shadow-hover:hover {
+  box-shadow: 0 8px 25px rgba(139, 92, 246, 0.15), 0 4px 10px rgba(0, 0, 0, 0.08);
+}
+
+/* Enhanced 3D palette cards with hover effects */
+.palette-card-hover {
+  background: white;
+  border: 2px solid var(--secondary);
+  box-shadow: 
+    0 8px 16px rgba(128, 128, 128, 0.15),
+    0 4px 8px rgba(128, 128, 128, 0.12),
+    0 2px 4px rgba(128, 128, 128, 0.08);
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  transform: translateZ(0);
+  border-radius: 12px;
+  position: relative;
+}
+
+.palette-card-hover::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(128, 128, 128, 0.05) 0%, rgba(160, 160, 160, 0.05) 100%);
+  border-radius: 10px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+.palette-card-hover:hover {
+  box-shadow: 
+    0 20px 40px rgba(128, 128, 128, 0.25),
+    0 12px 24px rgba(128, 128, 128, 0.18),
+    0 6px 12px rgba(128, 128, 128, 0.12),
+    0 2px 4px rgba(128, 128, 128, 0.08);
+  transform: translateY(-8px) translateZ(0) scale(1.02);
+  border-color: var(--primary);
+}
+
+.palette-card-hover:hover::before {
+  opacity: 1;
+}
+
+/* Additional 3D card variations */
+.card-3d {
+  background: white;
+  border: 2px solid var(--secondary);
+  box-shadow: 
+    0 8px 16px rgba(128, 128, 128, 0.15),
+    0 4px 8px rgba(128, 128, 128, 0.12),
+    0 2px 4px rgba(128, 128, 128, 0.08);
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  transform: translateZ(0);
+  border-radius: 12px;
+  position: relative;
+}
+
+.card-3d:hover {
+  box-shadow: 
+    0 20px 40px rgba(128, 128, 128, 0.25),
+    0 12px 24px rgba(128, 128, 128, 0.18),
+    0 6px 12px rgba(128, 128, 128, 0.12),
+    0 2px 4px rgba(128, 128, 128, 0.08);
+  transform: translateY(-8px) translateZ(0) scale(1.02);
+  border-color: var(--primary);
+}
+
+/* Custom navigation hover effects */
+.hover\:scale-102:hover {
+  transform: scale(1.02);
+}
+
+.scale-105 {
+  transform: scale(1.05);
+}
+
+.hover\:translate-x-1:hover {
+  transform: translateX(0.25rem);
+}
+
+.group:hover .group-hover\:translate-x-1 {
+  transform: translateX(0.25rem);
+}
+
+.group:hover .group-hover\:rotate-3 {
+  transform: rotate(3deg);
+}
+
+.transform.rotate-3 {
+  transform: rotate(3deg);
+}
+
+/* RTL Support */
+[dir="rtl"] {
+  text-align: right;
+}
+
+[dir="rtl"] .flex {
+  flex-direction: row-reverse;
+}
+
+[dir="rtl"] .space-x-2 > :not([hidden]) ~ :not([hidden]) {
+  --tw-space-x-reverse: 1;
+  margin-right: calc(0.5rem * var(--tw-space-x-reverse));
+  margin-left: calc(0.5rem * calc(1 - var(--tw-space-x-reverse)));
+}
+
+[dir="rtl"] .space-x-3 > :not([hidden]) ~ :not([hidden]) {
+  --tw-space-x-reverse: 1;
+  margin-right: calc(0.75rem * var(--tw-space-x-reverse));
+  margin-left: calc(0.75rem * calc(1 - var(--tw-space-x-reverse)));
+}
+
+[dir="rtl"] .space-x-4 > :not([hidden]) ~ :not([hidden]) {
+  --tw-space-x-reverse: 1;
+  margin-right: calc(1rem * var(--tw-space-x-reverse));
+  margin-left: calc(1rem * calc(1 - var(--tw-space-x-reverse)));
+}
+
+[dir="rtl"] .ml-2 {
+  margin-right: 0.5rem;
+  margin-left: 0;
+}
+
+[dir="rtl"] .mr-2 {
+  margin-left: 0.5rem;
+  margin-right: 0;
+}
+
+[dir="rtl"] .ml-3 {
+  margin-right: 0.75rem;
+  margin-left: 0;
+}
+
+[dir="rtl"] .mr-3 {
+  margin-left: 0.75rem;
+  margin-right: 0;
+}
+
+[dir="rtl"] .pl-4 {
+  padding-right: 1rem;
+  padding-left: 0;
+}
+
+[dir="rtl"] .pr-4 {
+  padding-left: 1rem;
+  padding-right: 0;
+}
+
+[dir="rtl"] .text-left {
+  text-align: right;
+}
+
+[dir="rtl"] .text-right {
+  text-align: left;
+}
+
+/* RTL-specific font for Arabic */
+[dir="rtl"] * {
+  font-family: var(--font-noto-arabic), 'Noto Sans Arabic', 'Tahoma', 'Arial', sans-serif;
+  font-feature-settings: "liga" 1, "kern" 1;
+  text-rendering: optimizeLegibility;
+}
+
+/* Ensure proper font fallback for Arabic text */
+[dir="rtl"] body {
+  font-family: var(--font-noto-arabic), 'Noto Sans Arabic', 'Tahoma', 'Arial', sans-serif;
+  font-feature-settings: "liga" 1, "kern" 1;
+  text-rendering: optimizeLegibility;
+}
+
+/* Improve Arabic text rendering */
+[dir="rtl"] h1, [dir="rtl"] h2, [dir="rtl"] h3, [dir="rtl"] h4, [dir="rtl"] h5, [dir="rtl"] h6 {
+  font-family: var(--font-noto-arabic), 'Noto Sans Arabic', 'Tahoma', 'Arial', sans-serif;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+[dir="rtl"] p, [dir="rtl"] span, [dir="rtl"] div, [dir="rtl"] button {
+  font-family: var(--font-noto-arabic), 'Noto Sans Arabic', 'Tahoma', 'Arial', sans-serif;
+  line-height: 1.6;
+}
+
+/* RTL Navigation adjustments */
+[dir="rtl"] .nav-item {
+  flex-direction: row-reverse;
+}
+
+[dir="rtl"] .nav-item .icon {
+  margin-left: 0.5rem;
+  margin-right: 0;
+}
+
+/* Additional RTL Support for better layout */
+[dir="rtl"] .justify-between {
+  flex-direction: row-reverse;
+}
+
+[dir="rtl"] .items-start {
+  flex-direction: row-reverse;
+}
+
+[dir="rtl"] .flex-1 {
+  text-align: right;
+}
+
+/* RTL Support for common margin/padding classes */
+[dir="rtl"] .ml-1 { margin-right: 0.25rem; margin-left: 0; }
+[dir="rtl"] .mr-1 { margin-left: 0.25rem; margin-right: 0; }
+[dir="rtl"] .ml-4 { margin-right: 1rem; margin-left: 0; }
+[dir="rtl"] .mr-4 { margin-left: 1rem; margin-right: 0; }
+[dir="rtl"] .ml-6 { margin-right: 1.5rem; margin-left: 0; }
+[dir="rtl"] .mr-6 { margin-left: 1.5rem; margin-right: 0; }
+[dir="rtl"] .ml-8 { margin-right: 2rem; margin-left: 0; }
+[dir="rtl"] .mr-8 { margin-left: 2rem; margin-right: 0; }
+
+[dir="rtl"] .pl-1 { padding-right: 0.25rem; padding-left: 0; }
+[dir="rtl"] .pr-1 { padding-left: 0.25rem; padding-right: 0; }
+[dir="rtl"] .pl-2 { padding-right: 0.5rem; padding-left: 0; }
+[dir="rtl"] .pr-2 { padding-left: 0.5rem; padding-right: 0; }
+[dir="rtl"] .pl-3 { padding-right: 0.75rem; padding-left: 0; }
+[dir="rtl"] .pr-3 { padding-left: 0.75rem; padding-right: 0; }
+[dir="rtl"] .pl-6 { padding-right: 1.5rem; padding-left: 0; }
+[dir="rtl"] .pr-6 { padding-left: 1.5rem; padding-right: 0; }
+[dir="rtl"] .pl-8 { padding-right: 2rem; padding-left: 0; }
+[dir="rtl"] .pr-8 { padding-left: 2rem; padding-right: 0; }
+
+/* RTL Positioning */
+[dir="rtl"] .left-0 { right: 0; left: auto; }
+[dir="rtl"] .right-0 { left: 0; right: auto; }
+[dir="rtl"] .left-4 { right: 1rem; left: auto; }
+[dir="rtl"] .right-4 { left: 1rem; right: auto; }
+
+/* RTL Border Radius */
+[dir="rtl"] .rounded-l-lg { border-radius: 0 0.5rem 0.5rem 0; }
+[dir="rtl"] .rounded-r-lg { border-radius: 0.5rem 0 0 0.5rem; }
+
+/* RTL Transform */
+[dir="rtl"] .rotate-180 { transform: rotate(0deg); }
+
+/* RTL specific fixes for cards and forms */
+[dir="rtl"] .card-3d {
+  text-align: right;
+}
+
+[dir="rtl"] input, [dir="rtl"] textarea, [dir="rtl"] select {
+  text-align: right;
+}
+
+[dir="rtl"] input[type="email"], [dir="rtl"] input[type="url"] {
+  text-align: left; /* Keep URLs and emails left-aligned */
+  direction: ltr;
+}
+
+/* Additional RTL fixes for better Arabic support */
+[dir="rtl"] .flex-row {
+  flex-direction: row-reverse;
+}
+
+[dir="rtl"] .justify-start {
+  justify-content: flex-end;
+}
+
+[dir="rtl"] .justify-end {
+  justify-content: flex-start;
+}
+
+[dir="rtl"] .items-start {
+  align-items: flex-end;
+}
+
+[dir="rtl"] .items-end {
+  align-items: flex-start;
+}
+
+/* RTL specific grid and flexbox adjustments */
+[dir="rtl"] .grid {
+  direction: rtl;
+}
+
+[dir="rtl"] .gap-x-2 > :not([hidden]) ~ :not([hidden]) {
+  margin-right: 0.5rem;
+  margin-left: 0;
+}
+
+[dir="rtl"] .gap-x-3 > :not([hidden]) ~ :not([hidden]) {
+  margin-right: 0.75rem;
+  margin-left: 0;
+}
+
+[dir="rtl"] .gap-x-4 > :not([hidden]) ~ :not([hidden]) {
+  margin-right: 1rem;
+  margin-left: 0;
+}
+
+/* Better Arabic text selection */
+[dir="rtl"] ::selection {
+  background-color: var(--primary);
+  color: white;
+}
+
+/* Improved Arabic line height and letter spacing */
+[dir="rtl"] {
+  letter-spacing: 0.01em;
+  word-spacing: 0.05em;
+}
+
+/* RTL scrollbar positioning */
+[dir="rtl"] ::-webkit-scrollbar {
+  left: 0;
+  right: auto;
+}
+
+/* ULTIMATE TEXT COLOR ENFORCEMENT - CATCH ALL REMAINING CASES */
+/* This catches any component that might still have light text */
+[style*="color: white"], [style*="color: #fff"], [style*="color: #ffffff"],
+[style*="color: rgb(255"], [style*="color: rgba(255"],
+[style*="color: hsl(0, 0%, 100%"], [style*="color: hsla(0, 0%, 100%"] {
+  color: #000000 !important;
+}
+
+/* Override any inline styles with light colors */
+[style*="color: #f"], [style*="color: #e"], [style*="color: #d"],
+[style*="color: #c"], [style*="color: #b"], [style*="color: #a"] {
+  color: #000000 !important;
+}
+
+/* Force black on specific utility classes only - allow primary/secondary colors */
+.text-inherit, .text-current, .text-transparent,
+[class*="text-gray"]:not([class*="text-primary"]):not([class*="text-secondary"]) {
+  color: #000000 !important;
+}
+
+/* Final override for component libraries */
+.MuiTypography-root, .ant-typography, .bp3-text, 
+.chakra-text, .mantine-text, [data-testid*="text"] {
+  color: #000000 !important;
+}
+
+/* Accessibility Enhancements */
+/* Screen Reader Only Content */
+.sr-only {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+/* Skip Links */
+.skip-link {
+  position: absolute;
+  top: -40px;
+  left: 6px;
+  background: var(--primary);
+  color: white;
+  padding: 8px 16px;
+  text-decoration: none;
+  border-radius: 4px;
+  z-index: 1000;
+  font-weight: 600;
+  transition: top 0.3s;
+  border: 2px solid transparent;
+}
+
+.skip-link:focus {
+  top: 6px;
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* High Contrast Mode */
+.high-contrast {
+  --background: #000000;
+  --foreground: #ffffff;
+  --card: #111111;
+  --card-foreground: #ffffff;
+  --primary: #ffffff;
+  --primary-foreground: #000000;
+  --secondary: #333333;
+  --secondary-foreground: #ffffff;
+  --muted: #222222;
+  --muted-foreground: #cccccc;
+  --border: #555555;
+  --input: #333333;
+  --ring: #ffffff;
+}
+
+.high-contrast * {
+  border-color: var(--border) !important;
+}
+
+.high-contrast img {
+  filter: contrast(1.2) brightness(1.1);
+}
+
+/* Contrast Levels */
+.contrast-high {
+  filter: contrast(1.3);
+}
+
+.contrast-highest {
+  filter: contrast(1.6);
+}
+
+/* Text Size Variations */
+.text-large {
+  font-size: 1.125em;
+  line-height: 1.6;
+}
+
+.text-xlarge {
+  font-size: 1.25em;
+  line-height: 1.7;
+}
+
+.text-large h1, .text-xlarge h1 { font-size: 2.5em; }
+.text-large h2, .text-xlarge h2 { font-size: 2em; }
+.text-large h3, .text-xlarge h3 { font-size: 1.5em; }
+
+/* Enhanced Focus Indicators */
+.enhanced-focus *:focus {
+  outline: 3px solid var(--ring);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.enhanced-focus button:focus,
+.enhanced-focus [role="button"]:focus {
+  outline: 3px solid var(--primary);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 6px rgba(139, 92, 246, 0.2);
+}
+
+.enhanced-focus input:focus,
+.enhanced-focus textarea:focus,
+.enhanced-focus select:focus {
+  outline: 3px solid var(--ring);
+  outline-offset: 1px;
+  border-color: var(--ring);
+}
+
+.enhanced-focus a:focus {
+  outline: 3px solid var(--primary);
+  outline-offset: 2px;
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+}
+
+/* Reduced Motion */
+.reduced-motion,
+.reduced-motion *,
+.reduced-motion *::before,
+.reduced-motion *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}
+
+/* ARIA Live Regions */
+[aria-live] {
+  position: absolute;
+  left: -10000px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
+/* Voice Command Indicators */
+.voice-command-active {
+  animation: pulse-ring 2s cubic-bezier(0.455, 0.03, 0.515, 0.955) infinite;
+}
+
+@keyframes pulse-ring {
+  0% { transform: scale(0.33); }
+  80%, 100% { opacity: 0; }
+}
+
+/* Screen Reader Announcements */
+.announcement-region {
+  position: absolute;
+  left: -10000px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
+/* Cognitive Assistance */
+.cognitive-helper {
+  border-left: 4px solid var(--primary);
+  background: rgba(139, 92, 246, 0.05);
+  padding: 12px;
+  margin: 8px 0;
+  border-radius: 4px;
+}
+
+.step-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+  counter-increment: step;
+}
+
+.step-indicator::before {
+  content: counter(step);
+  background: var(--primary);
+  color: white;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+/* Error and Success States for Screen Readers */
+[aria-invalid="true"] {
+  border-color: var(--accent);
+  border-width: 2px;
+}
+
+[aria-describedby]:focus + [role="alert"] {
+  position: static;
+  width: auto;
+  height: auto;
+  overflow: visible;
+  clip: auto;
+  white-space: normal;
+}
+
+/* Touch Target Improvements */
+button,
+[role="button"],
+input[type="checkbox"],
+input[type="radio"] {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+/* Simplified Interface Indicators */
+.simplified-mode {
+  --radius: 8px;
+}
+
+.simplified-mode button {
+  padding: 12px 24px;
+  font-size: 1.1em;
+  font-weight: 600;
+}
+
+.simplified-mode input {
+  padding: 12px;
+  font-size: 1.1em;
+}
+
+.simplified-mode .card {
+  border: 2px solid var(--border);
+  padding: 24px;
+}
+
+/* Keyboard Navigation Helpers */
+.keyboard-nav-visible:focus-within::after {
+  content: "Use Tab to navigate, Enter to select";
+  position: absolute;
+  bottom: -20px;
+  left: 0;
+  font-size: 12px;
+  color: var(--muted-foreground);
+  background: var(--background);
+  padding: 4px 8px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  z-index: 1000;
+}
+
+/* Print Styles for Accessibility */
+@media print {
+  .skip-link,
+  .sr-only {
+    position: static !important;
+    width: auto !important;
+    height: auto !important;
+    overflow: visible !important;
+    clip: auto !important;
+    white-space: normal !important;
+  }
+
+  .announcement-region {
+    position: static;
+    width: auto;
+    height: auto;
+    overflow: visible;
+  }
+}
+
+/* ===== GLOBAL BIGGER AND BOLDER TEXT OVERRIDES ===== */
+
+/* Override all Tailwind text size utilities to be bigger and bolder */
+.text-xs { font-size: 14px !important; font-weight: 600 !important; }
+.text-sm { font-size: 16px !important; font-weight: 600 !important; }
+.text-base { font-size: 18px !important; font-weight: 600 !important; }
+.text-lg { font-size: 20px !important; font-weight: 600 !important; }
+.text-xl { font-size: 24px !important; font-weight: 700 !important; }
+.text-2xl { font-size: 28px !important; font-weight: 700 !important; }
+.text-3xl { font-size: 32px !important; font-weight: 700 !important; }
+.text-4xl { font-size: 36px !important; font-weight: 800 !important; }
+.text-5xl { font-size: 48px !important; font-weight: 800 !important; }
+.text-6xl { font-size: 60px !important; font-weight: 800 !important; }
+
+/* Make specific UI component text bigger and bolder */
+.badge, .chip, .tag, [class*="badge"], [class*="chip"], [class*="tag"] {
+  font-size: 14px !important;
+  font-weight: 600 !important;
+}
+
+.tooltip, .popover, [class*="tooltip"], [class*="popover"] {
+  font-size: 16px !important;
+  font-weight: 600 !important;
+}
+
+.dropdown-menu, .menu, [class*="dropdown"], [class*="menu"] {
+  font-size: 16px !important;
+  font-weight: 600 !important;
+}
+
+/* React component overrides */
+[class*="react-"], [class*="mui-"], [class*="ant-"], [class*="chakra-"] {
+  font-size: 16px !important;
+  font-weight: 600 !important;
+}
+
+/* Specific component overrides for common patterns */
+.card-title, [class*="card-title"], .card-header, [class*="card-header"] {
+  font-size: 20px !important;
+  font-weight: 700 !important;
+}
+
+.card-description, [class*="card-description"], .card-content, [class*="card-content"] {
+  font-size: 16px !important;
+  font-weight: 600 !important;
+}
+
+/* Button text */
+button, [role="button"], .btn, [class*="btn"] {
+  font-size: 16px !important;
+  font-weight: 600 !important;
+}
+
+/* Form labels and inputs */
+label, .label, [class*="label"] {
+  font-size: 16px !important;
+  font-weight: 600 !important;
+}
+
+/* Navigation and menu items */
+.nav-link, [class*="nav-link"], .menu-item, [class*="menu-item"] {
+  font-size: 18px !important;
+  font-weight: 600 !important;
+}
+
+/* Status and notification text */
+.alert, .notification, [class*="alert"], [class*="notification"] {
+  font-size: 16px !important;
+  font-weight: 600 !important;
+}
+
+/* Tab content */
+.tab, .tab-content, [class*="tab"], [data-state] {
+  font-size: 16px !important;
+  font-weight: 600 !important;
+}
+
+/* Final catch-all override for any remaining small text */
+[class*="text-"], [data-size], [size] {
+  font-weight: 600 !important;
+  font-size: 16px !important;
+}
+
+/* Ensure all clickable elements are bold and readable */
+a, button, [role="button"], [role="link"], [tabindex] {
+  font-weight: 600 !important;
+  font-size: 16px !important;
+}
+
+/* Modal and dialog content */
+[role="dialog"], [role="modal"], [class*="dialog"], [class*="modal"] {
+  font-size: 16px !important;
+  font-weight: 600 !important;
+}
+
+/* Accessibility improvements - ensure readability */
+[aria-label], [aria-describedby], [title] {
+  font-weight: 600 !important;
+}
+
+/* ===== CLICKABLE ICON STYLING ===== */
+
+/* Basic clickable icon styling */
+.clickable-icon {
+  cursor: pointer;
+  transition: all 0.2s ease;
+  padding: 8px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.clickable-icon:hover {
+  transform: scale(1.05);
+}
+
+.clickable-icon:active {
+  transform: scale(0.95);
+}
+
+/* Size variants for clickable icons */
+.clickable-icon-sm {
+  padding: 4px;
+  border-radius: 4px;
+}
+
+.clickable-icon-lg {
+  padding: 12px;
+  border-radius: 8px;
+}
