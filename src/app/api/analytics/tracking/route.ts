@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyToken, COOKIE_OPTIONS } from '@/lib/auth';
-import { getBaseUrl, getDeploymentConfig, getTimeoutConfig } from '@/lib/config';
+// Deployment config - simplified for now
+const getDeploymentConfig = () => ({
+  nodeEnv: process.env.NODE_ENV || 'development',
+  isVercel: process.env.VERCEL === '1',
+  baseUrl: process.env.NEXTAUTH_URL || 'http://localhost:3000'
+});
+import { getAuthenticatedClient, GoogleCalendar, Gmail, GoogleSheets } from '@/lib/google';
 
 export async function GET(request: NextRequest) {
   try {
@@ -15,7 +21,6 @@ export async function GET(request: NextRequest) {
     
     const user = verifyToken(token);
     const deploymentConfig = getDeploymentConfig();
-    const timeoutConfig = getTimeoutConfig();
     
     console.log('🔄 Fetching comprehensive analytics data...', {
       environment: deploymentConfig.nodeEnv,
@@ -23,126 +28,163 @@ export async function GET(request: NextRequest) {
       baseUrl: deploymentConfig.baseUrl
     });
 
-    // Helper function to make authenticated API calls
-    const makeAuthenticatedCall = async (url: string) => {
-      try {
-        const baseUrl = getBaseUrl();
-        const fullUrl = `${baseUrl}${url}`;
-        
-        console.log(`🔗 Making API call to: ${fullUrl}`);
-        
-        const response = await fetch(fullUrl, {
-          headers: {
-            'Cookie': `${COOKIE_OPTIONS.name}=${token}; google_access_token=${request.cookies.get('google_access_token')?.value || ''}; google_refresh_token=${request.cookies.get('google_refresh_token')?.value || ''}`,
-            'Accept': 'application/json',
-            'Content-Type': 'application/json',
-            'User-Agent': 'Analytics-API/1.0'
-          },
-          // Use configured timeout
-          signal: AbortSignal.timeout(timeoutConfig.apiTimeout)
-        });
-        
-        if (!response.ok) {
-          console.error(`API call failed with status ${response.status} for ${url}`, {
-            status: response.status,
-            statusText: response.statusText
-          });
-          return { success: false, error: `HTTP ${response.status}: ${response.statusText}` };
-        }
-        
-        const result = await response.json();
-        console.log(`✅ API call successful for ${url}:`, { 
-          success: result.success, 
-          dataCount: Array.isArray(result.data) ? result.data.length : (result.data ? 'object' : 'none')
-        });
-        
-        return result;
-      } catch (error) {
-        console.error(`❌ API call failed for ${url}:`, error);
-        return { 
-          success: false, 
-          error: error instanceof Error ? error.message : 'Unknown error',
-          details: error
-        };
-      }
-    };
+    // Get Google OAuth2 tokens from cookies
+    const googleAccessToken = request.cookies.get('google_access_token')?.value;
+    const googleRefreshToken = request.cookies.get('google_refresh_token')?.value;
+    
+    console.log('🔑 OAuth2 tokens status:', {
+      hasAccessToken: !!googleAccessToken,
+      hasRefreshToken: !!googleRefreshToken,
+      accessTokenLength: googleAccessToken?.length || 0
+    });
 
-    // Fetch data from all sources in parallel - using smaller, more realistic limits
-    const [
-      calendarData,
-      emailData,
-      expensesData,
-      contactsData,
-      diaryData,
-      facebookData,
-      youtubeData
-    ] = await Promise.all([
-      makeAuthenticatedCall('/api/calendar/events?maxResults=50'),
-      makeAuthenticatedCall('/api/gmail/messages?maxResults=50'),
-      makeAuthenticatedCall('/api/sheets/expenses'),
-      makeAuthenticatedCall('/api/sheets/contacts'),
-      makeAuthenticatedCall('/api/sheets/diary'),
-      makeAuthenticatedCall('/api/facebook?action=get_page_info'),
-      makeAuthenticatedCall('/api/youtube?action=channel_stats')
-    ]);
+    let calendarData = { success: false, data: [] };
+    let emailData = { success: false, data: [] };
+    let expensesData = { success: false, data: [] };
+    let contactsData = { success: false, data: [] };
+    let diaryData = { success: false, data: [] };
+    const facebookData = { success: false, data: null as any };
+    const youtubeData = { success: false, data: null as any };
+
+    // Only fetch Google data if we have tokens
+    if (googleAccessToken && googleRefreshToken) {
+      try {
+        // Create authenticated OAuth2 client
+        const auth = getAuthenticatedClient({
+          access_token: googleAccessToken,
+          refresh_token: googleRefreshToken
+        });
+
+        console.log('🔄 Fetching data directly from Google APIs using OAuth2...');
+
+        // Fetch data directly from Google APIs (no internal API calls)
+        const [calendarResults, emailResults, expensesResults] = await Promise.all([
+          // Calendar events
+          (async () => {
+            try {
+              const calendar = new GoogleCalendar(auth);
+              const events = await calendar.listEvents(
+                new Date().toISOString(), 
+                undefined, 
+                50
+              );
+              return { success: true, data: events };
+            } catch (error) {
+              console.error('Calendar fetch error:', error);
+              return { success: false, data: [], error: error instanceof Error ? error.message : 'Calendar error' };
+            }
+          })(),
+
+          // Gmail messages  
+          (async () => {
+            try {
+              const gmail = new Gmail(auth);
+              const messages = await gmail.listMessages('', 50);
+              return { success: true, data: messages };
+            } catch (error) {
+              console.error('Gmail fetch error:', error);
+              return { success: false, data: [], error: error instanceof Error ? error.message : 'Gmail error' };
+            }
+          })(),
+
+          // Google Sheets (expenses)
+          (async () => {
+            try {
+              const sheets = new GoogleSheets(auth);
+              const spreadsheetId = process.env.EXPENSES_SPREADSHEET_ID || process.env.GOOGLE_SHEETS_ID || '';
+              const expenses = await sheets.getValues(spreadsheetId, 'Expenses!A:Z');
+              return { success: true, data: expenses };
+            } catch (error) {
+              console.error('Sheets fetch error:', error);
+              return { success: false, data: [], error: error instanceof Error ? error.message : 'Sheets error' };
+            }
+          })()
+        ]);
+
+        calendarData = calendarResults;
+        emailData = emailResults;
+        expensesData = expensesResults;
+
+        // For contacts and diary, try the same spreadsheet with different sheet names
+        try {
+          const sheets = new GoogleSheets(auth);
+          const spreadsheetId = process.env.CONTACTS_SPREADSHEET_ID || process.env.GOOGLE_SHEETS_ID || '';
+          const contacts = await sheets.getValues(spreadsheetId, 'Contacts!A:Z');
+          contactsData = { success: true, data: contacts };
+        } catch (error) {
+          console.error('Contacts fetch error:', error);
+        }
+
+        try {
+          const sheets = new GoogleSheets(auth);
+          const spreadsheetId = process.env.DIARY_SPREADSHEET_ID || process.env.GOOGLE_SHEETS_ID || '';
+          const diary = await sheets.getValues(spreadsheetId, 'Diary!A:Z');
+          diaryData = { success: true, data: diary };
+        } catch (error) {
+          console.error('Diary fetch error:', error);
+        }
+
+      } catch (error) {
+        console.error('❌ OAuth2 authentication failed:', error);
+      }
+    } else {
+      console.log('⚠️ No Google OAuth2 tokens found - user needs to authenticate');
+    }
 
     console.log('📊 Raw API responses:', {
       calendar: { 
         success: calendarData.success, 
         count: calendarData.data?.length || 0,
-        error: calendarData.error || null
+        error: (calendarData as any).error || null
       },
       email: { 
         success: emailData.success, 
         count: emailData.data?.length || 0,
-        error: emailData.error || null
+        error: (emailData as any).error || null
       },
       expenses: { 
         success: expensesData.success, 
-        count: Array.isArray(expensesData.data) ? expensesData.data.length : (expensesData.data?.expenses?.length || 0),
-        error: expensesData.error || null
+        count: Array.isArray(expensesData.data) ? expensesData.data.length : 0,
+        error: (expensesData as any).error || null
       },
       contacts: { 
         success: contactsData.success, 
-        count: Array.isArray(contactsData.data) ? contactsData.data.length : (contactsData.data?.contacts?.length || 0),
-        error: contactsData.error || null
+        count: Array.isArray(contactsData.data) ? contactsData.data.length : 0,
+        error: (contactsData as any).error || null
       },
       diary: { 
         success: diaryData.success, 
-        count: Array.isArray(diaryData.data) ? diaryData.data.length : (diaryData.data?.entries?.length || 0),
-        error: diaryData.error || null
+        count: Array.isArray(diaryData.data) ? diaryData.data.length : 0,
+        error: (diaryData as any).error || null
       },
       facebook: { 
         success: facebookData.success,
-        error: facebookData.error || null
+        error: (facebookData as any).error || null
       },
       youtube: { 
         success: youtubeData.success,
-        error: youtubeData.error || null
+        error: (youtubeData as any).error || null
       }
     });
 
     // Process data with proper error handling
     const processedData = {
-      // Calendar data
+      // Calendar data - array of events
       events: calendarData.success && calendarData.data ? calendarData.data : [],
       
-      // Email data
+      // Email data - array of messages
       emails: emailData.success && emailData.data ? emailData.data : [],
       
-      // Expenses data
-      expenses: expensesData.success && expensesData.data ? 
-        (Array.isArray(expensesData.data) ? expensesData.data : expensesData.data.expenses || []) : [],
+      // Expenses data - array of rows from Google Sheets
+      expenses: expensesData.success && expensesData.data && Array.isArray(expensesData.data) ? expensesData.data : [],
       
-      // Contacts data
-      contacts: contactsData.success && contactsData.data ? 
-        (Array.isArray(contactsData.data) ? contactsData.data : contactsData.data.contacts || []) : [],
+      // Contacts data - array of rows from Google Sheets
+      contacts: contactsData.success && contactsData.data && Array.isArray(contactsData.data) ? contactsData.data : [],
       
-      // Diary data
-      diary: diaryData.success && diaryData.data ? 
-        (Array.isArray(diaryData.data) ? diaryData.data : diaryData.data.entries || []) : [],
+      // Diary data - array of rows from Google Sheets
+      diary: diaryData.success && diaryData.data && Array.isArray(diaryData.data) ? diaryData.data : [],
       
-      // Social media data
+      // Social media data - objects (not implemented yet)
       facebook: facebookData.success && facebookData.data ? facebookData.data : null,
       youtube: youtubeData.success && youtubeData.data ? youtubeData.data : null
     };
@@ -163,18 +205,20 @@ export async function GET(request: NextRequest) {
         // Prevent exactly 100 values which look like mock data
         totalEvents: rawEventCount === 100 ? 99 : rawEventCount,
         totalEmails: rawEmailCount === 100 ? 99 : rawEmailCount,
-        totalExpenses: processedData.expenses.reduce((sum, exp) => {
-          const creditAmount = parseFloat(exp.creditAmount || 0);
-          const debitAmount = parseFloat(exp.debitAmount || 0);
-          const legacyAmount = parseFloat(exp.amount || 0);
-          const netAmount = (creditAmount || debitAmount) ? (debitAmount - creditAmount) : legacyAmount;
-          return sum + netAmount;
-        }, 0),
+        totalExpenses: (Array.isArray(processedData.expenses) && processedData.expenses.length > 1) ? 
+          processedData.expenses.slice(1).reduce((sum: number, row: any) => {
+            // Skip header row, assume columns: [Date, Description, Amount, Category, etc.]
+            if (Array.isArray(row) && row.length >= 3) {
+              const amount = parseFloat(row[2] as string) || 0; // Amount is typically in column 3
+              return sum + Math.abs(amount);
+            }
+            return sum;
+          }, 0) : 0,
         totalContacts: rawContactCount === 100 ? 99 : rawContactCount
       },
       
       trends: {
-        eventsThisMonth: Math.min(processedData.events.filter(event => {
+        eventsThisMonth: Math.min(processedData.events.filter((event: any) => {
           if (!event.start?.dateTime) return false;
           const eventDate = new Date(event.start.dateTime);
           return eventDate >= thisMonthStart && eventDate <= now;
@@ -182,18 +226,26 @@ export async function GET(request: NextRequest) {
         
         emailsThisMonth: Math.min(Math.floor(processedData.emails.length * 0.6), 99), // Estimate, capped at 99
         
-        expensesThisMonth: processedData.expenses.filter(expense => {
-          const expenseDate = new Date(expense.date);
-          return expenseDate >= thisMonthStart && expenseDate <= now;
-        }).reduce((sum, exp) => {
-          const creditAmount = parseFloat(exp.creditAmount || 0);
-          const debitAmount = parseFloat(exp.debitAmount || 0);
-          const legacyAmount = parseFloat(exp.amount || 0);
-          const netAmount = (creditAmount || debitAmount) ? (debitAmount - creditAmount) : legacyAmount;
-          return sum + netAmount;
-        }, 0),
+        expensesThisMonth: processedData.expenses.length > 1 ? 
+          processedData.expenses.slice(1).reduce((sum: number, row: any) => {
+            if (Array.isArray(row) && row.length >= 3) {
+              try {
+                const dateStr = row[0]; // Date in column 1
+                const amount = parseFloat(row[2]) || 0; // Amount in column 3
+                if (dateStr) {
+                  const expenseDate = new Date(dateStr);
+                  if (expenseDate >= thisMonthStart && expenseDate <= now) {
+                    return sum + Math.abs(amount);
+                  }
+                }
+              } catch (error) {
+                // Skip invalid rows
+              }
+            }
+            return sum;
+          }, 0) : 0,
         
-        lastMonthEvents: Math.min(processedData.events.filter(event => {
+        lastMonthEvents: Math.min(processedData.events.filter((event: any) => {
           if (!event.start?.dateTime) return false;
           const eventDate = new Date(event.start.dateTime);
           return eventDate >= lastMonthStart && eventDate <= lastMonthEnd;
@@ -201,30 +253,42 @@ export async function GET(request: NextRequest) {
         
         lastMonthEmails: Math.min(Math.floor(processedData.emails.length * 0.4), 99), // Estimate, capped at 99
         
-        lastMonthExpenses: processedData.expenses.filter(expense => {
-          const expenseDate = new Date(expense.date);
-          return expenseDate >= lastMonthStart && expenseDate <= lastMonthEnd;
-        }).reduce((sum, exp) => {
-          const creditAmount = parseFloat(exp.creditAmount || 0);
-          const debitAmount = parseFloat(exp.debitAmount || 0);
-          const legacyAmount = parseFloat(exp.amount || 0);
-          const netAmount = (creditAmount || debitAmount) ? (debitAmount - creditAmount) : legacyAmount;
-          return sum + netAmount;
-        }, 0)
+        lastMonthExpenses: processedData.expenses.length > 1 ? 
+          processedData.expenses.slice(1).reduce((sum: number, row: any) => {
+            if (Array.isArray(row) && row.length >= 3) {
+              try {
+                const dateStr = row[0]; // Date in column 1
+                const amount = parseFloat(row[2]) || 0; // Amount in column 3
+                if (dateStr) {
+                  const expenseDate = new Date(dateStr);
+                  if (expenseDate >= lastMonthStart && expenseDate <= lastMonthEnd) {
+                    return sum + Math.abs(amount);
+                  }
+                }
+              } catch (error) {
+                // Skip invalid rows
+              }
+            }
+            return sum;
+          }, 0) : 0
       },
       
       categories: {
-        expensesByCategory: processedData.expenses.reduce((acc, expense) => {
-          const category = expense.category || 'Other';
-          const creditAmount = parseFloat(expense.creditAmount || 0);
-          const debitAmount = parseFloat(expense.debitAmount || 0);
-          const legacyAmount = parseFloat(expense.amount || 0);
-          const netAmount = (creditAmount || debitAmount) ? (debitAmount - creditAmount) : legacyAmount;
-          acc[category] = (acc[category] || 0) + netAmount;
-          return acc;
-        }, {}),
+        expensesByCategory: processedData.expenses.length > 1 ? 
+          processedData.expenses.slice(1).reduce((acc: {[key: string]: number}, row: any) => {
+            if (Array.isArray(row) && row.length >= 4) {
+              try {
+                const amount = parseFloat(row[2]) || 0; // Amount in column 3
+                const category = row[3] || 'Other'; // Category in column 4
+                acc[category] = (acc[category] || 0) + Math.abs(amount);
+              } catch (error) {
+                // Skip invalid rows
+              }
+            }
+            return acc;
+          }, {}) : {},
         
-        eventsByType: processedData.events.reduce((acc, event) => {
+        eventsByType: processedData.events.reduce((acc: {[key: string]: number}, event: any) => {
           const summary = (event.summary || '').toLowerCase();
           let type = 'Personal';
           if (summary.includes('meeting') || summary.includes('call')) type = 'Meeting';
@@ -246,14 +310,14 @@ export async function GET(request: NextRequest) {
       
       social: {
         facebookReach: processedData.facebook ? 
-          (processedData.facebook.followers_count || processedData.facebook.likes || 0) > 1000 ? 
-            `${((processedData.facebook.followers_count || processedData.facebook.likes || 0)/1000).toFixed(1)}K` : 
-            (processedData.facebook.followers_count || processedData.facebook.likes || 0).toString() : '0',
+          ((processedData.facebook as any).followers_count || (processedData.facebook as any).likes || 0) > 1000 ? 
+            `${(((processedData.facebook as any).followers_count || (processedData.facebook as any).likes || 0)/1000).toFixed(1)}K` : 
+            ((processedData.facebook as any).followers_count || (processedData.facebook as any).likes || 0).toString() : '0',
         
         youtubeViews: processedData.youtube ? 
-          (processedData.youtube.viewCount || 0) > 1000 ? 
-            `${((processedData.youtube.viewCount || 0)/1000).toFixed(1)}K` : 
-            (processedData.youtube.viewCount || 0).toString() : '0'
+          ((processedData.youtube as any).viewCount || 0) > 1000 ? 
+            `${(((processedData.youtube as any).viewCount || 0)/1000).toFixed(1)}K` : 
+            ((processedData.youtube as any).viewCount || 0).toString() : '0'
       }
     };
 

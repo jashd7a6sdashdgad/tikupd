@@ -65,6 +65,10 @@ interface AnalyticsData {
     busyDaysThisMonth: number;
     completionRate: number;
   };
+  debug?: {
+    hasRealData: boolean;
+    apiResponses?: any;
+  };
 }
 
 export default function TrackingPage() {
@@ -364,10 +368,20 @@ export default function TrackingPage() {
                   </h1>
                   <p className="text-gray-600 font-medium mt-2 text-lg">Real-time insights and performance metrics</p>
                   <div className="flex items-center gap-2 mt-2">
-                    <div className={`w-2 h-2 rounded-full ${analyticsData.overview.totalEvents > 0 ? 'bg-green-500' : 'bg-red-500'}`}></div>
-                    <span className="text-sm text-gray-500">
-                      {analyticsData.overview.totalEvents > 0 ? 'Google Connected' : 'Google Not Connected'}
-                    </span>
+                    {(() => {
+                      const hasRealData = analyticsData.debug?.hasRealData || 
+                        analyticsData.overview.totalEvents > 0 || 
+                        analyticsData.overview.totalEmails > 0 || 
+                        analyticsData.overview.totalExpenses > 0;
+                      return (
+                        <>
+                          <div className={`w-2 h-2 rounded-full ${hasRealData ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                          <span className="text-sm text-gray-500">
+                            {hasRealData ? 'Google Connected' : 'Google Not Connected'}
+                          </span>
+                        </>
+                      );
+                    })()}
                   </div>
                 </div>
               </div>

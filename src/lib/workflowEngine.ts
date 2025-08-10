@@ -547,6 +547,12 @@ export class WorkflowEngine {
   // Storage methods
   private saveRulesToStorage(): void {
     try {
+      // Check if we're in a browser environment before accessing localStorage
+      if (typeof window === 'undefined' || !window.localStorage) {
+        console.log('localStorage not available (server-side), skipping rule saving');
+        return;
+      }
+      
       const rulesData = Array.from(this.rules.entries());
       localStorage.setItem('workflow_rules', JSON.stringify(rulesData));
     } catch (error) {
@@ -556,6 +562,12 @@ export class WorkflowEngine {
 
   private loadRulesFromStorage(): void {
     try {
+      // Check if we're in a browser environment before accessing localStorage
+      if (typeof window === 'undefined' || !window.localStorage) {
+        console.log('localStorage not available (server-side), skipping rule loading');
+        return;
+      }
+      
       const stored = localStorage.getItem('workflow_rules');
       if (stored) {
         const rulesData = JSON.parse(stored);
