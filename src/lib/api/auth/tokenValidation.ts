@@ -1,15 +1,6 @@
-import { promises as fs } from 'fs';
-import path from 'path';
+import { tokenStorage, ApiToken } from '@/lib/storage/tokenStorage';
 
-export interface ApiToken {
-  id: string;
-  name: string;
-  token: string;
-  permissions: string[];
-  status: 'active' | 'inactive';
-  createdAt: string;
-  expiresAt?: string;
-}
+export type { ApiToken } from '@/lib/storage/tokenStorage';
 
 export async function validateApiToken(authHeader: string | null): Promise<{ isValid: boolean; token?: ApiToken; error?: string }> {
   console.log('Validating API token, authHeader:', authHeader ? authHeader.substring(0, 20) + '...' : 'null');
@@ -23,21 +14,7 @@ export async function validateApiToken(authHeader: string | null): Promise<{ isV
   console.log('Extracted token:', token.substring(0, 20) + '...');
   
   try {
-    const dataDir = path.join(process.cwd(), 'data');
-    const tokensFile = path.join(dataDir, 'tokens.json');
-    console.log('Looking for tokens file:', tokensFile);
-    
-    // Check if tokens file exists
-    try {
-      await fs.access(tokensFile);
-      console.log('Tokens file exists');
-    } catch {
-      console.log('Tokens file does not exist');
-      return { isValid: false, error: 'No tokens found' };
-    }
-    
-    const tokensData = await fs.readFile(tokensFile, 'utf-8');
-    const tokens: ApiToken[] = JSON.parse(tokensData);
+    const tokens = await tokenStorage.loadTokens();
     console.log('Loaded tokens:', tokens.length);
     console.log('Token details:', tokens.map(t => ({ id: t.id, name: t.name, status: t.status })));
     

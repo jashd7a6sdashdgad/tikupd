@@ -1,138 +1,123 @@
 # Vercel Deployment Guide
 
-## ✅ Fixed: Hardcoded Data Issue
+## Overview
+This guide covers deploying the Mahboob Personal Assistant to Vercel with proper configuration for the hybrid token storage system.
 
-The tracking page hardcoded data issue has been resolved. The problem was caused by:
-1. Incorrect base URL configuration on Vercel
-2. Failed API calls falling back to sample data
-3. Missing environment variables
+## Token Storage System
 
-## Required Environment Variables for Vercel
+The application now uses a hybrid storage system that automatically adapts to different environments:
 
-### 🚨 Critical Variables (Application won't work without these):
+- **Local Development**: Uses local file system (`data/tokens.json`)
+- **Cloudflare**: Uses R2 bucket storage
+- **Vercel**: Uses in-memory storage with environment variable fallback
 
-```bash
-# Base URL Configuration - CRITICAL for Vercel
-NEXTAUTH_URL=https://your-vercel-app.vercel.app
-NEXT_PUBLIC_APP_URL=https://your-vercel-app.vercel.app
+## Environment Variables
 
-# API Keys - REQUIRED
-WEATHER_API_KEY=your_weather_api_key_from_weatherapi.com
-GEMINI_API_KEY=your_gemini_api_key_from_google
+### Required for Vercel
 
-# Google OAuth - REQUIRED for real data
-GOOGLE_CLIENT_ID=your_google_oauth_client_id
-GOOGLE_CLIENT_SECRET=your_google_oauth_client_secret
+1. **NODE_ENV**: Set to `production`
+2. **TOKENS_DATA**: (Optional) Initial tokens data as JSON string
 
-# Google Sheets - REQUIRED for expenses/contacts
-EXPENSES_SPREADSHEET_ID=your_google_sheets_id
-CONTACTS_SPREADSHEET_ID=your_contacts_sheets_id
-DIARY_SPREADSHEET_ID=your_diary_sheets_id
+### Optional for Cloudflare R2
+
+1. **NEXT_INC_CACHE_R2_BUCKET**: R2 bucket binding name
+
+## Vercel Configuration
+
+### 1. vercel.json
+```json
+{
+  "functions": {
+    "src/app/api/tokens/route.ts": {
+      "maxDuration": 30
+    }
+  },
+  "env": {
+    "NEXT_INC_CACHE_R2_BUCKET": "@mahboob-personal-assistant-r2"
+  }
+}
 ```
 
-### 📊 For Analytics to Work (Optional but Recommended):
-
-```bash
-# Social Media APIs
-FACEBOOK_PAGE_ACCESS_TOKEN=your_facebook_token
-FACEBOOK_PAGE_ID=your_facebook_page_id
-YOUTUBE_API_KEY=your_youtube_api_key
-YOUTUBE_CHANNEL_ID=your_youtube_channel_id
-
-# N8N Integration
-N8N_API_URL=https://your-n8n-instance.com
-N8N_API_KEY=your_n8n_api_key
-N8N_VOICE_WEBHOOK_URL=https://your-n8n-instance.com/webhook/voice
-
-# External APIs
-FIRECRAWL_API_KEY=your_firecrawl_api_key
-```
-
-## Vercel Deployment Steps
-
-### 1. Set Environment Variables in Vercel Dashboard
+### 2. Environment Variables in Vercel Dashboard
 
 1. Go to your Vercel project dashboard
-2. Navigate to **Settings** → **Environment Variables**
-3. Add each variable above with your actual values
-4. **IMPORTANT**: Set them for Production, Preview, and Development environments
+2. Navigate to Settings > Environment Variables
+3. Add the following variables:
 
-### 2. Update Your Domain URLs
+```
+NODE_ENV=production
+TOKENS_DATA=[{"id":"...","token":"...","name":"...","permissions":[...],"status":"active","createdAt":"...","expiresAt":"..."}]
+```
 
-Replace `https://your-vercel-app.vercel.app` with your actual Vercel URL:
-- `NEXTAUTH_URL=https://your-actual-app.vercel.app`
-- `NEXT_PUBLIC_APP_URL=https://your-actual-app.vercel.app`
+## Deployment Steps
 
-### 3. Google OAuth Setup for Vercel
+### 1. Build and Deploy
+```bash
+npm run build
+vercel --prod
+```
 
-1. Go to [Google Cloud Console](https://console.cloud.google.com)
-2. Navigate to APIs & Services → Credentials
-3. Edit your OAuth 2.0 Client ID
-4. Add these to **Authorized redirect URIs**:
-   ```
-   https://your-vercel-app.vercel.app/api/auth/callback/google
-   https://your-vercel-app.vercel.app/api/google/callback
-   ```
-
-### 4. Verify Deployment
-
-After deployment, check these URLs:
-- `https://your-vercel-app.vercel.app/api/analytics/tracking` (should show real data)
-- `https://your-vercel-app.vercel.app/tracking` (should show actual analytics)
+### 2. Verify Token Storage
+After deployment, test the token creation endpoint:
+```bash
+curl -X POST https://your-domain.vercel.app/api/tokens \
+  -H "Content-Type: application/json" \
+  -d '{"name":"test","permissions":["read:expenses"]}'
+```
 
 ## Troubleshooting
 
-### Issue: Still seeing "0" values on tracking page
-**Solution**: Check Vercel Function logs for API call errors:
-1. Go to Vercel Dashboard → Functions
-2. Click on `/api/analytics/tracking`
-3. Check logs for specific error messages
+### Token Creation Fails
+- Check Vercel function logs for errors
+- Verify environment variables are set correctly
+- Ensure the API route is properly configured
 
-### Issue: "Authentication required" errors
-**Solution**: Verify Google OAuth is working:
-1. Test login at `/auth`
-2. Check browser dev tools for cookie presence
-3. Verify `NEXTAUTH_URL` matches your actual domain
+### Storage Not Persisting
+- In-memory storage resets on each function invocation
+- Consider setting up Cloudflare R2 for persistent storage
+- Use environment variables for initial token data
 
-### Issue: API timeouts on Vercel
-**Solution**: Add timeout configuration:
-```bash
-API_TIMEOUT=25000  # Vercel functions timeout at 30s
-RETRY_COUNT=2
-```
+## Cloudflare R2 Setup (Optional)
 
-## Environment Variable Checklist
+For persistent storage on Vercel:
 
-Before deploying, ensure you have:
+1. Create a Cloudflare R2 bucket
+2. Configure the bucket binding in `wrangler.jsonc`
+3. Set the `NEXT_INC_CACHE_R2_BUCKET` environment variable
 
-- [ ] `NEXTAUTH_URL` set to your Vercel app URL
-- [ ] `NEXT_PUBLIC_APP_URL` set to your Vercel app URL  
-- [ ] `WEATHER_API_KEY` from WeatherAPI.com
-- [ ] `GEMINI_API_KEY` from Google AI Studio
-- [ ] Google OAuth credentials configured
-- [ ] Google Sheets IDs for your data
-- [ ] All variables set for Production environment in Vercel
+## Local vs Production
 
-## Testing Real Data
+| Environment | Storage Type | Persistence |
+|-------------|--------------|-------------|
+| Local Dev   | File System  | ✅ Persistent |
+| Vercel      | In-Memory    | ❌ Resets on restart |
+| Cloudflare  | R2 Bucket    | ✅ Persistent |
 
-1. **Deploy to Vercel** with all environment variables
-2. **Authenticate with Google** at `/auth`
-3. **Visit tracking page** - should show real data, not hardcoded values
-4. **Check console logs** in Vercel Functions for debugging
+## Best Practices
 
-## What Was Fixed
+1. **Development**: Use local file storage for testing
+2. **Production**: Use Cloudflare R2 for persistent storage
+3. **Fallback**: In-memory storage ensures the app works on Vercel
+4. **Security**: Never commit sensitive tokens to version control
+5. **Monitoring**: Check Vercel function logs for storage-related errors
 
-✅ Removed hardcoded sample data fallback
-✅ Fixed base URL configuration for Vercel
-✅ Added proper error handling and logging
-✅ Used centralized configuration management
-✅ Added timeout handling for Vercel functions
+## Migration from Local to Vercel
 
-The tracking page now shows:
-- **Real event counts** from Google Calendar
-- **Actual email counts** from Gmail
-- **True expense data** from Google Sheets
-- **Genuine contact numbers** from your contacts sheet
-- **Zero values** when no data exists (instead of fake numbers)
+1. Export your local tokens:
+   ```bash
+   cat data/tokens.json
+   ```
 
-If you're still seeing hardcoded data after following this guide, check the Vercel Function logs for specific error messages.
+2. Set the `TOKENS_DATA` environment variable in Vercel with the exported data
+
+3. Deploy and test token functionality
+
+4. Consider setting up Cloudflare R2 for production use
+
+## Support
+
+If you encounter issues:
+1. Check Vercel function logs
+2. Verify environment variable configuration
+3. Test with minimal token data
+4. Consider using Cloudflare R2 for production deployments

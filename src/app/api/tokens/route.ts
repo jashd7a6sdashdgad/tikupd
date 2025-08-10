@@ -1,59 +1,38 @@
 import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
-import { promises as fs } from 'fs';
-import path from 'path';
-
-import { ApiToken } from '@/lib/api/auth/tokenValidation';
-
-// Use the base ApiToken interface directly
-
-// File path for persistent storage
-const TOKENS_FILE = path.join(process.cwd(), 'data', 'tokens.json');
-console.log('Tokens file path:', TOKENS_FILE);
-console.log('Current working directory:', process.cwd());
-
-// Ensure data directory exists and load tokens from file
-async function ensureDataDir() {
-  const dataDir = path.dirname(TOKENS_FILE);
-  try {
-    await fs.access(dataDir);
-  } catch {
-    console.log('Creating data directory:', dataDir);
-    await fs.mkdir(dataDir, { recursive: true });
-  }
-}
-
-// Load tokens from file
-async function loadTokens(): Promise<ApiToken[]> {
-  try {
-    await ensureDataDir();
-    const data = await fs.readFile(TOKENS_FILE, 'utf-8');
-    return JSON.parse(data);
-  } catch {
-    // File doesn't exist or is invalid, return empty array
-    return [];
-  }
-}
-
-// Save tokens to file
-async function saveTokens(tokens: ApiToken[]): Promise<void> {
-  console.log('Ensuring data directory exists...');
-  await ensureDataDir();
-  console.log('Writing tokens to file:', TOKENS_FILE);
-  console.log('Tokens to save:', tokens.length);
-  await fs.writeFile(TOKENS_FILE, JSON.stringify(tokens, null, 2));
-  console.log('Tokens written to file successfully');
-}
+import { tokenStorage, ApiToken } from '@/lib/storage/tokenStorage';
 
 // Generate a secure random token
 function generateSecureToken(): string {
   return 'mpa_' + crypto.randomBytes(32).toString('hex');
 }
 
+// Clean up expired tokens
+async function cleanupExpiredTokens(): Promise<void> {
+  try {
+    const tokens = await tokenStorage.loadTokens();
+    const now = new Date();
+    const validTokens = tokens.filter(token => {
+      if (!token.expiresAt) return true; // No expiration
+      return new Date(token.expiresAt) > now;
+    });
+    
+    if (validTokens.length !== tokens.length) {
+      console.log(`Cleaning up ${tokens.length - validTokens.length} expired tokens`);
+      await tokenStorage.saveTokens(validTokens);
+    }
+  } catch (error) {
+    console.error('Error cleaning up expired tokens:', error);
+  }
+}
+
 // GET /api/tokens - List all tokens
 export async function GET() {
   try {
-    const tokens = await loadTokens();
+    // Clean up expired tokens first
+    await cleanupExpiredTokens();
+    
+    const tokens = await tokenStorage.loadTokens();
     
     // Return tokens without the actual token value for security
     const safeTokens = tokens.map(token => ({
@@ -83,8 +62,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Token name is required' }, { status: 400 });
     }
 
+    // Clean up expired tokens first
+    await cleanupExpiredTokens();
+    
     // Load existing tokens
-    const tokens = await loadTokens();
+    const tokens = await tokenStorage.loadTokens();
     console.log('Loaded existing tokens:', tokens.length);
     
     // Generate token
@@ -112,11 +94,11 @@ export async function POST(request: NextRequest) {
     };
     console.log('Created token object:', { id: newToken.id, name: newToken.name, permissions: newToken.permissions });
 
-    // Add token and save to file
+    // Add token and save
     tokens.push(newToken);
-    console.log('Saving tokens to file...');
+    console.log('Saving tokens...');
     console.log('Full token object being saved:', JSON.stringify(newToken, null, 2));
-    await saveTokens(tokens);
+    await tokenStorage.saveTokens(tokens);
     console.log('Tokens saved successfully');
 
     // Return the token (only time it will be shown in full)
@@ -159,17 +141,7 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Token ID is required' }, { status: 400 });
     }
 
-    const tokens = await loadTokens();
-    const tokenIndex = tokens.findIndex(token => token.id === tokenId);
-    
-    if (tokenIndex === -1) {
-      return NextResponse.json({ error: 'Token not found' }, { status: 404 });
-    }
-
-    // Remove token and save to file
-    tokens.splice(tokenIndex, 1);
-    await saveTokens(tokens);
-
+    await tokenStorage.deleteToken(tokenId);
     return NextResponse.json({ message: 'Token deleted successfully' });
 
   } catch (error) {
@@ -190,41 +162,28 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'Token ID is required' }, { status: 400 });
     }
 
-    const tokens = await loadTokens();
+    const tokens = await tokenStorage.loadTokens();
     const tokenIndex = tokens.findIndex(token => token.id === tokenId);
     
     if (tokenIndex === -1) {
       return NextResponse.json({ error: 'Token not found' }, { status: 404 });
     }
 
-    // Update allowed fields
-    const { name, permissions, status } = body;
-    
-    if (name && typeof name === 'string') {
-      tokens[tokenIndex].name = name.trim();
-    }
-    
-    if (Array.isArray(permissions)) {
-      tokens[tokenIndex].permissions = permissions;
-    }
-    
-    if (status && (status === 'active' || status === 'inactive')) {
-      tokens[tokenIndex].status = status;
-    }
+    // Update token
+    const updatedToken = { ...tokens[tokenIndex], ...body };
+    tokens[tokenIndex] = updatedToken;
+    await tokenStorage.saveTokens(tokens);
 
-    // Save updated tokens to file
-    await saveTokens(tokens);
-
-    return NextResponse.json({
+    return NextResponse.json({ 
       message: 'Token updated successfully',
-              token: {
-          id: tokens[tokenIndex].id,
-          name: tokens[tokenIndex].name,
-          permissions: tokens[tokenIndex].permissions,
-          createdAt: tokens[tokenIndex].createdAt,
-          expiresAt: tokens[tokenIndex].expiresAt,
-          status: tokens[tokenIndex].status
-        }
+      token: {
+        id: updatedToken.id,
+        name: updatedToken.name,
+        permissions: updatedToken.permissions,
+        createdAt: updatedToken.createdAt,
+        expiresAt: updatedToken.expiresAt,
+        status: updatedToken.status
+      }
     });
 
   } catch (error) {
