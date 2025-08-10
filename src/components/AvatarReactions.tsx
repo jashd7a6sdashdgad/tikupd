@@ -218,7 +218,7 @@ const AvatarReactions: React.FC<AvatarReactionsProps> = ({
             
             {/* Fallback Avatar - shown if image fails */}
             <div className="absolute inset-0 bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center">
-              <span className={`${size === 'sm' ? 'text-lg' : size === 'md' ? 'text-2xl' : 'text-4xl'} text-white`}>
+              <span className={`${size === 'sm' ? 'text-lg' : size === 'md' ? 'text-2xl' : 'text-4xl'} text-black font-bold`}>
                 🤖
               </span>
             </div>
@@ -242,7 +242,7 @@ const AvatarReactions: React.FC<AvatarReactionsProps> = ({
               className="absolute -top-1 -right-1 w-4 h-4 rounded-full flex items-center justify-center text-xs animate-pulse"
               style={{ backgroundColor: currentReaction.emotionState.color }}
             >
-              <Sparkles className="h-2 w-2 text-white" />
+              <Sparkles className="h-2 w-2 text-black font-bold" />
             </div>
           )}
         </div>

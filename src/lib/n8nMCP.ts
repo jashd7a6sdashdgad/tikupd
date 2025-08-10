@@ -134,47 +134,92 @@ Return ONLY valid JSON in this format:
    */
   async createWorkflowInN8N(workflow: WorkflowTemplate): Promise<{ id: string; webhookUrl?: string }> {
     try {
+      // Check for required configuration
+      const n8nApiUrl = process.env.N8N_API_URL;
+      const n8nApiKey = process.env.N8N_API_KEY;
+      
+      if (!n8nApiUrl || !n8nApiKey) {
+        console.error('❌ N8N configuration missing:', {
+          hasApiUrl: !!n8nApiUrl,
+          hasApiKey: !!n8nApiKey
+        });
+        throw new Error('N8N configuration is incomplete. Please set N8N_API_URL and N8N_API_KEY environment variables.');
+      }
+      
       // Ensure MCP client is initialized
-      await ensureMCPInitialized();
+      try {
+        await ensureMCPInitialized();
+      } catch (mcpInitError) {
+        console.warn('MCP client initialization failed, will use direct API:', mcpInitError);
+      }
       
       // Convert our workflow format to N8N format
       const n8nWorkflow = this.convertToN8NFormat(workflow);
       
-      // Try MCP first
+      console.log(`🔧 Converting workflow "${workflow.name}" to N8N format...`);
+      console.log(`📋 N8N Workflow nodes: ${n8nWorkflow.nodes?.length || 0}`);
+      
+      // Try MCP first if available
       try {
-        const result = await mcpClient.createWorkflow(n8nWorkflow);
-        
-        return {
-          id: result.id || result.workflow_id,
-          webhookUrl: this.extractWebhookUrl(workflow)
-        };
-      } catch (mcpError) {
-        console.warn('MCP workflow creation failed, falling back to direct API:', mcpError);
-        
-        // Fallback to direct N8N API
-        const response = await fetch(`${process.env.N8N_API_URL}/api/v1/workflows`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-N8N-API-KEY': process.env.N8N_API_KEY || '',
-          },
-          body: JSON.stringify(n8nWorkflow)
-        });
-
-        if (!response.ok) {
-          throw new Error(`N8N API error: ${response.statusText}`);
+        if (mcpClient) {
+          console.log('🔗 Attempting to create workflow via MCP...');
+          const result = await mcpClient.createWorkflow(n8nWorkflow);
+          
+          console.log('✅ Workflow created via MCP successfully:', result);
+          return {
+            id: result.id || result.workflow_id,
+            webhookUrl: this.extractWebhookUrl(workflow)
+          };
         }
-
-        const result = await response.json();
-        
-        return {
-          id: result.id,
-          webhookUrl: this.extractWebhookUrl(workflow)
-        };
+      } catch (mcpError) {
+        console.warn('⚠️ MCP workflow creation failed, falling back to direct API:', mcpError);
       }
+      
+      // Fallback to direct N8N API
+      console.log(`🌐 Creating workflow via direct N8N API: ${n8nApiUrl}/api/v1/workflows`);
+      
+      const response = await fetch(`${n8nApiUrl}/api/v1/workflows`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-N8N-API-KEY': n8nApiKey,
+        },
+        body: JSON.stringify(n8nWorkflow)
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('❌ N8N API error response:', {
+          status: response.status,
+          statusText: response.statusText,
+          body: errorText
+        });
+        throw new Error(`N8N API error (${response.status}): ${response.statusText}. ${errorText}`);
+      }
+
+      const result = await response.json();
+      console.log('✅ Workflow created via N8N API successfully:', result);
+      
+      return {
+        id: result.id,
+        webhookUrl: this.extractWebhookUrl(workflow)
+      };
+      
     } catch (error) {
-      console.error('Error creating workflow in N8N:', error);
-      throw error;
+      console.error('💥 Error creating workflow in N8N:', error);
+      
+      // Provide helpful error messages
+      if (error instanceof Error) {
+        if (error.message.includes('N8N configuration')) {
+          throw new Error('N8N is not configured. Please set up your N8N instance URL and API key in environment variables.');
+        }
+        if (error.message.includes('fetch')) {
+          throw new Error('Cannot connect to N8N instance. Please check if N8N is running and accessible.');
+        }
+        throw error;
+      }
+      
+      throw new Error('Unknown error occurred while creating workflow in N8N');
     }
   }
 

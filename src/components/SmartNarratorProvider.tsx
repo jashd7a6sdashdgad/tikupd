@@ -62,11 +62,14 @@ export function SmartNarratorProvider({ children }: SmartNarratorProviderProps) 
       narratorPersonality.setUserName(user.username || user.email || 'there');
       narratorPersonality.saveUserPreferences();
       
-      // Welcome user after a short delay
-      setTimeout(() => {
-        greetUser();
-        setHasGreeted(true);
-      }, 1500);
+      // Disable automatic greeting - user requested removal
+      // setTimeout(() => {
+      //   greetUser();
+      //   setHasGreeted(true);
+      // }, 1500);
+      
+      // Just mark as greeted without actually greeting
+      setHasGreeted(true);
     }
   }, [user, hasGreeted, isEnabled]);
 

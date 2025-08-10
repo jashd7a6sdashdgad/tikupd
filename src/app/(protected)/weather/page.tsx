@@ -125,7 +125,7 @@ export default function WeatherPage() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <div className="p-3 bg-gradient-to-br from-sky-500 to-sky-600 rounded-2xl shadow-lg">
-                <Sun className="h-8 w-8 text-white" />
+                <Sun className="h-8 w-8 text-black font-bold" />
               </div>
               <div>
                 <h1 className="text-4xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">

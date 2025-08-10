@@ -45,7 +45,7 @@ export default function Home() {
         {/* Backup login button */}
         <button
           onClick={() => router.push('/auth')}
-          className="mt-4 px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90 transition-colors"
+          className="mt-4 px-4 py-2 bg-primary text-black font-bold rounded-md hover:bg-primary/90 transition-colors"
         >
           Go to Login
         </button>

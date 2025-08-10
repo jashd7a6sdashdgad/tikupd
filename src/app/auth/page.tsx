@@ -529,7 +529,7 @@ export default function AuthPage() {
                           onClick={authenticateBiometric}
                           disabled={biometricLoading}
                           variant="primary"
-                          className="w-full flex items-center gap-3 bg-gradient-to-r from-primary to-blue-600 hover:from-primary/90 hover:to-blue-600/90 text-white relative overflow-hidden group"
+                          className="w-full flex items-center gap-3 bg-gradient-to-r from-primary to-blue-600 hover:from-primary/90 hover:to-blue-600/90 text-black font-bold relative overflow-hidden group"
                         >
                           <div className="flex items-center gap-3 z-10">
                             {biometricType.includes('Face') ? (

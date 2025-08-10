@@ -103,7 +103,7 @@ export default function SearchPage() {
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-4">
               <div className="p-3 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl shadow-lg">
-                <Search className="h-8 w-8 text-white" />
+                <Search className="h-8 w-8 text-black font-bold" />
               </div>
               <div>
                 <h1 className="text-4xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
@@ -165,7 +165,7 @@ export default function SearchPage() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
                   <div className="text-center p-6 bg-white/70 backdrop-blur-sm rounded-2xl border border-white/30 shadow-lg hover:shadow-xl transition-all duration-300">
                     <div className="p-3 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl w-fit mx-auto mb-4">
-                      <Brain className="h-6 w-6 text-white" />
+                      <Brain className="h-6 w-6 text-black font-bold" />
                     </div>
                     <h3 className="font-bold text-black text-lg mb-2">Natural Language</h3>
                     <p className="text-sm text-gray-600 leading-relaxed">
@@ -175,7 +175,7 @@ export default function SearchPage() {
                   
                   <div className="text-center p-6 bg-white/70 backdrop-blur-sm rounded-2xl border border-white/30 shadow-lg hover:shadow-xl transition-all duration-300">
                     <div className="p-3 bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl w-fit mx-auto mb-4">
-                      <Filter className="h-6 w-6 text-white" />
+                      <Filter className="h-6 w-6 text-black font-bold" />
                     </div>
                     <h3 className="font-bold text-black text-lg mb-2">Smart Filters</h3>
                     <p className="text-sm text-gray-600 leading-relaxed">
@@ -185,7 +185,7 @@ export default function SearchPage() {
                   
                   <div className="text-center p-6 bg-white/70 backdrop-blur-sm rounded-2xl border border-white/30 shadow-lg hover:shadow-xl transition-all duration-300">
                     <div className="p-3 bg-gradient-to-br from-green-500 to-green-600 rounded-2xl w-fit mx-auto mb-4">
-                      <Sparkles className="h-6 w-6 text-white" />
+                      <Sparkles className="h-6 w-6 text-black font-bold" />
                     </div>
                     <h3 className="font-bold text-black text-lg mb-2">Global Search</h3>
                     <p className="text-sm text-gray-600 leading-relaxed">
@@ -207,7 +207,7 @@ export default function SearchPage() {
                         <p className="text-3xl font-bold text-primary">{searchStats.totalDocuments}</p>
                       </div>
                       <div className="p-3 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl">
-                        <BookOpen className="h-6 w-6 text-white" />
+                        <BookOpen className="h-6 w-6 text-black font-bold" />
                       </div>
                     </div>
                   </CardContent>
@@ -223,7 +223,7 @@ export default function SearchPage() {
                         </p>
                       </div>
                       <div className="p-3 bg-gradient-to-br from-green-500 to-green-600 rounded-2xl">
-                        <BarChart3 className="h-6 w-6 text-white" />
+                        <BarChart3 className="h-6 w-6 text-black font-bold" />
                       </div>
                     </div>
                   </CardContent>
@@ -237,7 +237,7 @@ export default function SearchPage() {
                         <p className="text-3xl font-bold text-primary">{searchStats.indexSize}</p>
                       </div>
                       <div className="p-3 bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl">
-                        <Settings className="h-6 w-6 text-white" />
+                        <Settings className="h-6 w-6 text-black font-bold" />
                       </div>
                     </div>
                   </CardContent>
@@ -251,7 +251,7 @@ export default function SearchPage() {
                         <p className="text-3xl font-bold text-primary">{searchStats.totalWords}</p>
                       </div>
                       <div className="p-3 bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl">
-                        <Search className="h-6 w-6 text-white" />
+                        <Search className="h-6 w-6 text-black font-bold" />
                       </div>
                     </div>
                   </CardContent>
@@ -266,7 +266,7 @@ export default function SearchPage() {
                 <CardHeader className="p-0 mb-6">
                   <CardTitle className="flex items-center space-x-2 text-xl font-bold text-black">
                     <div className="p-2 bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-xl">
-                      <Lightbulb className="h-5 w-5 text-white" />
+                      <Lightbulb className="h-5 w-5 text-black font-bold" />
                     </div>
                     <span>Search Examples</span>
                   </CardTitle>
@@ -301,7 +301,7 @@ export default function SearchPage() {
                     <CardHeader className="p-0 mb-4">
                       <CardTitle className="flex items-center space-x-2 text-lg font-bold text-black">
                         <div className="p-2 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl">
-                          <Brain className="h-4 w-4 text-white" />
+                          <Brain className="h-4 w-4 text-black font-bold" />
                         </div>
                         <span>Smart Suggestions</span>
                       </CardTitle>
@@ -335,7 +335,7 @@ export default function SearchPage() {
                     <CardHeader className="p-0 mb-4">
                       <CardTitle className="flex items-center space-x-2 text-lg font-bold text-black">
                         <div className="p-2 bg-gradient-to-br from-green-500 to-green-600 rounded-xl">
-                          <TrendingUp className="h-4 w-4 text-white" />
+                          <TrendingUp className="h-4 w-4 text-black font-bold" />
                         </div>
                         <span>Recent Searches</span>
                       </CardTitle>
@@ -357,7 +357,7 @@ export default function SearchPage() {
                   <CardHeader className="p-0 mb-4">
                     <CardTitle className="flex items-center space-x-2 text-lg font-bold text-black">
                       <div className="p-2 bg-gradient-to-br from-gray-500 to-gray-600 rounded-xl">
-                        <Settings className="h-4 w-4 text-white" />
+                        <Settings className="h-4 w-4 text-black font-bold" />
                       </div>
                       <span>Search Index</span>
                     </CardTitle>

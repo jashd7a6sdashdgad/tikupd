@@ -377,7 +377,7 @@ export default function VoiceMessageRecorder({
             disabled={permissionStatus === 'denied'}
             className={`${
               recordingState.isRecording
-                ? 'bg-red-600 hover:bg-red-700 animate-pulse text-white'
+                ? 'bg-red-600 hover:bg-red-700 animate-pulse text-black font-bold'
                 : 'bg-white hover:bg-gray-100 border border-gray-300 text-black'
             } rounded-full p-3`}
           >
@@ -427,7 +427,7 @@ export default function VoiceMessageRecorder({
           <Button
             onClick={sendVoiceMessage}
             disabled={isSending}
-            className="bg-blue-500 hover:bg-blue-600 text-white rounded-full p-3"
+            className="bg-blue-500 hover:bg-blue-600 text-black font-bold rounded-full p-3"
           >
             {isSending ? (
               <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent" />

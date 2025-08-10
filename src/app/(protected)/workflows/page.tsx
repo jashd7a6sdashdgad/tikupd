@@ -420,7 +420,7 @@ export default function WorkflowsPage() {
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
                           <div className="flex items-center gap-3 mb-2">
-                            <div className={`p-2 rounded-lg ${getPriorityColor(rule.priority)} text-white`}>
+                            <div className={`p-2 rounded-lg ${getPriorityColor(rule.priority)} text-black font-bold`}>
                               {getTriggerIcon(rule.trigger.type)}
                             </div>
                             <div>
@@ -441,7 +441,7 @@ export default function WorkflowsPage() {
                             <Badge variant="outline">
                               {rule.actions.length} action{rule.actions.length !== 1 ? 's' : ''}
                             </Badge>
-                            <Badge variant="outline" className={`text-white ${getPriorityColor(rule.priority)}`}>
+                            <Badge variant="outline" className={`text-black font-bold ${getPriorityColor(rule.priority)}`}>
                               {rule.priority}
                             </Badge>
                             {rule.tags.map(tag => (

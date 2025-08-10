@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyToken, COOKIE_OPTIONS } from '@/lib/auth';
 import { ENV_VARS } from '@/lib/env-validation';
+import { getApiConfig, getSocialConfig } from '@/lib/config';
 
 // Use validated environment variables
 const FACEBOOK_PAGE_ACCESS_TOKEN = ENV_VARS.FACEBOOK_PAGE_ACCESS_TOKEN;
-const FACEBOOK_PAGE_ID = ENV_VARS.FACEBOOK_PAGE_ID;
-const FACEBOOK_API_URL = 'https://graph.facebook.com/v18.0';
+const { facebookApiUrl: FACEBOOK_API_URL } = getApiConfig();
+const socialConfig = getSocialConfig();
+const FACEBOOK_PAGE_ID = ENV_VARS.FACEBOOK_PAGE_ID || socialConfig.facebook?.pageId;
 
 // Helper function to check if token is expired
 function isFacebookTokenExpired(errorMessage: string): boolean {

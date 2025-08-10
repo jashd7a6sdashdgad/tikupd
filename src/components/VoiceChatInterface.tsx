@@ -47,6 +47,7 @@ export default function VoiceChatInterface({
   const [currentPlayingId, setCurrentPlayingId] = useState<string | null>(null);
   const [textInput, setTextInput] = useState('');
 
+
   // Voice recorder state & refs
   const [isRecording, setIsRecording] = useState(false);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -467,7 +468,7 @@ export default function VoiceChatInterface({
             onClick={sendTextMessage}
             disabled={!textInput.trim() || isProcessing || isRecording}
             size="sm"
-            className="bg-blue-500 hover:bg-blue-600 text-white"
+            className="bg-blue-500 hover:bg-blue-600 text-black font-bold"
           >
             <Send className="h-4 w-4" />
           </Button>
@@ -483,7 +484,7 @@ export default function VoiceChatInterface({
             {isRecording && (
               <div className="absolute inset-0 bg-red-400 opacity-50 rounded-full animate-ping" />
             )}
-            <Mic className={`h-6 w-6 text-white ${isRecording ? 'animate-pulse' : ''}`} />
+            <Mic className={`h-6 w-6 text-black font-bold ${isRecording ? 'animate-pulse' : ''}`} />
           </Button>
           <span className="ml-4 text-sm text-gray-500">
             {isRecording ? 'Recording...' : 'Tap to speak'}

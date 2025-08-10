@@ -336,7 +336,7 @@ export function ModernVoiceWidget({
       <div className={cn('fixed bottom-6 right-6 z-50', className)}>
         <Button
           onClick={onToggleCollapse}
-          className="w-16 h-16 rounded-full bg-gradient-to-br from-purple-500 via-blue-500 to-indigo-600 hover:from-purple-600 hover:via-blue-600 hover:to-indigo-700 text-white shadow-2xl hover:shadow-purple-500/25 transition-all duration-300 hover:scale-110 border-2 border-white/20 backdrop-blur-sm"
+          className="w-16 h-16 rounded-full bg-gradient-to-br from-purple-500 via-blue-500 to-indigo-600 hover:from-purple-600 hover:via-blue-600 hover:to-indigo-700 text-black font-bold shadow-2xl hover:shadow-purple-500/25 transition-all duration-300 hover:scale-110 border-2 border-white/20 backdrop-blur-sm"
           title="Open Voice Assistant"
         >
           {isRecording ? (
@@ -365,7 +365,7 @@ export function ModernVoiceWidget({
         <div className="flex items-center justify-between p-4 border-b border-white/20 bg-gradient-to-r from-purple-500/10 via-blue-500/10 to-indigo-500/10">
           <div className="flex items-center gap-3">
             <div className="relative p-2 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-xl shadow-lg">
-              <Bot className="h-5 w-5 text-white" />
+              <Bot className="h-5 w-5 text-black font-bold" />
               {(isRecording || isSpeaking) && (
                 <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-400 rounded-full animate-pulse" />
               )}
@@ -453,7 +453,7 @@ export function ModernVoiceWidget({
               >
                 {message.type === 'assistant' && (
                   <div className="flex-shrink-0 p-2 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-xl shadow-sm">
-                    <Bot className="h-4 w-4 text-white" />
+                    <Bot className="h-4 w-4 text-black font-bold" />
                   </div>
                 )}
                 
@@ -461,7 +461,7 @@ export function ModernVoiceWidget({
                   className={cn(
                     'max-w-[80%] rounded-2xl px-4 py-3 shadow-sm',
                     message.type === 'user'
-                      ? 'bg-gradient-to-br from-blue-500 to-indigo-600 text-white'
+                      ? 'bg-gradient-to-br from-blue-500 to-indigo-600 text-black font-bold'
                       : 'bg-white/80 backdrop-blur-sm border border-white/40 text-gray-800'
                   )}
                 >
@@ -483,7 +483,7 @@ export function ModernVoiceWidget({
                 
                 {message.type === 'user' && (
                   <div className="flex-shrink-0 p-2 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl shadow-sm">
-                    <User className="h-4 w-4 text-white" />
+                    <User className="h-4 w-4 text-black font-bold" />
                   </div>
                 )}
               </div>
@@ -494,7 +494,7 @@ export function ModernVoiceWidget({
             <div className="flex justify-start">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-xl shadow-sm">
-                  <Bot className="h-4 w-4 text-white" />
+                  <Bot className="h-4 w-4 text-black font-bold" />
                 </div>
                 <div className="bg-white/80 backdrop-blur-sm border border-white/40 rounded-2xl px-4 py-3">
                   <div className="flex items-center gap-2">
@@ -529,9 +529,9 @@ export function ModernVoiceWidget({
                 <div className="absolute inset-0 bg-red-400/50 rounded-full animate-ping" />
               )}
               {isRecording ? (
-                <MicOff className="h-6 w-6 text-white relative z-10" />
+                <MicOff className="h-6 w-6 text-black font-bold relative z-10" />
               ) : (
-                <Mic className="h-6 w-6 text-white relative z-10" />
+                <Mic className="h-6 w-6 text-black font-bold relative z-10" />
               )}
             </Button>
           </div>

@@ -393,7 +393,7 @@ class SmartPrivacy {
             We need your consent to process <strong>${dataType}</strong> data for: <em>${purpose}</em>
           </p>
           <div class="flex gap-2">
-            <button id="consent-allow" class="flex-1 bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600">
+            <button id="consent-allow" class="flex-1 bg-blue-500 text-black font-bold py-2 px-4 rounded hover:bg-blue-600">
               Allow
             </button>
             <button id="consent-deny" class="flex-1 bg-gray-300 text-gray-700 py-2 px-4 rounded hover:bg-gray-400">

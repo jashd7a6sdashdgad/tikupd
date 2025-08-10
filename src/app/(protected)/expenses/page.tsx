@@ -46,8 +46,9 @@ export default function ExpensesPage() {
   const { t } = useTranslation(language);
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [analytics, setAnalytics] = useState<ExpenseAnalytics | null>(null);
-  const [loading, setLoading] = useState(true);
+
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
   const [showAddForm, setShowAddForm] = useState(false);
   const [usingMockData, setUsingMockData] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
@@ -348,6 +349,18 @@ export default function ExpensesPage() {
     }
   };
 
+  const getExpenseEmoji = (expense: Expense) => {
+    // If it's a credit (money coming in), show happy emoji
+    if (expense.creditAmount && expense.creditAmount > 0) {
+      return '😊'; // Happy face
+    }
+    // If it's a debit (money going out), show sad emoji
+    if (expense.debitAmount && expense.debitAmount > 0) {
+      return '😢'; // Sad face
+    }
+    return '😐'; // Neutral face for edge cases
+  };
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 p-4 lg:p-8">
@@ -357,7 +370,7 @@ export default function ExpensesPage() {
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-4">
               <div className="p-3 bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl shadow-lg">
-                <DollarSign className="h-8 w-8 text-white" />
+                <DollarSign className="h-8 w-8 text-black font-bold" />
               </div>
               <div>
                 <h1 className="text-4xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
@@ -742,10 +755,16 @@ export default function ExpensesPage() {
                           <div className="flex items-center space-x-2">
                             <div className="text-right mr-4">
                               {expense.creditAmount && expense.creditAmount > 0 && (
-                                <div className="text-sm text-green-600">+{formatCurrency(expense.creditAmount)}</div>
+                                <div className="text-sm text-green-600 flex items-center gap-1">
+                                  <span>😊</span>
+                                  <span>+{formatCurrency(expense.creditAmount)}</span>
+                                </div>
                               )}
                               {expense.debitAmount && expense.debitAmount > 0 && (
-                                <div className="text-sm text-red-600">-{formatCurrency(expense.debitAmount)}</div>
+                                <div className="text-sm text-red-600 flex items-center gap-1">
+                                  <span>😢</span>
+                                  <span>-{formatCurrency(expense.debitAmount)}</span>
+                                </div>
                               )}
                             </div>
                             <Button 

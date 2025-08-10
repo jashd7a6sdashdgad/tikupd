@@ -122,7 +122,7 @@ export default function WebScraperPage() {
         <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/20 p-6 mb-8 hover:shadow-3xl transition-all duration-300">
           <div className="flex items-center gap-4">
             <div className="p-3 bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl shadow-lg">
-              <Globe className="h-8 w-8 text-white" />
+              <Globe className="h-8 w-8 text-black font-bold" />
             </div>
             <div>
               <h1 className="text-4xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">

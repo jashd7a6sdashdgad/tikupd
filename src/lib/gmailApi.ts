@@ -62,11 +62,12 @@ export interface EmailAttachment {
 
 export class GmailApiService {
   private config: GmailApiConfig;
-  private baseUrl = 'https://gmail.googleapis.com/gmail/v1';
+  private baseUrl: string;
   private intelligence: EmailIntelligence;
 
   constructor(config: GmailApiConfig) {
     this.config = config;
+    this.baseUrl = process.env.GMAIL_API_URL || 'https://gmail.googleapis.com/gmail/v1';
     this.intelligence = emailIntelligence;
   }
 

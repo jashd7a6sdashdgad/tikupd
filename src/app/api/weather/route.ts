@@ -1,10 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const WEATHER_API_KEY = '9b9f2a541a83438898d03333250707';
-const WEATHER_API_URL = 'http://api.weatherapi.com/v1/current.json';
+const WEATHER_API_KEY = process.env.WEATHER_API_KEY;
+const WEATHER_API_URL = process.env.WEATHER_API_URL || 'http://api.weatherapi.com/v1/current.json';
 
 export async function GET(request: NextRequest) {
   try {
+    // Check for required API key
+    if (!WEATHER_API_KEY) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'Weather API key is not configured. Please set WEATHER_API_KEY environment variable.'
+        },
+        { status: 500 }
+      );
+    }
+
     const searchParams = request.nextUrl.searchParams;
     const location = searchParams.get('q') || 'muscat';
 

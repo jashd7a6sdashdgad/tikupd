@@ -18,7 +18,7 @@ export default function AddExpenseForm({ onAdded }: { onAdded: () => void }) {
   const [description, setDescription] = useState('');
   const [availableBalance, setAvailableBalance] = useState('');
   const [id, setId] = useState('');
-  const [loading, setLoading] = useState(false);
+
   const [showImageUpload, setShowImageUpload] = useState(false);
   const [receiptImage, setReceiptImage] = useState<{
     file: File;
@@ -27,6 +27,7 @@ export default function AddExpenseForm({ onAdded }: { onAdded: () => void }) {
   } | null>(null);
   const [imageError, setImageError] = useState<string | null>(null);
   const [processingOCR, setProcessingOCR] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [autoFilled, setAutoFilled] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
 
@@ -538,7 +539,7 @@ HEre the answer you are looking for.`,
             <button
               type="button"
               onClick={removeImage}
-              className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600"
+              className="absolute top-1 right-1 bg-red-500 text-black font-bold rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600"
               disabled={processingOCR}
             >
               ×
@@ -547,7 +548,7 @@ HEre the answer you are looking for.`,
             {/* OCR Processing Indicator */}
             {processingOCR && (
               <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center rounded">
-                <div className="text-white text-sm font-medium flex items-center">
+                <div className="text-black font-bold text-sm font-medium flex items-center">
                   <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
                   Extracting data...
                 </div>
@@ -573,7 +574,7 @@ HEre the answer you are looking for.`,
         <button
           type="submit"
           disabled={loading}
-          className="flex-1 bg-blue-600 text-white px-6 py-3 rounded-md hover:bg-blue-700 disabled:opacity-50 font-medium"
+          className="flex-1 bg-blue-600 text-black font-bold px-6 py-3 rounded-md hover:bg-blue-700 disabled:opacity-50 font-medium"
         >
           {loading ? t('adding') : t('addExpense')}
         </button>

@@ -1,0 +1,70 @@
+{
+  "business": {
+    "name": "Mahboob Agents",
+    "domain": "mahboobagents.fun",
+    "email": "contact@mahboobagents.fun",
+    "phone": "+96895060007",
+    "location": "Muscat, Oman",
+    "description": "Innovative solutions for businesses & individuals"
+  },
+  "social": {
+    "facebook": {
+      "platform": "facebook",
+      "name": "Mahboob Agents",
+      "username": "mahboobagents",
+      "url": "https://facebook.com/mahboobagents",
+      "pageId": "196199373900228",
+      "followers": 1250,
+      "verified": true,
+      "isActive": true
+    },
+    "instagram": {
+      "platform": "instagram",
+      "name": "Mahboob Agents",
+      "username": "@mahboobagents",
+      "url": "https://instagram.com/mahboobagents",
+      "followers": 890,
+      "verified": false,
+      "isActive": true
+    },
+    "twitter": {
+      "platform": "twitter",
+      "name": "Mahboob Agents",
+      "username": "@mahboobagents",
+      "url": "https://twitter.com/mahboobagents",
+      "followers": 420,
+      "verified": false,
+      "isActive": true
+    },
+    "linkedin": {
+      "platform": "linkedin",
+      "name": "Mahboob Agents",
+      "username": "company/mahboob-agents",
+      "url": "https://linkedin.com/company/mahboob-agents",
+      "followers": 89,
+      "verified": false,
+      "isActive": true
+    },
+    "youtube": {
+      "platform": "youtube",
+      "name": "Mahboob Agents",
+      "username": "mahboobagents",
+      "url": "https://youtube.com/@mahboobagents",
+      "followers": 320,
+      "verified": false,
+      "isActive": true
+    },
+    "website": {
+      "platform": "website",
+      "name": "Official Website",
+      "username": "mahboobagents.fun",
+      "url": "https://mahboobagents.fun",
+      "description": "Main website with services and contact info",
+      "isActive": true
+    }
+  },
+  "templates": {
+    "bio1": "🌐 Innovative solutions for businesses & individuals\n📍 Based in Muscat, Oman\n🔗 {website}\n📧 {email}",
+    "bio2": "Making life easier with smart automation ✨\nCheck out our services 👇\n🌐 {website}"
+  }
+}

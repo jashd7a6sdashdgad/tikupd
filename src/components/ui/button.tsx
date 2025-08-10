@@ -17,8 +17,8 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       accent: 'bg-white text-black hover:bg-gray-100 focus:ring-gray-300 border border-gray-300',
       outline: 'border border-gray-300 text-gray-700 hover:bg-white hover:text-black focus:ring-gray-300',
       ghost: 'text-gray-700 hover:bg-gray-50 focus:ring-gray-300',
-      destructive: 'bg-red-600 text-white hover:bg-red-700 focus:ring-red-500 border border-red-600',
-      success: 'bg-green-600 text-white hover:bg-green-700 focus:ring-green-500'
+      destructive: 'bg-red-600 text-black font-bold hover:bg-red-700 focus:ring-red-500 border border-red-600',
+      success: 'bg-green-600 text-black font-bold hover:bg-green-700 focus:ring-green-500'
     };
     
     const sizes = {

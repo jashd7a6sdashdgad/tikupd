@@ -559,7 +559,7 @@ if (calendarResponse && calendarResponse.ok) {
             <div>
               <div className="flex items-center gap-4">
                 <div className="p-3 bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl shadow-lg">
-                  <Brain className="h-8 w-8 text-white" />
+                  <Brain className="h-8 w-8 text-black font-bold" />
                 </div>
                 <div>
                   <h1 className="text-4xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
@@ -650,7 +650,7 @@ if (calendarResponse && calendarResponse.ok) {
           <div className="glass-widget-dark p-6">
             <div className="flex items-center gap-3 mb-6">
               <div className="p-3 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl shadow-lg">
-                <BarChart3 className="h-6 w-6 text-white" />
+                <BarChart3 className="h-6 w-6 text-black font-bold" />
               </div>
               <div>
                 <h2 className="text-2xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
@@ -675,7 +675,7 @@ if (calendarResponse && calendarResponse.ok) {
             <div className="glass-widget p-6">
               <div className="flex items-center gap-3 mb-6">
                 <div className="p-3 bg-gradient-to-br from-orange-500 to-red-600 rounded-2xl shadow-lg">
-                  <Activity className="h-6 w-6 text-white" />
+                  <Activity className="h-6 w-6 text-black font-bold" />
                 </div>
                 <div>
                   <h2 className="text-xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
@@ -697,7 +697,7 @@ if (calendarResponse && calendarResponse.ok) {
             <div className="glass-widget p-6">
               <div className="flex items-center gap-3 mb-6">
                 <div className="p-3 bg-gradient-to-br from-blue-500 to-cyan-600 rounded-2xl shadow-lg">
-                  <Clock className="h-6 w-6 text-white" />
+                  <Clock className="h-6 w-6 text-black font-bold" />
                 </div>
                 <div>
                   <h2 className="text-xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
@@ -1344,7 +1344,7 @@ if (calendarResponse && calendarResponse.ok) {
               >
                 <div className="glass-widget-light p-4">
                   <div className={`p-3 bg-gradient-to-br ${feature.color} rounded-xl shadow-md mb-3 mx-auto w-fit`}>
-                    <IconComponent className="h-6 w-6 text-white" />
+                    <IconComponent className="h-6 w-6 text-black font-bold" />
                   </div>
                   <p className="text-center text-sm font-semibold text-gray-700 group-hover:text-gray-900 transition-colors">
                     {feature.name}
@@ -1361,14 +1361,14 @@ if (calendarResponse && calendarResponse.ok) {
       <CollapsibleSidebar
         side="right"
         title="Smart Notifications"
-        icon={<Bell className="w-5 h-5 text-white" />}
+        icon={<Bell className="w-5 h-5 text-black font-bold" />}
         defaultOpen={false}
         className="lg:block hidden"
       >
         <NotificationPanel />
       </CollapsibleSidebar>
 
-      {/* Modern Voice Widget */}
+      {/* Modern Voice Widget - Dashboard Specific */}
       <ModernVoiceWidget
         collapsed={isVoiceCollapsed}
         onToggleCollapse={() => setIsVoiceCollapsed(!isVoiceCollapsed)}

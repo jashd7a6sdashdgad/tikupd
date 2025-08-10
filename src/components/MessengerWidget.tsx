@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { MessageCircle, X, Minimize2, Maximize2, Send, Phone, Video } from 'lucide-react';
+import { getBusinessConfig, getSocialConfig } from '@/lib/config';
 
 interface MessengerWidgetProps {
   pageId?: string;
@@ -20,10 +21,13 @@ interface ChatMessage {
 }
 
 export default function MessengerWidget({ 
-  pageId = "196199373900228", 
+  pageId, 
   minimized = true,
   className = "" 
 }: MessengerWidgetProps) {
+  const businessConfig = getBusinessConfig();
+  const socialConfig = getSocialConfig();
+  const effectivePageId = pageId || socialConfig.facebook?.pageId || process.env.FACEBOOK_PAGE_ID || "196199373900228";
   const [isOpen, setIsOpen] = useState(!minimized);
   const [isMinimized, setIsMinimized] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -123,12 +127,12 @@ export default function MessengerWidget({
       <div className={`fixed bottom-4 right-4 z-50 ${className}`}>
         <Button
           onClick={() => setIsOpen(true)}
-          className="rounded-full w-14 h-14 bg-blue-600 hover:bg-blue-700 text-white shadow-lg hover:shadow-xl transition-all duration-300"
+          className="rounded-full w-14 h-14 bg-blue-600 hover:bg-blue-700 text-black font-bold shadow-lg hover:shadow-xl transition-all duration-300"
         >
           <MessageCircle className="h-6 w-6" />
         </Button>
         {/* Notification badge */}
-        <div className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+        <div className="absolute -top-1 -right-1 bg-red-500 text-black font-bold text-xs rounded-full w-5 h-5 flex items-center justify-center">
           3
         </div>
       </div>
@@ -139,7 +143,7 @@ export default function MessengerWidget({
     <div className={`fixed bottom-4 right-4 z-50 ${className}`}>
       <Card className={`w-80 h-96 shadow-xl transition-all duration-300 ${isMinimized ? 'h-12' : 'h-96'}`}>
         {/* Header */}
-        <div className="flex items-center justify-between p-3 bg-blue-600 text-white rounded-t-lg">
+        <div className="flex items-center justify-between p-3 bg-blue-600 text-black font-bold rounded-t-lg">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center">
               <MessageCircle className="h-4 w-4 text-blue-600" />
@@ -156,15 +160,15 @@ export default function MessengerWidget({
             <Button
               variant="ghost"
               size="sm"
-              className="text-white hover:bg-blue-700 h-8 w-8 p-0"
-              onClick={() => window.open(`tel:+96895060007`, '_blank')}
+              className="text-black font-bold hover:bg-blue-700 h-8 w-8 p-0"
+              onClick={() => window.open(`tel:${businessConfig.phone}`, '_blank')}
             >
               <Phone className="h-4 w-4" />
             </Button>
             <Button
               variant="ghost"
               size="sm"
-              className="text-white hover:bg-blue-700 h-8 w-8 p-0"
+              className="text-black font-bold hover:bg-blue-700 h-8 w-8 p-0"
               onClick={() => setIsMinimized(!isMinimized)}
             >
               {isMinimized ? <Maximize2 className="h-4 w-4" /> : <Minimize2 className="h-4 w-4" />}
@@ -172,7 +176,7 @@ export default function MessengerWidget({
             <Button
               variant="ghost"
               size="sm"
-              className="text-white hover:bg-blue-700 h-8 w-8 p-0"
+              className="text-black font-bold hover:bg-blue-700 h-8 w-8 p-0"
               onClick={() => setIsOpen(false)}
             >
               <X className="h-4 w-4" />
@@ -193,7 +197,7 @@ export default function MessengerWidget({
                     <div
                       className={`max-w-xs p-2 rounded-lg ${
                         message.sender === 'user'
-                          ? 'bg-blue-600 text-white'
+                          ? 'bg-blue-600 text-black font-bold'
                           : 'bg-white text-black border'
                       }`}
                     >

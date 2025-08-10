@@ -23,7 +23,8 @@ import {
   Shield,
   Settings,
   Save,
-  RotateCcw
+  RotateCcw,
+  Star
 } from 'lucide-react';
 
 import { prayerTimesService, PrayerSettings } from '@/lib/islamic/prayerTimes';
@@ -71,63 +72,52 @@ export default function CulturalSettings() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="bg-card/80 backdrop-blur-sm border-b border-border/50 sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-4">
-            <div>
-              <h1 className="text-2xl font-bold text-primary flex items-center space-x-2">
-                <Moon className="h-6 w-6" />
-                <span>Islamic & Cultural Settings</span>
-              </h1>
-              <p className="text-muted-foreground">
-                Configure prayer times, Ramadan mode, and Islamic finance compliance
-              </p>
-            </div>
-            <div className="flex items-center space-x-2">
-              <Button
-                variant="outline"
-                onClick={resetToDefaults}
-                disabled={!unsavedChanges}
-                size="sm"
-              >
-                <RotateCcw className="h-4 w-4 mr-2" />
-                Reset
-              </Button>
-              <Button
-                onClick={saveSettings}
-                disabled={!unsavedChanges}
-                size="sm"
-              >
-                <Save className="h-4 w-4 mr-2" />
-                Save Changes
-              </Button>
-            </div>
-          </div>
-        </div>
-      </header>
+    <div className="space-y-8">
+      {/* Modern Action Buttons */}
+      <div className="flex justify-end gap-3">
+        <Button
+          variant="outline"
+          onClick={resetToDefaults}
+          disabled={!unsavedChanges}
+          size="sm"
+          className="bg-white/60 backdrop-blur-sm hover:bg-white/80 border-2 border-orange-200 hover:border-orange-400 text-orange-700 hover:text-orange-800"
+        >
+          <RotateCcw className="h-4 w-4 mr-2" />
+          Reset
+        </Button>
+        <Button
+          onClick={saveSettings}
+          disabled={!unsavedChanges}
+          size="sm"
+          className="bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-black font-bold shadow-lg hover:shadow-xl transition-all duration-300"
+        >
+          <Save className="h-4 w-4 mr-2" />
+          Save Changes
+        </Button>
+      </div>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5">
-            <TabsTrigger value="prayer" className="flex items-center space-x-2">
+      <main className="space-y-8">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-8">
+          <TabsList className="grid w-full grid-cols-5 bg-white/70 backdrop-blur-xl border-2 border-white/30 rounded-2xl p-2 shadow-lg">
+            <TabsTrigger value="prayer" className="flex items-center space-x-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-blue-600 data-[state=active]:text-black data-[state=active]:font-bold rounded-xl py-3 px-4 transition-all duration-300 hover:bg-white/50">
               <Clock className="h-4 w-4" />
-              <span>Prayer Times</span>
+              <span className="hidden sm:inline">Prayer Times</span>
+              <span className="sm:hidden">Prayer</span>
             </TabsTrigger>
-            <TabsTrigger value="ramadan" className="flex items-center space-x-2">
+            <TabsTrigger value="ramadan" className="flex items-center space-x-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-purple-600 data-[state=active]:text-black data-[state=active]:font-bold rounded-xl py-3 px-4 transition-all duration-300 hover:bg-white/50">
               <Moon className="h-4 w-4" />
               <span>Ramadan</span>
             </TabsTrigger>
-            <TabsTrigger value="finance" className="flex items-center space-x-2">
+            <TabsTrigger value="finance" className="flex items-center space-x-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-emerald-500 data-[state=active]:to-emerald-600 data-[state=active]:text-black data-[state=active]:font-bold rounded-xl py-3 px-4 transition-all duration-300 hover:bg-white/50">
               <Shield className="h-4 w-4" />
-              <span>Islamic Finance</span>
+              <span>Finance</span>
             </TabsTrigger>
-            <TabsTrigger value="calendar" className="flex items-center space-x-2">
+            <TabsTrigger value="calendar" className="flex items-center space-x-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-amber-500 data-[state=active]:to-orange-600 data-[state=active]:text-black data-[state=active]:font-bold rounded-xl py-3 px-4 transition-all duration-300 hover:bg-white/50">
               <Calendar className="h-4 w-4" />
-              <span>Islamic Calendar</span>
+              <span className="hidden sm:inline">Calendar</span>
+              <span className="sm:hidden">Cal</span>
             </TabsTrigger>
-            <TabsTrigger value="general" className="flex items-center space-x-2">
+            <TabsTrigger value="general" className="flex items-center space-x-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-gray-500 data-[state=active]:to-gray-600 data-[state=active]:text-black data-[state=active]:font-bold rounded-xl py-3 px-4 transition-all duration-300 hover:bg-white/50">
               <Settings className="h-4 w-4" />
               <span>General</span>
             </TabsTrigger>
@@ -137,13 +127,15 @@ export default function CulturalSettings() {
           <TabsContent value="prayer" className="space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Calculation Method */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center space-x-2">
-                    <Clock className="h-5 w-5" />
-                    <span>Calculation Settings</span>
+              <Card className="bg-white/70 backdrop-blur-xl border-2 border-white/30 rounded-3xl shadow-xl hover:shadow-2xl transition-all duration-500 hover:bg-white/80">
+                <CardHeader className="pb-4">
+                  <CardTitle className="flex items-center space-x-3 text-xl">
+                    <div className="p-2 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-md">
+                      <Clock className="h-5 w-5 text-black font-bold" />
+                    </div>
+                    <span className="bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">Calculation Settings</span>
                   </CardTitle>
-                  <CardDescription>
+                  <CardDescription className="text-gray-600 font-medium">
                     Configure how prayer times are calculated
                   </CardDescription>
                 </CardHeader>
@@ -192,13 +184,15 @@ export default function CulturalSettings() {
               </Card>
 
               {/* Location Settings */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center space-x-2">
-                    <MapPin className="h-5 w-5" />
-                    <span>Location</span>
+              <Card className="bg-white/70 backdrop-blur-xl border-2 border-white/30 rounded-3xl shadow-xl hover:shadow-2xl transition-all duration-500 hover:bg-white/80">
+                <CardHeader className="pb-4">
+                  <CardTitle className="flex items-center space-x-3 text-xl">
+                    <div className="p-2 bg-gradient-to-br from-green-500 to-green-600 rounded-xl shadow-md">
+                      <MapPin className="h-5 w-5 text-black font-bold" />
+                    </div>
+                    <span className="bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">Location</span>
                   </CardTitle>
-                  <CardDescription>
+                  <CardDescription className="text-gray-600 font-medium">
                     Set your location for accurate prayer times
                   </CardDescription>
                 </CardHeader>
@@ -307,13 +301,15 @@ export default function CulturalSettings() {
               </Card>
 
               {/* Notification Settings */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center space-x-2">
-                    <Bell className="h-5 w-5" />
-                    <span>Notifications</span>
+              <Card className="bg-white/70 backdrop-blur-xl border-2 border-white/30 rounded-3xl shadow-xl hover:shadow-2xl transition-all duration-500 hover:bg-white/80">
+                <CardHeader className="pb-4">
+                  <CardTitle className="flex items-center space-x-3 text-xl">
+                    <div className="p-2 bg-gradient-to-br from-yellow-500 to-orange-600 rounded-xl shadow-md">
+                      <Bell className="h-5 w-5 text-black font-bold" />
+                    </div>
+                    <span className="bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">Notifications</span>
                   </CardTitle>
-                  <CardDescription>
+                  <CardDescription className="text-gray-600 font-medium">
                     Configure prayer time notifications and reminders
                   </CardDescription>
                 </CardHeader>
@@ -354,14 +350,18 @@ export default function CulturalSettings() {
                     <Label>Mute during meetings</Label>
                   </div>
 
-                  <div className="space-y-2">
-                    <Label>Reminder Times (minutes before prayer)</Label>
-                    <div className="flex flex-wrap gap-2">
+                  <div className="space-y-3">
+                    <Label className="text-gray-700 font-semibold">Reminder Times (minutes before prayer)</Label>
+                    <div className="flex flex-wrap gap-3">
                       {[5, 10, 15, 30, 60].map(minutes => (
                         <Badge
                           key={minutes}
                           variant={prayerSettings.notifications.reminderMinutes.includes(minutes) ? 'default' : 'outline'}
-                          className="cursor-pointer"
+                          className={`cursor-pointer px-4 py-2 rounded-xl font-semibold transition-all duration-300 hover:scale-105 ${
+                            prayerSettings.notifications.reminderMinutes.includes(minutes) 
+                              ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-black border-2 border-blue-300 shadow-md hover:shadow-lg' 
+                              : 'bg-white/70 text-gray-700 border-2 border-gray-300 hover:bg-blue-50 hover:border-blue-300'
+                          }`}
                           onClick={() => {
                             const currentReminders = prayerSettings.notifications.reminderMinutes;
                             const newReminders = currentReminders.includes(minutes)
@@ -382,13 +382,15 @@ export default function CulturalSettings() {
               </Card>
 
               {/* Current Prayer Times Display */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center space-x-2">
-                    <Clock className="h-5 w-5" />
-                    <span>Today's Prayer Times</span>
+              <Card className="bg-gradient-to-br from-indigo-50 via-purple-50 to-blue-50 border-2 border-indigo-200 rounded-3xl shadow-xl hover:shadow-2xl transition-all duration-500">
+                <CardHeader className="pb-4">
+                  <CardTitle className="flex items-center space-x-3 text-xl">
+                    <div className="p-2 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl shadow-md">
+                      <Clock className="h-5 w-5 text-black font-bold" />
+                    </div>
+                    <span className="bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">Today's Prayer Times</span>
                   </CardTitle>
-                  <CardDescription>
+                  <CardDescription className="text-gray-600 font-medium">
                     Current prayer times with adjustments applied
                   </CardDescription>
                 </CardHeader>
@@ -398,17 +400,22 @@ export default function CulturalSettings() {
               </Card>
 
               {/* Prayer Time Adjustments */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Manual Adjustments</CardTitle>
-                  <CardDescription>
+              <Card className="bg-white/70 backdrop-blur-xl border-2 border-white/30 rounded-3xl shadow-xl hover:shadow-2xl transition-all duration-500 hover:bg-white/80">
+                <CardHeader className="pb-4">
+                  <CardTitle className="flex items-center space-x-3 text-xl">
+                    <div className="p-2 bg-gradient-to-br from-teal-500 to-cyan-600 rounded-xl shadow-md">
+                      <Settings className="h-5 w-5 text-black font-bold" />
+                    </div>
+                    <span className="bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">Manual Adjustments</span>
+                  </CardTitle>
+                  <CardDescription className="text-gray-600 font-medium">
                     Fine-tune prayer times (in minutes)
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   {Object.entries(prayerSettings.adjustments).map(([prayer, adjustment]) => (
-                    <div key={prayer} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                      <Label className="capitalize font-medium">{prayer}</Label>
+                    <div key={prayer} className="flex items-center justify-between p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-2xl shadow-sm hover:shadow-md transition-all duration-300">
+                      <Label className="capitalize font-semibold text-gray-700">{prayer}</Label>
                       <div className="flex items-center space-x-3">
                         <Button
                           variant="outline"
@@ -462,13 +469,15 @@ export default function CulturalSettings() {
           <TabsContent value="ramadan" className="space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Ramadan Mode */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center space-x-2">
-                    <Moon className="h-5 w-5" />
-                    <span>Ramadan Mode</span>
+              <Card className="bg-white/70 backdrop-blur-xl border-2 border-white/30 rounded-3xl shadow-xl hover:shadow-2xl transition-all duration-500 hover:bg-white/80">
+                <CardHeader className="pb-4">
+                  <CardTitle className="flex items-center space-x-3 text-xl">
+                    <div className="p-2 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-xl shadow-md">
+                      <Moon className="h-5 w-5 text-black font-bold" />
+                    </div>
+                    <span className="bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">Ramadan Mode</span>
                   </CardTitle>
-                  <CardDescription>
+                  <CardDescription className="text-gray-600 font-medium">
                     Enable special features during the holy month
                   </CardDescription>
                 </CardHeader>
@@ -496,10 +505,15 @@ export default function CulturalSettings() {
               </Card>
 
               {/* Fasting Reminders */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Fasting Reminders</CardTitle>
-                  <CardDescription>
+              <Card className="bg-white/70 backdrop-blur-xl border-2 border-white/30 rounded-3xl shadow-xl hover:shadow-2xl transition-all duration-500 hover:bg-white/80">
+                <CardHeader className="pb-4">
+                  <CardTitle className="flex items-center space-x-3 text-xl">
+                    <div className="p-2 bg-gradient-to-br from-orange-500 to-red-600 rounded-xl shadow-md">
+                      <Clock className="h-5 w-5 text-black font-bold" />
+                    </div>
+                    <span className="bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">Fasting Reminders</span>
+                  </CardTitle>
+                  <CardDescription className="text-gray-600 font-medium">
                     Configure Suhoor and Iftar notifications
                   </CardDescription>
                 </CardHeader>
@@ -584,13 +598,15 @@ export default function CulturalSettings() {
               </Card>
 
               {/* Spiritual Goals */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center space-x-2">
-                    <BookOpen className="h-5 w-5" />
-                    <span>Spiritual Goals</span>
+              <Card className="bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 border-2 border-emerald-200 rounded-3xl shadow-xl hover:shadow-2xl transition-all duration-500">
+                <CardHeader className="pb-4">
+                  <CardTitle className="flex items-center space-x-3 text-xl">
+                    <div className="p-2 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl shadow-md">
+                      <BookOpen className="h-5 w-5 text-black font-bold" />
+                    </div>
+                    <span className="bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">Spiritual Goals</span>
                   </CardTitle>
-                  <CardDescription>
+                  <CardDescription className="text-gray-600 font-medium">
                     Set your spiritual objectives for Ramadan
                   </CardDescription>
                 </CardHeader>
@@ -654,13 +670,15 @@ export default function CulturalSettings() {
               </Card>
 
               {/* Wellness Settings */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center space-x-2">
-                    <Heart className="h-5 w-5" />
-                    <span>Wellness</span>
+              <Card className="bg-gradient-to-br from-pink-50 via-rose-50 to-red-50 border-2 border-pink-200 rounded-3xl shadow-xl hover:shadow-2xl transition-all duration-500">
+                <CardHeader className="pb-4">
+                  <CardTitle className="flex items-center space-x-3 text-xl">
+                    <div className="p-2 bg-gradient-to-br from-pink-500 to-rose-600 rounded-xl shadow-md">
+                      <Heart className="h-5 w-5 text-black font-bold" />
+                    </div>
+                    <span className="bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">Wellness</span>
                   </CardTitle>
-                  <CardDescription>
+                  <CardDescription className="text-gray-600 font-medium">
                     Health and wellness reminders during fasting
                   </CardDescription>
                 </CardHeader>
@@ -719,13 +737,15 @@ export default function CulturalSettings() {
 
           {/* Islamic Finance Settings */}
           <TabsContent value="finance" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <Shield className="h-5 w-5" />
-                  <span>Halal Investment Screening</span>
+            <Card className="bg-gradient-to-br from-emerald-50 via-green-50 to-teal-50 border-2 border-emerald-200 rounded-3xl shadow-xl hover:shadow-2xl transition-all duration-500">
+              <CardHeader className="pb-6">
+                <CardTitle className="flex items-center space-x-3 text-2xl">
+                  <div className="p-3 bg-gradient-to-br from-emerald-500 to-green-600 rounded-2xl shadow-lg">
+                    <Shield className="h-6 w-6 text-black font-bold" />
+                  </div>
+                  <span className="bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">Halal Investment Screening</span>
                 </CardTitle>
-                <CardDescription>
+                <CardDescription className="text-gray-600 font-medium text-lg">
                   Configure Islamic finance compliance checking for your investments
                 </CardDescription>
               </CardHeader>
@@ -810,13 +830,15 @@ value="5"
 
           {/* Islamic Calendar Settings */}
           <TabsContent value="calendar" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <Calendar className="h-5 w-5" />
-                  <span>Islamic Calendar Integration</span>
+            <Card className="bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-50 border-2 border-amber-200 rounded-3xl shadow-xl hover:shadow-2xl transition-all duration-500">
+              <CardHeader className="pb-6">
+                <CardTitle className="flex items-center space-x-3 text-2xl">
+                  <div className="p-3 bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl shadow-lg">
+                    <Calendar className="h-6 w-6 text-black font-bold" />
+                  </div>
+                  <span className="bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">Islamic Calendar Integration</span>
                 </CardTitle>
-                <CardDescription>
+                <CardDescription className="text-gray-600 font-medium text-lg">
                   Display Islamic dates and holidays alongside Gregorian calendar
                 </CardDescription>
               </CardHeader>
@@ -863,13 +885,15 @@ value="5"
 
           {/* General Cultural Settings */}
           <TabsContent value="general" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <Settings className="h-5 w-5" />
-                  <span>General Cultural Preferences</span>
+            <Card className="bg-gradient-to-br from-gray-50 via-slate-50 to-blue-50 border-2 border-gray-200 rounded-3xl shadow-xl hover:shadow-2xl transition-all duration-500">
+              <CardHeader className="pb-6">
+                <CardTitle className="flex items-center space-x-3 text-2xl">
+                  <div className="p-3 bg-gradient-to-br from-gray-500 to-slate-600 rounded-2xl shadow-lg">
+                    <Settings className="h-6 w-6 text-black font-bold" />
+                  </div>
+                  <span className="bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">General Cultural Preferences</span>
                 </CardTitle>
-                <CardDescription>
+                <CardDescription className="text-gray-600 font-medium text-lg">
                   Configure language, regional preferences, and cultural adaptations
                 </CardDescription>
               </CardHeader>
@@ -947,15 +971,31 @@ value="5"
           </TabsContent>
         </Tabs>
 
-        {/* Floating Save Button */}
+        {/* Enhanced Floating Save Button */}
         {unsavedChanges && (
-          <div className="fixed bottom-6 right-6 z-50">
-            <Button onClick={saveSettings} size="lg" className="shadow-lg">
-              <Save className="h-4 w-4 mr-2" />
-              Save All Changes
-            </Button>
+          <div className="fixed bottom-8 right-8 z-50 animate-in slide-in-from-bottom-4 duration-300">
+            <div className="bg-white/20 backdrop-blur-xl rounded-3xl p-1 shadow-2xl border border-white/30">
+              <Button 
+                onClick={saveSettings} 
+                size="lg" 
+                className="bg-gradient-to-r from-emerald-500 via-green-500 to-teal-600 hover:from-emerald-600 hover:via-green-600 hover:to-teal-700 text-black font-bold shadow-xl hover:shadow-2xl transition-all duration-500 transform hover:scale-105 rounded-2xl px-8 py-4 border-2 border-emerald-300 hover:border-emerald-200"
+              >
+                <Save className="h-5 w-5 mr-3 animate-pulse" />
+                <span className="text-lg">Save All Changes</span>
+              </Button>
+            </div>
           </div>
         )}
+        
+        {/* Subtle Background Pattern */}
+        <div className="fixed inset-0 -z-10 opacity-5">
+          <div className="absolute top-1/4 left-1/4 transform -rotate-12">
+            <Moon className="h-32 w-32 text-emerald-500" />
+          </div>
+          <div className="absolute bottom-1/4 right-1/4 transform rotate-12">
+            <Star className="h-24 w-24 text-purple-500" />
+          </div>
+        </div>
       </main>
     </div>
   );

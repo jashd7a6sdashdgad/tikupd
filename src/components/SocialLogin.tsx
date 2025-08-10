@@ -41,7 +41,7 @@ export default function SocialLogin({
   className = ''
 }: SocialLoginProps) {
   const { language } = useSettings();
-  const t = useTranslation(language);
+
   const [connectedUsers, setConnectedUsers] = useState<Map<string, SocialUser>>(new Map());
   const [loading, setLoading] = useState<Set<string>>(new Set());
   const [errors, setErrors] = useState<Map<string, string>>(new Map());
@@ -182,10 +182,10 @@ export default function SocialLogin({
 
   const getProviderColor = (provider: string) => {
     switch (provider) {
-      case 'facebook': return 'bg-blue-600 hover:bg-blue-700 text-white';
-      case 'instagram': return 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white';
-      case 'google': return 'bg-red-600 hover:bg-red-700 text-white';
-      default: return 'bg-gray-600 hover:bg-gray-700 text-white';
+      case 'facebook': return 'bg-blue-600 hover:bg-blue-700 text-black font-bold';
+      case 'instagram': return 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-black font-bold';
+      case 'google': return 'bg-red-600 hover:bg-red-700 text-black font-bold';
+      default: return 'bg-gray-600 hover:bg-gray-700 text-black font-bold';
     }
   };
 
@@ -246,7 +246,7 @@ export default function SocialLogin({
                     disabled={isLoading}
                     className={`${
                       isConnected 
-                        ? 'bg-gray-500 hover:bg-gray-600 text-white' 
+                        ? 'bg-gray-500 hover:bg-gray-600 text-black font-bold' 
                         : getProviderColor(provider)
                     } min-w-24`}
                     size="sm"

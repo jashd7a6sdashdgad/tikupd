@@ -266,8 +266,8 @@ nav, .nav, [class*="nav"] {
   }
   
   body *, p, span, div, h1, h2, h3, h4, h5, h6, label, button, a, td, th, li, ul, ol {
-    color: #ffffff !important;
-    font-weight: 600 !important;
+    color: #000000 !important;
+    font-weight: 700 !important;
   }
 }
 
@@ -440,23 +440,28 @@ nav .bg-gradient-to-r, aside .bg-gradient-to-r {
 /* Dark mode overrides for specific components */
 @media (prefers-color-scheme: dark) {
   .text-foreground {
-    color: #ffffff !important;
+    color: #000000 !important;
+    font-weight: 700 !important;
   }
   
   .text-secondary {
-    color: #ffffff !important;
+    color: #000000 !important;
+    font-weight: 700 !important;
   }
   
   .card, .card * {
-    color: #ffffff !important;
+    color: #000000 !important;
+    font-weight: 700 !important;
   }
   
   button, .btn, button * {
-    color: #ffffff !important;
+    color: #000000 !important;
+    font-weight: 700 !important;
   }
   
   input, textarea, select {
-    color: #ffffff !important;
+    color: #000000 !important;
+    font-weight: 700 !important;
   }
   
   nav, nav *, .navigation, .navigation * {
@@ -472,7 +477,8 @@ nav .bg-gradient-to-r, aside .bg-gradient-to-r {
   .text-zinc-400, .text-zinc-500, .text-zinc-600,
   .text-neutral-50, .text-neutral-100, .text-neutral-200,
   .text-neutral-300, .text-neutral-400, .text-neutral-500, .text-neutral-600 {
-    color: #ffffff !important;
+    color: #000000 !important;
+    font-weight: 700 !important;
   }
 
   .text-muted, .muted, .text-muted-foreground,
@@ -490,7 +496,8 @@ nav .bg-gradient-to-r, aside .bg-gradient-to-r {
   [data-radix-alert-dialog-content] *,
   [data-radix-toast] *, 
   [data-radix-tooltip-content] * {
-    color: #ffffff !important;
+    color: #000000 !important;
+    font-weight: 700 !important;
   }
 }
 
@@ -776,7 +783,8 @@ nav .bg-gradient-to-r, aside .bg-gradient-to-r {
 /* Color combinations for better readability */
 .primary-button {
   background-color: hsl(var(--color-primary));
-  color: white;
+  color: #000000 !important;
+  font-weight: 700 !important;
   border: 1px solid hsl(var(--color-primary));
 }
 
@@ -788,7 +796,8 @@ nav .bg-gradient-to-r, aside .bg-gradient-to-r {
 
 .accent-button {
   background-color: hsl(271 81% 45%); /* Medium purple */
-  color: white;
+  color: #000000 !important;
+  font-weight: 700 !important;
   border: 1px solid hsl(271 81% 45%);
 }
 
@@ -1118,7 +1127,8 @@ nav .bg-gradient-to-r, aside .bg-gradient-to-r {
 /* Better Arabic text selection */
 [dir="rtl"] ::selection {
   background-color: var(--primary);
-  color: white;
+  color: #000000 !important;
+  font-weight: 700 !important;
 }
 
 /* Improved Arabic line height and letter spacing */
@@ -1179,12 +1189,12 @@ nav .bg-gradient-to-r, aside .bg-gradient-to-r {
   top: -40px;
   left: 6px;
   background: var(--primary);
-  color: white;
+  color: #000000 !important;
   padding: 8px 16px;
   text-decoration: none;
   border-radius: 4px;
   z-index: 1000;
-  font-weight: 600;
+  font-weight: 700 !important;
   transition: top 0.3s;
   border: 2px solid transparent;
 }
@@ -1332,7 +1342,7 @@ nav .bg-gradient-to-r, aside .bg-gradient-to-r {
 .step-indicator::before {
   content: counter(step);
   background: var(--primary);
-  color: white;
+  color: #000000 !important;
   width: 24px;
   height: 24px;
   border-radius: 50%;
@@ -1340,7 +1350,7 @@ nav .bg-gradient-to-r, aside .bg-gradient-to-r {
   align-items: center;
   justify-content: center;
   font-size: 12px;
-  font-weight: bold;
+  font-weight: 700 !important;
 }
 
 /* Error and Success States for Screen Readers */

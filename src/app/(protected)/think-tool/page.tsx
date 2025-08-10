@@ -315,7 +315,7 @@ export default function ThinkToolPage() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <div className="p-3 bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl shadow-lg">
-                <Brain className="h-8 w-8 text-white" />
+                <Brain className="h-8 w-8 text-black font-bold" />
               </div>
               <div>
                 <h1 className="text-4xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
@@ -547,7 +547,7 @@ export default function ThinkToolPage() {
                   >
                     <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
                       message.type === 'user' 
-                        ? 'bg-primary text-white' 
+                        ? 'bg-primary text-black font-bold' 
                         : 'bg-secondary text-primary'
                     }`}>
                       {message.type === 'user' ? (
@@ -560,7 +560,7 @@ export default function ThinkToolPage() {
                     <div className="flex-1 max-w-[80%]">
                       <div className={`inline-block p-3 rounded-lg ${
                         message.type === 'user'
-                          ? 'bg-primary text-white'
+                          ? 'bg-primary text-black font-bold'
                           : 'bg-muted text-black'
                       }`}>
                         <p className="text-sm whitespace-pre-wrap">{message.content}</p>

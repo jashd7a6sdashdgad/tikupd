@@ -23,7 +23,11 @@ import {
   Camera,
   Share2,
   Moon,
-  Shield
+  Shield,
+  Palette,
+  Compass,
+  Key,
+  Briefcase
 } from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
@@ -169,6 +173,30 @@ const getNavigation = (t: (key: string) => string) => [
     name: t('security'),
     href: '/security',
     icon: Shield
+  },
+  {
+    key: 'travel',
+    name: t('travel') || 'Travel Companion',
+    href: '/travel',
+    icon: Compass
+  },
+  {
+    key: 'customization',
+    name: 'Customization',
+    href: '/customization',
+    icon: Palette
+  },
+  {
+    key: 'api-tokens',
+    name: 'API Tokens',
+    href: '/api-tokens',
+    icon: Key
+  },
+  {
+    key: 'business',
+    name: t('business') || 'Business',
+    href: '/business',
+    icon: Briefcase
   }
 ];
 
@@ -211,7 +239,7 @@ export function Navigation() {
                           className={cn(
                             'group flex gap-x-3 rounded-xl p-3 text-sm leading-6 font-semibold transition-all duration-300 ease-in-out relative overflow-hidden',
                             isActive
-                              ? 'bg-gradient-to-r from-primary to-primary/80 text-white shadow-lg shadow-primary/20 scale-105'
+                              ? 'bg-gradient-to-r from-primary to-primary/80 text-black font-bold shadow-lg shadow-primary/20 scale-105'
                               : 'text-black hover:text-primary hover:bg-gradient-to-r hover:from-primary/10 hover:to-primary/5 hover:shadow-md hover:shadow-primary/10 hover:scale-102',
                             'hover:translate-x-1'
                           )}
@@ -219,7 +247,7 @@ export function Navigation() {
                           <item.icon className={cn(
                             "h-6 w-6 shrink-0 transition-all duration-300",
                             isActive 
-                              ? "text-white transform rotate-3 scale-110" 
+                              ? "text-black font-bold transform rotate-3 scale-110" 
                               : "group-hover:text-primary group-hover:scale-110 group-hover:rotate-3"
                           )} />
                           <span className="transition-all duration-300 group-hover:translate-x-1">
@@ -242,14 +270,14 @@ export function Navigation() {
                     className={cn(
                       'group flex gap-x-3 rounded-xl p-3 text-sm leading-6 font-semibold transition-all duration-300 ease-in-out relative overflow-hidden',
                       pathname === '/settings'
-                        ? 'bg-gradient-to-r from-primary to-primary/80 text-white shadow-lg shadow-primary/20 scale-105'
+                        ? 'bg-gradient-to-r from-primary to-primary/80 text-black font-bold shadow-lg shadow-primary/20 scale-105'
                         : 'text-black hover:text-primary hover:bg-gradient-to-r hover:from-primary/10 hover:to-primary/5 hover:shadow-md hover:shadow-primary/10 hover:scale-102 hover:translate-x-1'
                     )}
                   >
                     <Settings className={cn(
                       "h-6 w-6 shrink-0 transition-all duration-300",
                       pathname === '/settings'
-                        ? "text-white transform rotate-3 scale-110" 
+                        ? "text-black font-bold transform rotate-3 scale-110" 
                         : "group-hover:text-primary group-hover:scale-110 group-hover:rotate-3"
                     )} />
                     <span className="transition-all duration-300 group-hover:translate-x-1">
@@ -328,14 +356,14 @@ export function Navigation() {
                           className={cn(
                             'group flex gap-x-3 rounded-xl p-3 text-sm leading-6 font-semibold transition-all duration-300 ease-in-out relative overflow-hidden',
                             isActive
-                              ? 'bg-gradient-to-r from-primary to-primary/80 text-white shadow-lg shadow-primary/20 scale-105'
+                              ? 'bg-gradient-to-r from-primary to-primary/80 text-black font-bold shadow-lg shadow-primary/20 scale-105'
                               : 'text-black hover:text-primary hover:bg-gradient-to-r hover:from-primary/10 hover:to-primary/5 hover:shadow-md hover:shadow-primary/10 hover:scale-102 hover:translate-x-1'
                           )}
                         >
                           <item.icon className={cn(
                             "h-6 w-6 shrink-0 transition-all duration-300",
                             isActive 
-                              ? "text-white transform rotate-3 scale-110" 
+                              ? "text-black font-bold transform rotate-3 scale-110" 
                               : "group-hover:text-primary group-hover:scale-110 group-hover:rotate-3"
                           )} />
                           <span className="transition-all duration-300 group-hover:translate-x-1">
@@ -356,14 +384,14 @@ export function Navigation() {
                       className={cn(
                         'group flex gap-x-3 rounded-xl p-3 text-sm leading-6 font-semibold transition-all duration-300 ease-in-out relative overflow-hidden',
                         pathname === '/settings'
-                          ? 'bg-gradient-to-r from-primary to-primary/80 text-white shadow-lg shadow-primary/20 scale-105'
+                          ? 'bg-gradient-to-r from-primary to-primary/80 text-black font-bold shadow-lg shadow-primary/20 scale-105'
                           : 'text-black hover:text-primary hover:bg-gradient-to-r hover:from-primary/10 hover:to-primary/5 hover:shadow-md hover:shadow-primary/10 hover:scale-102 hover:translate-x-1'
                       )}
                     >
                       <Settings className={cn(
                         "h-6 w-6 shrink-0 transition-all duration-300",
                         pathname === '/settings'
-                          ? "text-white transform rotate-3 scale-110" 
+                          ? "text-black font-bold transform rotate-3 scale-110" 
                           : "group-hover:text-primary group-hover:scale-110 group-hover:rotate-3"
                       )} />
                       <span className="transition-all duration-300 group-hover:translate-x-1">

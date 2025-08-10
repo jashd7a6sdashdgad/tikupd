@@ -504,7 +504,7 @@ export default function PhotosPage() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <div className="p-3 bg-gradient-to-br from-pink-500 to-pink-600 rounded-2xl shadow-lg">
-                <Camera className="h-8 w-8 text-white" />
+                <Camera className="h-8 w-8 text-black font-bold" />
               </div>
               <div>
                 <h1 className="text-4xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
@@ -626,13 +626,13 @@ export default function PhotosPage() {
                           onClick={() => toggleFavorite(photo.id)}
                           variant="ghost"
                           size="sm"
-                          className={`text-white hover:text-red-500 ${photo.isFavorite ? 'text-red-500' : ''}`}
+                          className={`text-black font-bold hover:text-red-500 ${photo.isFavorite ? 'text-red-500' : ''}`}
                         >
                           <Heart className={`h-4 w-4 ${photo.isFavorite ? 'fill-current' : ''}`} />
                         </Button>
                       </div>
                       <div className="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-black/70 to-transparent">
-                        <p className="text-sm font-medium text-white line-clamp-1">{photo.name}</p>
+                        <p className="text-sm font-medium text-black font-bold line-clamp-1">{photo.name}</p>
                         <p className="text-xs text-gray-300">{formatFileSize(photo.size)}</p>
                       </div>
                     </Card>

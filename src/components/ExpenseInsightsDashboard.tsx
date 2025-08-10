@@ -22,7 +22,6 @@ import {
   Camera,
   Zap,
   Target,
-  Calendar,
   Tag,
   Brain,
   Eye,
@@ -185,7 +184,7 @@ export default function ExpenseInsightsDashboard({ expenses, onRefresh }: Props)
               />
               <label
                 htmlFor="receipt-upload"
-                className={`inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 cursor-pointer ${
+                className={`inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-black font-bold rounded-lg hover:bg-blue-700 cursor-pointer ${
                   isProcessingReceipt ? 'opacity-50 cursor-not-allowed' : ''
                 }`}
               >

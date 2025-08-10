@@ -14,8 +14,6 @@ import {
   Mic,
   RefreshCw,
   User,
-  Calendar,
-  Paperclip,
   Trash2,
   Brain,
   Sparkles,
@@ -51,8 +49,9 @@ export default function EmailPage() {
   const { t } = useTranslation(language);
   const [messages, setMessages] = useState<EmailMessage[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
-  const [loading, setLoading] = useState(true);
+
   const [sending, setSending] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [showCompose, setShowCompose] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
   
@@ -231,6 +230,16 @@ export default function EmailPage() {
     }
   };
 
+  const getPriorityEmoji = (priority?: string) => {
+    switch (priority) {
+      case 'urgent': return '😱'; // Shocked/urgent face
+      case 'high': return '😰';    // Anxious face
+      case 'medium': return '😐';  // Neutral face
+      case 'low': return '😌';     // Relieved face
+      default: return '😐';       // Default neutral
+    }
+  };
+
   const getCategoryColor = (category?: string) => {
     switch (category) {
       case 'Work': return 'bg-blue-100 text-blue-800';
@@ -290,7 +299,7 @@ export default function EmailPage() {
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-4">
               <div className="p-3 bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl shadow-lg">
-                <Mail className="h-8 w-8 text-white" />
+                <Mail className="h-8 w-8 text-black font-bold" />
               </div>
               <div>
                 <h1 className="text-4xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
@@ -566,7 +575,8 @@ export default function EmailPage() {
                             <span className="font-medium text-black">{from}</span>
                             <span className="text-sm text-black">{formatDate(date)}</span>
                             {message.priority && (
-                              <span className={`text-xs px-2 py-1 rounded-full border ${getPriorityColor(message.priority)}`}>
+                              <span className={`text-xs px-2 py-1 rounded-full border ${getPriorityColor(message.priority)} flex items-center gap-1`}>
+                                <span>{getPriorityEmoji(message.priority)}</span>
                                 {message.priority.toUpperCase()}
                               </span>
                             )}

@@ -213,7 +213,7 @@ export default function GmailAuthSetup({ onAuthSuccess, onAuthError }: GmailAuth
                   <div className={`
                     flex items-center justify-center w-8 h-8 rounded-full border-2
                     ${isActive ? 'bg-primary text-primary-foreground border-primary' :
-                      isCompleted ? 'bg-green-500 text-white border-green-500' :
+                      isCompleted ? 'bg-green-500 text-black font-bold border-green-500' :
                       'bg-muted text-muted-foreground border-muted-foreground'}
                   `}>
                     <Icon className="w-4 h-4" />

@@ -35,7 +35,9 @@ import {
   Sparkles,
   Volume2,
   Eye,
-  Code
+  Code,
+  X,
+  Globe
 } from 'lucide-react';
 import { WorkflowTemplate, WorkflowNode } from '@/lib/n8nMCP';
 
@@ -85,6 +87,7 @@ export default function SmartWorkflowBuilder({ className }: WorkflowBuilderProps
   // Status and error handling
   const [status, setStatus] = useState<string>('');
   const [error, setError] = useState<string>('');
+  const [showSetupGuide, setShowSetupGuide] = useState(false);
   
   // Voice recording
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -212,6 +215,10 @@ export default function SmartWorkflowBuilder({ className }: WorkflowBuilderProps
   // Create workflow in N8N
   const createWorkflowInN8N = async (workflow: WorkflowTemplate) => {
     try {
+      console.log(`🚀 Deploying workflow "${workflow.name}" to N8N...`);
+      setStatus('🔧 Deploying workflow to N8N...');
+      setError('');
+      
       const response = await fetch('/api/workflows', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -225,15 +232,27 @@ export default function SmartWorkflowBuilder({ className }: WorkflowBuilderProps
       
       if (result.success) {
         console.log('✅ Workflow created in N8N:', result.data);
-        setStatus('✅ Workflow deployed to N8N successfully!');
-        setTimeout(() => setStatus(''), 3000);
+        setStatus(`✅ Workflow "${workflow.name}" deployed to N8N successfully!`);
+        setTimeout(() => setStatus(''), 5000);
       } else {
         console.error('Failed to create workflow:', result.message);
-        setError('Failed to deploy workflow to N8N');
+        
+        // Show specific error message from the API
+        const errorMessage = result.message || 'Failed to deploy workflow to N8N';
+        setError(`❌ Deployment failed: ${errorMessage}`);
+        
+        // Provide helpful suggestions based on error type
+        if (errorMessage.includes('N8N configuration')) {
+          setError('❌ N8N is not configured. Please check your N8N_API_URL and N8N_API_KEY environment variables.');
+        } else if (errorMessage.includes('connect')) {
+          setError('❌ Cannot connect to N8N. Please ensure N8N is running and accessible.');
+        } else {
+          setError(`❌ Deployment failed: ${errorMessage}`);
+        }
       }
     } catch (error) {
       console.error('Error creating workflow:', error);
-      setError('Error deploying workflow to N8N');
+      setError('❌ Network error: Unable to communicate with N8N service. Please check your connection.');
     }
   };
 
@@ -261,6 +280,54 @@ export default function SmartWorkflowBuilder({ className }: WorkflowBuilderProps
       }
     } catch (error) {
       console.error('Error executing voice command:', error);
+    }
+  };
+
+  // Mock deployment for development/testing
+  const mockDeploy = async () => {
+    const workflowToMock = selectedTemplate || generatedWorkflow;
+    if (!workflowToMock) {
+      setError('No workflow selected for mock deployment');
+      return;
+    }
+
+    try {
+      setStatus('🔧 Running mock deployment...');
+      setError('');
+      
+      // Simulate deployment process
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      // Create a mock result
+      const mockResult = {
+        id: `mock_${workflowToMock.id}_${Date.now()}`,
+        name: workflowToMock.name,
+        active: true,
+        webhookUrl: `https://mock-n8n.example.com/webhook/${workflowToMock.id}`,
+        nodes: workflowToMock.nodes.length,
+        connections: workflowToMock.connections.length
+      };
+      
+      console.log('✅ Mock deployment completed:', mockResult);
+      setStatus(`✅ Mock deployment successful! Workflow "${workflowToMock.name}" would be deployed with ${mockResult.nodes} nodes and ${mockResult.connections} connections.`);
+      
+      // Save to local storage as a "deployed" workflow
+      try {
+        const deployedWorkflows = JSON.parse(localStorage.getItem('mockDeployedWorkflows') || '[]');
+        const updatedDeployed = [...deployedWorkflows, {
+          ...mockResult,
+          originalWorkflow: workflowToMock,
+          deployedAt: new Date().toISOString()
+        }];
+        localStorage.setItem('mockDeployedWorkflows', JSON.stringify(updatedDeployed));
+      } catch (storageError) {
+        console.warn('Failed to save mock deployment to localStorage:', storageError);
+      }
+      
+      setTimeout(() => setStatus(''), 8000);
+    } catch (error) {
+      console.error('Mock deployment error:', error);
+      setError('Mock deployment failed. Please try again.');
     }
   };
 
@@ -321,7 +388,7 @@ export default function SmartWorkflowBuilder({ className }: WorkflowBuilderProps
         <div className="p-6">
           <div className="flex items-start justify-between mb-4">
             <div className={`p-3 bg-gradient-to-br ${colorClass} rounded-xl shadow-lg`}>
-              <IconComponent className="h-6 w-6 text-white" />
+              <IconComponent className="h-6 w-6 text-black font-bold" />
             </div>
             <Badge variant="secondary" className="capitalize">
               {template.category}
@@ -354,13 +421,22 @@ export default function SmartWorkflowBuilder({ className }: WorkflowBuilderProps
                 <Eye className="h-3 w-3 mr-1" />
                 View
               </Button>
-              <Button size="sm" onClick={(e) => {
-                e.stopPropagation();
-                createWorkflowInN8N(template);
-              }}>
-                <Play className="h-3 w-3 mr-1" />
-                Deploy
-              </Button>
+              <div className="flex gap-1">
+                <Button size="sm" variant="outline" onClick={(e) => {
+                  e.stopPropagation();
+                  exportWorkflow(template);
+                }} className="hover:bg-green-50">
+                  <Download className="h-3 w-3 mr-1" />
+                  Export
+                </Button>
+                <Button size="sm" onClick={(e) => {
+                  e.stopPropagation();
+                  createWorkflowInN8N(template);
+                }} className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-black font-bold">
+                  <Play className="h-3 w-3 mr-1" />
+                  Deploy
+                </Button>
+              </div>
             </div>
           </div>
         </div>
@@ -447,6 +523,127 @@ export default function SmartWorkflowBuilder({ className }: WorkflowBuilderProps
       {error && (
         <div className="mb-4 p-3 bg-red-100 border border-red-300 rounded-lg text-red-700">
           {error}
+          {(error.includes('N8N configuration') || error.includes('N8N is not configured')) && (
+            <div className="mt-3 flex gap-2">
+              <Button
+                onClick={() => setShowSetupGuide(true)}
+                size="sm"
+                variant="outline"
+                className="bg-white hover:bg-gray-50"
+              >
+                <Settings className="h-4 w-4 mr-2" />
+                Show N8N Setup Guide
+              </Button>
+              <Button
+                onClick={() => mockDeploy()}
+                size="sm"
+                variant="outline"
+                className="bg-blue-50 hover:bg-blue-100 text-blue-600"
+              >
+                <Code className="h-4 w-4 mr-2" />
+                Try Mock Deploy
+              </Button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* N8N Setup Guide Modal */}
+      {showSetupGuide && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-3xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-8">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-3xl font-bold text-gray-800">N8N Setup Guide</h2>
+                <Button onClick={() => setShowSetupGuide(false)} variant="outline" size="sm">
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+              
+              <div className="space-y-6">
+                <div className="bg-blue-50 p-4 rounded-xl border border-blue-200">
+                  <h3 className="font-semibold text-blue-800 mb-2">🚀 Quick Setup</h3>
+                  <p className="text-blue-700">
+                    To connect your personal assistant with N8N, you need to set up environment variables in your deployment.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <Globe className="h-5 w-5 text-green-600" />
+                        Environment Variables
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      <div>
+                        <h4 className="font-semibold text-sm">N8N_API_URL</h4>
+                        <code className="text-xs bg-gray-100 px-2 py-1 rounded block mt-1">
+                          https://your-n8n-instance.com
+                        </code>
+                      </div>
+                      <div>
+                        <h4 className="font-semibold text-sm">N8N_API_KEY</h4>
+                        <code className="text-xs bg-gray-100 px-2 py-1 rounded block mt-1">
+                          your-n8n-api-key-here
+                        </code>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <Settings className="h-5 w-5 text-purple-600" />
+                        N8N Configuration
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      <div className="text-sm space-y-2">
+                        <p>1. Enable API access in N8N settings</p>
+                        <p>2. Generate an API key in N8N</p>
+                        <p>3. Set your N8N instance URL</p>
+                        <p>4. Restart your application</p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                <div className="bg-yellow-50 p-4 rounded-xl border border-yellow-200">
+                  <h3 className="font-semibold text-yellow-800 mb-2">⚠️ Development Mode</h3>
+                  <p className="text-yellow-700 text-sm">
+                    If you're running in development mode, you can test workflows without N8N by using the mock mode. 
+                    Real deployment requires a running N8N instance.
+                  </p>
+                </div>
+
+                <div className="bg-gray-50 p-4 rounded-xl">
+                  <h3 className="font-semibold text-gray-800 mb-2">📚 Learn More</h3>
+                  <p className="text-gray-600 text-sm mb-3">
+                    Need help setting up N8N? Check out these resources:
+                  </p>
+                  <div className="space-y-1 text-sm">
+                    <a href="https://docs.n8n.io/" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline block">
+                      • N8N Official Documentation
+                    </a>
+                    <a href="https://docs.n8n.io/api/" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline block">
+                      • N8N API Documentation
+                    </a>
+                    <a href="https://community.n8n.io/" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline block">
+                      • N8N Community Forum
+                    </a>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-3 mt-8">
+                <Button onClick={() => setShowSetupGuide(false)}>
+                  Got it, thanks!
+                </Button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
       
@@ -455,7 +652,7 @@ export default function SmartWorkflowBuilder({ className }: WorkflowBuilderProps
         <div className="p-6">
           <div className="flex items-center gap-4 mb-4">
             <div className="p-3 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-2xl shadow-lg">
-              <Brain className="h-8 w-8 text-white" />
+              <Brain className="h-8 w-8 text-black font-bold" />
             </div>
             <div>
               <h1 className="text-3xl font-bold text-gray-800">Smart Workflow Builder</h1>
@@ -540,23 +737,40 @@ export default function SmartWorkflowBuilder({ className }: WorkflowBuilderProps
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-semibold text-gray-800">Visual Workflow Editor</h2>
                 <div className="flex gap-2">
-                  <Button variant="outline" size="sm" onClick={() => saveWorkflow()}>
-                    <Save className="h-4 w-4 mr-2" />
-                    Save
-                  </Button>
-                  <Button variant="outline" size="sm" onClick={() => exportWorkflow()}>
-                    <Download className="h-4 w-4 mr-2" />
-                    Export
-                  </Button>
                   {(generatedWorkflow || selectedTemplate) && (
-                    <Button 
-                      size="sm"
-                      className="bg-gradient-to-r from-green-500 to-emerald-600"
-                      onClick={() => createWorkflowInN8N(generatedWorkflow || selectedTemplate!)}
-                    >
-                      <Play className="h-4 w-4 mr-2" />
-                      Deploy to N8N
-                    </Button>
+                    <>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => saveWorkflow(generatedWorkflow || selectedTemplate!)}
+                        className="hover:bg-blue-50"
+                      >
+                        <Save className="h-4 w-4 mr-2" />
+                        Save
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => exportWorkflow(generatedWorkflow || selectedTemplate!)}
+                        className="hover:bg-green-50"
+                      >
+                        <Download className="h-4 w-4 mr-2" />
+                        Export JSON
+                      </Button>
+                      <Button 
+                        size="sm"
+                        className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-black font-bold"
+                        onClick={() => createWorkflowInN8N(generatedWorkflow || selectedTemplate!)}
+                      >
+                        <Play className="h-4 w-4 mr-2" />
+                        Deploy to N8N
+                      </Button>
+                    </>
+                  )}
+                  {!generatedWorkflow && !selectedTemplate && (
+                    <div className="text-sm text-gray-500 italic py-2">
+                      Generate or select a workflow to enable export options
+                    </div>
                   )}
                 </div>
               </div>
@@ -621,9 +835,9 @@ export default function SmartWorkflowBuilder({ className }: WorkflowBuilderProps
                     : 'bg-gradient-to-br from-blue-500 to-indigo-600 hover:scale-105'
                 )}>
                   {isRecording ? (
-                    <MicOff className="h-8 w-8 text-white" />
+                    <MicOff className="h-8 w-8 text-black font-bold" />
                   ) : (
-                    <Mic className="h-8 w-8 text-white" />
+                    <Mic className="h-8 w-8 text-black font-bold" />
                   )}
                 </div>
               </div>
@@ -640,7 +854,7 @@ export default function SmartWorkflowBuilder({ className }: WorkflowBuilderProps
                 size="lg"
                 onClick={isRecording ? stopVoiceRecording : startVoiceRecording}
                 className={cn(
-                  'text-white font-semibold px-8 py-3',
+                  'text-black font-bold font-semibold px-8 py-3',
                   isRecording 
                     ? 'bg-gradient-to-r from-red-500 to-pink-600 hover:from-red-600 hover:to-pink-700' 
                     : 'bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700'

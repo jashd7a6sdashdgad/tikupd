@@ -104,13 +104,29 @@ export async function POST(request: NextRequest) {
         }
 
         console.log(`🚀 Creating workflow in N8N: ${workflow.name}`);
-        const createdWorkflow = await n8nMCPService.createWorkflowInN8N(workflow);
+        
+        try {
+          const createdWorkflow = await n8nMCPService.createWorkflowInN8N(workflow);
 
-        return NextResponse.json({
-          success: true,
-          data: createdWorkflow,
-          message: 'Workflow created in N8N successfully'
-        });
+          return NextResponse.json({
+            success: true,
+            data: createdWorkflow,
+            message: 'Workflow created in N8N successfully'
+          });
+        } catch (workflowError: any) {
+          console.error('❌ Workflow creation failed:', workflowError);
+          
+          // Return specific error message from the service
+          return NextResponse.json({
+            success: false,
+            message: workflowError.message || 'Failed to create workflow in N8N',
+            error: 'WORKFLOW_CREATION_FAILED',
+            details: {
+              workflowName: workflow.name,
+              timestamp: new Date().toISOString()
+            }
+          }, { status: 500 });
+        }
 
       case 'execute-voice':
         // Execute workflow via voice command

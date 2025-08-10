@@ -148,7 +148,7 @@ export default function PhotoAlbumPage() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <div className="p-3 bg-gradient-to-br from-pink-500 to-pink-600 rounded-2xl shadow-lg">
-                <Image className="h-8 w-8 text-white" />
+                <Image className="h-8 w-8 text-black font-bold" />
               </div>
               <div>
                 <h1 className="text-4xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
@@ -375,7 +375,7 @@ export default function PhotoAlbumPage() {
                       />
                       {selectedImages.has(image.id) && (
                         <div className="absolute top-2 right-2 w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
-                          <span className="text-white text-xs">✓</span>
+                          <span className="text-black font-bold text-xs">✓</span>
                         </div>
                       )}
                     </div>

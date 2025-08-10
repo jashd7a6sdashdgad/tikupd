@@ -25,8 +25,9 @@ export default function ContactsPage() {
   const { language } = useSettings();
   const { t } = useTranslation(language);
   const [contacts, setContacts] = useState<Contact[]>([]);
-  const [loading, setLoading] = useState(true);
+
   const [adding, setAdding] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [showAddForm, setShowAddForm] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [editingContact, setEditingContact] = useState<Contact | null>(null);
@@ -296,7 +297,7 @@ export default function ContactsPage() {
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-4">
               <div className="p-3 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-2xl shadow-lg">
-                <Users className="h-8 w-8 text-white" />
+                <Users className="h-8 w-8 text-black font-bold" />
               </div>
               <div>
                 <h1 className="text-4xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
@@ -463,7 +464,7 @@ export default function ContactsPage() {
               <Card key={contact.id} className="hover:shadow-lg transition-shadow">
                 <CardContent className="p-6">
                   <div className="flex items-start space-x-4">
-                    <div className={`w-12 h-12 rounded-full flex items-center justify-center text-white font-semibold ${getContactColor(contact.name)}`}>
+                    <div className={`w-12 h-12 rounded-full flex items-center justify-center text-black font-bold font-semibold ${getContactColor(contact.name)}`}>
                       {getInitials(contact.name)}
                     </div>
                     

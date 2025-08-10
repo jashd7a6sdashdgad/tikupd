@@ -304,7 +304,7 @@ export default function ImageUpload({
             <div className="space-y-3">
               <Button
                 onClick={startCamera}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                className="w-full bg-blue-600 hover:bg-blue-700 text-black font-bold"
               >
                 <Camera className="h-4 w-4 mr-2" />
                 Take Photo

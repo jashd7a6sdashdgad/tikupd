@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyToken, COOKIE_OPTIONS } from '@/lib/auth';
 import { ENV_VARS } from '@/lib/env-validation';
+import { getApiConfig, getSocialConfig } from '@/lib/config';
 
 // Use validated environment variables
+const socialConfig = getSocialConfig();
+const { messengerApiUrl: MESSENGER_API_URL } = getApiConfig();
 const MESSENGER_PAGE_ACCESS_TOKEN = ENV_VARS.MESSENGER_PAGE_ACCESS_TOKEN || ENV_VARS.FACEBOOK_PAGE_ACCESS_TOKEN;
-const MESSENGER_PAGE_ID = ENV_VARS.MESSENGER_PAGE_ID || ENV_VARS.FACEBOOK_PAGE_ID;
-const MESSENGER_API_URL = 'https://graph.facebook.com/v18.0';
+const MESSENGER_PAGE_ID = ENV_VARS.MESSENGER_PAGE_ID || ENV_VARS.FACEBOOK_PAGE_ID || socialConfig.facebook?.pageId;
 
 export async function GET(request: NextRequest) {
   try {

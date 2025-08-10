@@ -31,9 +31,9 @@ export interface ConversationEntry {
 }
 
 class N8NVoiceAssistant {
-  private webhookUrl = 'https://n8n.srv903406.hstgr.cloud/webhook/2cf42f51-787d-454d-90dd-e9940e57fd9e';
+  private webhookUrl = process.env.N8N_VOICE_WEBHOOK_URL || '';
   private conversationHistory: ConversationEntry[] = [];
-  private maxHistoryLength = 10;
+  private maxHistoryLength = parseInt(process.env.MAX_CONVERSATION_HISTORY || '10');
 
   // Comprehensive system prompt explaining the entire website
   private getSystemPrompt(language: string): string {
@@ -265,6 +265,11 @@ Be helpful, knowledgeable, and ready to assist with any aspect of the personal a
 
   async sendMessage(message: string, language: string = 'en', audioBase64?: string, audioFormat?: string): Promise<N8NVoiceResponse> {
     try {
+      // Check if webhook URL is configured
+      if (!this.webhookUrl) {
+        throw new Error('N8N Voice Webhook URL is not configured. Please set N8N_VOICE_WEBHOOK_URL environment variable.');
+      }
+
       const requestData: N8NVoiceRequest = {
         message: message.trim(),
         language,

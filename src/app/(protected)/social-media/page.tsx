@@ -47,7 +47,7 @@ export default function SocialMediaPage() {
         <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/20 p-6 mb-8 hover:shadow-3xl transition-all duration-300">
           <div className="flex items-center gap-4">
             <div className="p-3 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl shadow-lg">
-              <Share2 className="h-8 w-8 text-white" />
+              <Share2 className="h-8 w-8 text-black font-bold" />
             </div>
             <div>
               <h1 className="text-4xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
@@ -129,7 +129,7 @@ export default function SocialMediaPage() {
                   <div className="space-y-3">
                     <div className="flex items-center gap-3 p-3 bg-blue-50 rounded border border-blue-200">
                       <div className="w-8 h-8 bg-blue-600 rounded flex items-center justify-center">
-                        <span className="text-white text-sm font-bold">f</span>
+                        <span className="text-black font-bold text-sm font-bold">f</span>
                       </div>
                       <div>
                         <p className="font-medium text-black">Facebook</p>
@@ -138,7 +138,7 @@ export default function SocialMediaPage() {
                     </div>
                     <div className="flex items-center gap-3 p-3 bg-pink-50 rounded border border-pink-200">
                       <div className="w-8 h-8 bg-gradient-to-br from-purple-600 to-pink-600 rounded flex items-center justify-center">
-                        <span className="text-white text-sm font-bold">i</span>
+                        <span className="text-black font-bold text-sm font-bold">i</span>
                       </div>
                       <div>
                         <p className="font-medium text-black">Instagram</p>
@@ -147,7 +147,7 @@ export default function SocialMediaPage() {
                     </div>
                     <div className="flex items-center gap-3 p-3 bg-red-50 rounded border border-red-200">
                       <div className="w-8 h-8 bg-red-600 rounded flex items-center justify-center">
-                        <span className="text-white text-sm font-bold">G</span>
+                        <span className="text-black font-bold text-sm font-bold">G</span>
                       </div>
                       <div>
                         <p className="font-medium text-black">Google Analytics</p>

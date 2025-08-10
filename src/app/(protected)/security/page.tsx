@@ -243,7 +243,7 @@ export default function SecurityPage() {
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-4">
               <div className="p-3 bg-gradient-to-br from-red-500 to-red-600 rounded-2xl shadow-lg">
-                <Shield className="h-8 w-8 text-white" />
+                <Shield className="h-8 w-8 text-black font-bold" />
               </div>
               <div>
                 <h1 className="text-4xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
@@ -282,7 +282,7 @@ export default function SecurityPage() {
                     securityStatus.threatLevel === 'low' ? 'bg-gradient-to-br from-green-500 to-green-600' :
                     securityStatus.threatLevel === 'medium' ? 'bg-gradient-to-br from-yellow-500 to-yellow-600' : 'bg-gradient-to-br from-red-500 to-red-600'
                   }`}>
-                    <Shield className="h-6 w-6 text-white" />
+                    <Shield className="h-6 w-6 text-black font-bold" />
                   </div>
                 </div>
               </CardContent>
@@ -298,7 +298,7 @@ export default function SecurityPage() {
                     </p>
                   </div>
                   <div className="p-3 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl">
-                    <Fingerprint className="h-6 w-6 text-white" />
+                    <Fingerprint className="h-6 w-6 text-black font-bold" />
                   </div>
                 </div>
               </CardContent>
@@ -314,7 +314,7 @@ export default function SecurityPage() {
                     </p>
                   </div>
                   <div className="p-3 bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl">
-                    <Eye className="h-6 w-6 text-white" />
+                    <Eye className="h-6 w-6 text-black font-bold" />
                   </div>
                 </div>
               </CardContent>
@@ -331,7 +331,7 @@ export default function SecurityPage() {
                     </div>
                   </div>
                   <div className="p-3 bg-gradient-to-br from-green-500 to-green-600 rounded-2xl">
-                    <CheckCircle className="h-6 w-6 text-white" />
+                    <CheckCircle className="h-6 w-6 text-black font-bold" />
                   </div>
                 </div>
               </CardContent>
@@ -353,7 +353,7 @@ export default function SecurityPage() {
                   <CardHeader className="p-0 mb-6">
                     <CardTitle className="flex items-center gap-3 text-xl font-bold text-black">
                       <div className="p-2 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl">
-                        <Activity className="w-5 h-5 text-white" />
+                        <Activity className="w-5 h-5 text-black font-bold" />
                       </div>
                       Security Health
                     </CardTitle>
@@ -393,7 +393,7 @@ export default function SecurityPage() {
                     <CardHeader className="p-0 mb-6">
                       <CardTitle className="flex items-center gap-3 text-xl font-bold text-black">
                         <div className="p-2 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl">
-                          <BarChart3 className="w-5 h-5 text-white" />
+                          <BarChart3 className="w-5 h-5 text-black font-bold" />
                         </div>
                         Activity Summary
                       </CardTitle>

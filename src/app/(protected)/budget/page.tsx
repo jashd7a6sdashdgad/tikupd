@@ -14,13 +14,10 @@ import {
   DollarSign,
   Brain,
   RefreshCw,
-  Settings,
   Save,
   AlertTriangle,
   CheckCircle,
-  PieChart,
-  BarChart3,
-  Calendar,
+  Settings,
   Zap
 } from 'lucide-react';
 import BudgetAdvisorDashboard from '@/components/BudgetAdvisorDashboard';
@@ -39,7 +36,7 @@ export default function BudgetPage() {
   const { t } = useTranslation(language);
   const [expenses, setExpenses] = useState<any[]>([]);
   const [budgetLimits, setBudgetLimits] = useState<BudgetLimit[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState<'advisor' | 'limits' | 'goals'>('advisor');
 
@@ -273,7 +270,7 @@ export default function BudgetPage() {
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-4">
               <div className="p-3 bg-gradient-to-br from-green-500 to-teal-600 rounded-2xl shadow-lg">
-                <Target className="h-8 w-8 text-white" />
+                <Target className="h-8 w-8 text-black font-bold" />
               </div>
               <div>
                 <h1 className="text-4xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">

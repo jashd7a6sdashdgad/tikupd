@@ -10,15 +10,14 @@ import { useTranslation } from '@/lib/translations';
 import { 
   BookOpen, 
   Plus, 
-  Calendar,
   Heart,
   Frown,
   Smile,
   Meh,
-  Zap,
   AlertCircle,
   Mic,
-  RefreshCw
+  RefreshCw,
+  Calendar
 } from 'lucide-react';
 import { useVoiceInput } from '@/hooks/useVoiceInput';
 
@@ -26,8 +25,9 @@ export default function DiaryPage() {
   const { language } = useSettings();
   const { t } = useTranslation(language);
   const [entries, setEntries] = useState<DiaryEntry[]>([]);
-  const [loading, setLoading] = useState(true);
+
   const [adding, setAdding] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [showAddForm, setShowAddForm] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   
@@ -55,7 +55,6 @@ export default function DiaryPage() {
     { value: 'happy', label: t('happy'), icon: Smile, color: 'text-green-500' },
     { value: 'sad', label: t('sad'), icon: Frown, color: 'text-blue-500' },
     { value: 'neutral', label: t('neutral'), icon: Meh, color: 'text-black' },
-    { value: 'excited', label: t('excited'), icon: Zap, color: 'text-yellow-500' },
     { value: 'anxious', label: t('anxious'), icon: AlertCircle, color: 'text-red-500' },
     { value: 'grateful', label: t('grateful'), icon: Heart, color: 'text-pink-500' },
     { value: 'angry', label: t('angry'), icon: AlertCircle, color: 'text-red-600' },
@@ -197,7 +196,7 @@ export default function DiaryPage() {
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-4">
               <div className="p-3 bg-gradient-to-br from-pink-500 to-rose-600 rounded-2xl shadow-lg">
-                <BookOpen className="h-8 w-8 text-white" />
+                <BookOpen className="h-8 w-8 text-black font-bold" />
               </div>
               <div>
                 <h1 className="text-4xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">

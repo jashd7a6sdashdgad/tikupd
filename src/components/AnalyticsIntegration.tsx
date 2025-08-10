@@ -453,7 +453,7 @@ export default function AnalyticsIntegration({ className = '' }: AnalyticsIntegr
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2 text-black">
                       <div className="w-6 h-6 bg-blue-600 rounded flex items-center justify-center">
-                        <span className="text-white text-xs font-bold">f</span>
+                        <span className="text-black font-bold text-xs font-bold">f</span>
                       </div>
                       Facebook Performance
                     </CardTitle>
@@ -480,7 +480,7 @@ export default function AnalyticsIntegration({ className = '' }: AnalyticsIntegr
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2 text-black">
                       <div className="w-6 h-6 bg-gradient-to-br from-purple-600 to-pink-600 rounded flex items-center justify-center">
-                        <span className="text-white text-xs font-bold">i</span>
+                        <span className="text-black font-bold text-xs font-bold">i</span>
                       </div>
                       Instagram Performance
                     </CardTitle>

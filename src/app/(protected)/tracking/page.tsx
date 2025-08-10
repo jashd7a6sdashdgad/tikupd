@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { useSettings } from '@/contexts/SettingsContext';
 import { useTranslation } from '@/lib/translations';
+import { ModernCard } from '@/components/ui/ModernCard';
 import { 
   BarChart3, 
   TrendingUp, 
@@ -28,7 +29,12 @@ import {
   Award,
   Eye,
   MessageSquare,
-  Flag
+  Flag,
+  Brain,
+  Sun,
+  ArrowRight,
+  PieChart,
+  Star
 } from 'lucide-react';
 
 interface AnalyticsData {
@@ -65,6 +71,7 @@ interface AnalyticsData {
 export default function TrackingPage() {
   const { language } = useSettings();
   const { t } = useTranslation(language);
+  const [timeRange, setTimeRange] = useState('30d');
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData>({
     overview: {
       totalEvents: 0,
@@ -96,7 +103,7 @@ export default function TrackingPage() {
     }
   });
   const [loading, setLoading] = useState(true);
-  const [timeRange, setTimeRange] = useState('month'); // 'week', 'month', 'year'
+ // 'week', 'month', 'year'
 
   // Bank detection functions (from expenses page)
   const isFromAhliBank = (from: string) => {
@@ -320,246 +327,297 @@ export default function TrackingPage() {
     }
   };
 
+  // Enhanced glassmorphism effects like dashboard
+  const cardHoverEffects = "hover:shadow-3xl hover:scale-[1.02] transition-all duration-500 transform";
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 p-4 lg:p-8">
-      <div className="max-w-7xl mx-auto">
-        {/* Modern Header Card */}
-        <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/20 p-6 mb-8 hover:shadow-3xl transition-all duration-300">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="p-3 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl shadow-lg">
-                <BarChart3 className="h-8 w-8 text-white" />
+      <div className="max-w-7xl mx-auto space-y-8">
+        {/* Modern Header */}
+        <ModernCard gradient="blue" blur="xl" className={`${cardHoverEffects} relative overflow-hidden`}>
+          <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 via-purple-500/10 to-indigo-500/10" />
+          <div className="relative p-8">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-6">
+                <div className="p-4 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-3xl shadow-2xl">
+                  <BarChart3 className="h-10 w-10 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-4xl font-bold bg-gradient-to-r from-gray-800 via-blue-800 to-indigo-800 bg-clip-text text-transparent">
+                    Analytics & Tracking
+                  </h1>
+                  <p className="text-gray-600 font-medium mt-2 text-lg">Real-time insights and performance metrics</p>
+                </div>
               </div>
-              <div>
-                <h1 className="text-4xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
-                  {t('trackingTitle')}
-                </h1>
-                <p className="text-gray-600 font-medium mt-1">{t('analyticsTitle')}</p>
+              
+              <div className="flex items-center gap-4">
+                <select
+                  value={timeRange}
+                  onChange={(e) => setTimeRange(e.target.value)}
+                  className="px-4 py-2 bg-white/80 backdrop-blur-sm border border-white/30 rounded-xl shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 font-medium"
+                >
+                  <option value="week">This Week</option>
+                  <option value="month">This Month</option>
+                  <option value="year">This Year</option>
+                </select>
+                <Button onClick={fetchAnalytics} className="bg-white/20 hover:bg-white/30 backdrop-blur-sm border border-white/30 text-gray-800">
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Refresh
+                </Button>
+                <Button onClick={exportData} className="bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white">
+                  <Download className="h-4 w-4 mr-2" />
+                  Export
+                </Button>
+              </div>
+            </div> {/* closes .flex items-center justify-between */}
+          </div> {/* closes .relative p-8 */}
+          </ModernCard>
+
+        {/* Overview Cards - Dashboard Style */}
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+          <ModernCard gradient="blue" blur="lg" className={cardHoverEffects}>
+            <div className="p-6">
+              <div className="flex items-center justify-between">
+                <div className="flex-1">
+                  <p className="text-sm font-semibold text-blue-700 uppercase tracking-wider">Events</p>
+                  <p className="text-3xl font-bold text-gray-800 mt-1">{analyticsData.overview.totalEvents}</p>
+                  <div className="flex items-center mt-2">
+                    <TrendingUp className="h-4 w-4 text-green-500 mr-1" />
+                    <p className="text-sm text-green-600 font-medium">
+                      {formatPercentage(calculateChange(
+                        analyticsData.trends.eventsThisMonth, 
+                        analyticsData.trends.lastMonthEvents
+                      ))} from last month
+                    </p>
+                  </div>
+                </div>
+                <div className="p-3 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl shadow-xl">
+                  <Calendar className="h-8 w-8 text-white" />
+                </div>
               </div>
             </div>
-            
-            <div className="flex items-center space-x-4">
-              <select
-                value={timeRange}
-                onChange={(e) => setTimeRange(e.target.value)}
-                className="px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary text-black"
-              >
-                <option value="week">{t('overview')}</option>
-                <option value="month">{t('overview')}</option>
-                <option value="year">{t('overview')}</option>
-              </select>
-              <Button onClick={fetchAnalytics} variant="outline" size="sm">
-                <RefreshCw className="h-4 w-4 mr-2" />
-                {t('refresh')}
-              </Button>
-              <Button onClick={exportData} variant="outline" size="sm">
-                <Download className="h-4 w-4 mr-2" />
-                {t('export')}
-              </Button>
+          </ModernCard>
+
+          <ModernCard gradient="green" blur="lg" className={cardHoverEffects}>
+            <div className="p-6">
+              <div className="flex items-center justify-between">
+                <div className="flex-1">
+                  <p className="text-sm font-semibold text-green-700 uppercase tracking-wider">Emails</p>
+                  <p className="text-3xl font-bold text-gray-800 mt-1">{analyticsData.overview.totalEmails}</p>
+                  <div className="flex items-center mt-2">
+                    <TrendingUp className="h-4 w-4 text-green-500 mr-1" />
+                    <p className="text-sm text-green-600 font-medium">
+                      {formatPercentage(calculateChange(
+                        analyticsData.trends.emailsThisMonth, 
+                        analyticsData.trends.lastMonthEmails
+                      ))} from last month
+                    </p>
+                  </div>
+                </div>
+                <div className="p-3 bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl shadow-xl">
+                  <Mail className="h-8 w-8 text-white" />
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
+          </ModernCard>
 
-        {/* Overview Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <Card className="smooth-transition hover:shadow-lg">
-            <CardContent className="p-6">
+          <ModernCard gradient="orange" blur="lg" className={cardHoverEffects}>
+            <div className="p-6">
               <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-black">{t('events')}</p>
-                  <p className="text-2xl font-bold text-primary">{analyticsData.overview.totalEvents}</p>
-                  <p className="text-xs text-green-600 mt-1">
-                    {formatPercentage(calculateChange(
-                      analyticsData.trends.eventsThisMonth, 
-                      analyticsData.trends.lastMonthEvents
-                    ))} from last month
-                  </p>
-                </div>
-                <Calendar className="h-8 w-8 text-primary" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="smooth-transition hover:shadow-lg">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-black">{t('email')}</p>
-                  <p className="text-2xl font-bold text-primary">{analyticsData.overview.totalEmails}</p>
-                  <p className="text-xs text-green-600 mt-1">
-                    {formatPercentage(calculateChange(
-                      analyticsData.trends.emailsThisMonth, 
-                      analyticsData.trends.lastMonthEmails
-                    ))} from last month
-                  </p>
-                </div>
-                <Mail className="h-8 w-8 text-primary" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="smooth-transition hover:shadow-lg">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-black">{t('expenses')}</p>
-                  <p className="text-2xl font-bold text-primary">
+                <div className="flex-1">
+                  <p className="text-sm font-semibold text-orange-700 uppercase tracking-wider">Expenses</p>
+                  <p className="text-3xl font-bold text-gray-800 mt-1">
                     {formatCurrency(analyticsData.overview.totalExpenses)}
                   </p>
-                  <p className="text-xs text-red-600 mt-1">
-                    {formatPercentage(calculateChange(
-                      analyticsData.trends.expensesThisMonth, 
-                      analyticsData.trends.lastMonthExpenses
-                    ))} from last month
-                  </p>
+                  <div className="flex items-center mt-2">
+                    <TrendingDown className="h-4 w-4 text-red-500 mr-1" />
+                    <p className="text-sm text-red-600 font-medium">
+                      {formatPercentage(calculateChange(
+                        analyticsData.trends.expensesThisMonth, 
+                        analyticsData.trends.lastMonthExpenses
+                      ))} from last month
+                    </p>
+                  </div>
                 </div>
-                <DollarSign className="h-8 w-8 text-primary" />
+                <div className="p-3 bg-gradient-to-br from-orange-500 to-amber-600 rounded-2xl shadow-xl">
+                  <DollarSign className="h-8 w-8 text-white" />
+                </div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </ModernCard>
 
-          <Card className="smooth-transition hover:shadow-lg">
-            <CardContent className="p-6">
+          <ModernCard gradient="purple" blur="lg" className={cardHoverEffects}>
+            <div className="p-6">
               <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-black">{t('contacts')}</p>
-                  <p className="text-2xl font-bold text-primary">{analyticsData.overview.totalContacts}</p>
-                  <p className="text-xs text-blue-600 mt-1">Active contacts</p>
+                <div className="flex-1">
+                  <p className="text-sm font-semibold text-purple-700 uppercase tracking-wider">Contacts</p>
+                  <p className="text-3xl font-bold text-gray-800 mt-1">{analyticsData.overview.totalContacts}</p>
+                  <p className="text-sm text-purple-600 font-medium mt-2">Active contacts</p>
                 </div>
-                <Activity className="h-8 w-8 text-primary" />
+                <div className="p-3 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-2xl shadow-xl">
+                  <Users className="h-8 w-8 text-white" />
+                </div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </ModernCard>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
-          {/* Productivity Metrics */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center">
-                <Target className="h-5 w-5 mr-2" />
-                {t('analytics')}
-              </CardTitle>
-              <CardDescription>{t('overview')}</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-black">{t('events')}</span>
-                <span className="text-lg font-bold text-primary">
-                  {analyticsData.productivity.averageEventsPerDay}
-                </span>
-              </div>
-              
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-black">{t('email')}</span>
-                <span className="text-lg font-bold text-primary">
-                  {analyticsData.productivity.averageEmailsPerDay}
-                </span>
-              </div>
-              
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-black">{t('overview')}</span>
-                <span className="text-lg font-bold text-primary">
-                  {analyticsData.productivity.busyDaysThisMonth}
-                </span>
-              </div>
-              
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-black">{t('statistics')}</span>
-                <span className="text-lg font-bold text-green-600">
-                  {analyticsData.productivity.completionRate}%
-                </span>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Expense Breakdown */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center">
-                <BarChart3 className="h-5 w-5 mr-2" />
-                {t('expenses')}
-              </CardTitle>
-              <CardDescription>{t('overview')}</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {loading ? (
-                <div className="space-y-3">
-                  {[1, 2, 3, 4, 5].map((i) => (
-                    <div key={i} className="animate-pulse">
-                      <div className="flex justify-between items-center mb-2">
-                        <div className="h-4 bg-gray-200 rounded w-20"></div>
-                        <div className="h-4 bg-gray-200 rounded w-12"></div>
+        {/* Main Analytics Grid - Compact Layout */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Left Column - Analytics & Expenses Combined */}
+          <div className="space-y-6">
+            {/* Productivity Analytics */}
+            <ModernCard gradient="none" blur="lg" className={cardHoverEffects}>
+              <div className="p-6">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="p-2 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl">
+                    <Target className="h-6 w-6 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-gray-800">Productivity Analytics</h3>
+                    <p className="text-gray-600">Performance metrics and insights</p>
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="p-4 bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl border border-blue-200">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-semibold text-blue-700">Daily Events</p>
+                        <p className="text-2xl font-bold text-blue-800">{analyticsData.productivity.averageEventsPerDay}</p>
                       </div>
-                      <div className="h-2 bg-gray-200 rounded"></div>
+                      <Calendar className="h-8 w-8 text-blue-600" />
                     </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {Object.entries(separateBankCategories(analyticsData.categories.expensesByCategory)).map(([category, amount]) => {
-                    const total = Object.values(separateBankCategories(analyticsData.categories.expensesByCategory)).reduce((a, b) => a + b, 0);
-                    const percentage = (amount / total) * 100;
-                    
-                    return (
-                      <div key={category}>
-                        <div className="flex justify-between items-center mb-2">
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm font-medium text-black">{category}</span>
-                            {/* Show bank flags for individual bank categories */}
-                            {category === 'Ahli Bank (Cards)' && (
-                              <span className="px-2 py-1 bg-yellow-100 text-yellow-700 text-xs rounded-full flex items-center gap-1">
-                                <Flag className="h-3 w-3" />
-                                Bank
-                              </span>
-                            )}
-                            {category === 'Bank Muscat' && (
-                              <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full flex items-center gap-1">
-                                <Flag className="h-3 w-3" />
-                                Bank
-                              </span>
-                            )}
-                            {category === 'Ahli Bank (General)' && (
-                              <span className="px-2 py-1 bg-red-100 text-red-700 text-xs rounded-full flex items-center gap-1">
-                                <Flag className="h-3 w-3" />
-                                Bank
-                              </span>
-                            )}
-                          </div>
-                          <span className="text-sm font-bold text-black">
-                            {formatCurrency(amount)}
-                          </span>
-                        </div>
-                        <div className="w-full bg-gray-200 rounded-full h-2">
-                          <div
-                            className={`h-2 rounded-full transition-all duration-300 ${
-                              category === 'Ahli Bank (General)' ? 'bg-red-500' :
-                              category === 'Ahli Bank (Cards)' ? 'bg-yellow-500' :
-                              category === 'Bank Muscat' ? 'bg-blue-500' :
-                              'bg-primary'
-                            }`}
-                            style={{ width: `${percentage}%` }}
-                          ></div>
-                        </div>
+                  </div>
+                  
+                  <div className="p-4 bg-gradient-to-br from-green-50 to-green-100 rounded-xl border border-green-200">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-semibold text-green-700">Daily Emails</p>
+                        <p className="text-2xl font-bold text-green-800">{analyticsData.productivity.averageEmailsPerDay}</p>
                       </div>
-                    );
-                  })}
+                      <Mail className="h-8 w-8 text-green-600" />
+                    </div>
+                  </div>
+                  
+                  <div className="p-4 bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl border border-purple-200">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-semibold text-purple-700">Busy Days</p>
+                        <p className="text-2xl font-bold text-purple-800">{analyticsData.productivity.busyDaysThisMonth}</p>
+                      </div>
+                      <Clock className="h-8 w-8 text-purple-600" />
+                    </div>
+                  </div>
+                  
+                  <div className="p-4 bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl border border-orange-200">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-semibold text-orange-700">Completion</p>
+                        <p className="text-2xl font-bold text-orange-800">{analyticsData.productivity.completionRate}%</p>
+                      </div>
+                      <Award className="h-8 w-8 text-orange-600" />
+                    </div>
+                  </div>
                 </div>
-              )}
-            </CardContent>
-          </Card>
+              </div>
+            </ModernCard>
 
-          {/* Advanced Analytics Sidebar */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center text-black">
-                <Activity className="h-5 w-5 mr-2" />
-                {t('analytics')}
-              </CardTitle>
-              <CardDescription>{t('overview')}</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-6">
+            {/* Expense Breakdown */}
+            <ModernCard gradient="none" blur="lg" className={cardHoverEffects}>
+              <div className="p-6">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="p-2 bg-gradient-to-br from-orange-500 to-red-600 rounded-xl">
+                    <PieChart className="h-6 w-6 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-gray-800">Expense Breakdown</h3>
+                    <p className="text-gray-600">Category distribution</p>
+                  </div>
+                </div>
+                
+                {loading ? (
+                  <div className="space-y-3">
+                    {[1, 2, 3, 4].map((i) => (
+                      <div key={i} className="animate-pulse">
+                        <div className="flex justify-between items-center mb-2">
+                          <div className="h-4 bg-gray-200 rounded w-24"></div>
+                          <div className="h-4 bg-gray-200 rounded w-16"></div>
+                        </div>
+                        <div className="h-3 bg-gray-200 rounded"></div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {Object.entries(separateBankCategories(analyticsData.categories.expensesByCategory)).map(([category, amount]) => {
+                      const total = Object.values(separateBankCategories(analyticsData.categories.expensesByCategory)).reduce((a, b) => a + b, 0);
+                      const percentage = total > 0 ? (amount / total) * 100 : 0;
+                      
+                      return (
+                        <div key={category} className="p-3 bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl border border-gray-200">
+                          <div className="flex justify-between items-center mb-3">
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm font-semibold text-gray-800">{category}</span>
+                              {category === 'Ahli Bank (Cards)' && (
+                                <span className="px-2 py-1 bg-yellow-100 text-yellow-700 text-xs rounded-full flex items-center gap-1">
+                                  <Flag className="h-3 w-3" />
+                                  Bank
+                                </span>
+                              )}
+                              {category === 'Bank Muscat' && (
+                                <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full flex items-center gap-1">
+                                  <Flag className="h-3 w-3" />
+                                  Bank
+                                </span>
+                              )}
+                              {category === 'Ahli Bank (General)' && (
+                                <span className="px-2 py-1 bg-red-100 text-red-700 text-xs rounded-full flex items-center gap-1">
+                                  <Flag className="h-3 w-3" />
+                                  Bank
+                                </span>
+                              )}
+                            </div>
+                            <span className="text-base font-bold text-gray-800">
+                              {formatCurrency(amount)}
+                            </span>
+                          </div>
+                          <div className="w-full bg-gray-300 rounded-full h-3">
+                            <div
+                              className={`h-3 rounded-full transition-all duration-500 shadow-sm ${
+                                category === 'Ahli Bank (General)' ? 'bg-gradient-to-r from-red-400 to-red-500' :
+                                category === 'Ahli Bank (Cards)' ? 'bg-gradient-to-r from-yellow-400 to-yellow-500' :
+                                category === 'Bank Muscat' ? 'bg-gradient-to-r from-blue-400 to-blue-500' :
+                                'bg-gradient-to-r from-indigo-400 to-indigo-500'
+                              }`}
+                              style={{ width: `${Math.max(percentage, 2)}%` }}
+                            ></div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </ModernCard>
+          </div>
+
+          {/* Right Column - Advanced Analytics & Social Media */}
+          <div className="space-y-6">
+            {/* Smart Insights */}
+            <ModernCard gradient="none" blur="lg" className={cardHoverEffects}>
+              <div className="p-6">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="p-2 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-xl">
+                  <Brain className="h-6 w-6 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-gray-800">Smart Insights</h3>
+                  <p className="text-gray-600">AI-powered analysis</p>
+                </div>
+              </div>
+              
+              <div className="space-y-4">
                 {/* Time Analysis */}
                 <div>
                   <h4 className="font-semibold text-black mb-3">{t('analytics')}</h4>
@@ -741,7 +799,15 @@ export default function TrackingPage() {
                     </div>
                   </div>
                 </div>
+              </div>
+              </div>
+            </ModernCard>
 
+            {/* Performance Indicators & Recommendations Card */}
+            <ModernCard gradient="none" blur="lg" className={cardHoverEffects}>
+              <div className="p-6">
+                <Card>
+                  <CardContent>
                 {/* Performance Indicators */}
                 <div>
                   <h4 className="font-semibold text-black mb-3">{t('analytics')}</h4>
@@ -791,14 +857,17 @@ export default function TrackingPage() {
                     </div>
                   </div>
                 </div>
+                  </CardContent>
+                </Card>
               </div>
-            </CardContent>
-          </Card>
+            </ModernCard>
+
+          </div>
         </div>
 
         {/* Monthly Trends */}
         <Card>
-          <CardHeader>
+            <CardHeader>
             <CardTitle className="flex items-center">
               <TrendingUp className="h-5 w-5 mr-2" />
               {t('statistics')}

@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyToken, COOKIE_OPTIONS } from '@/lib/auth';
+import { getApiConfig } from '@/lib/config';
 
 const FIRECRAWL_API_KEY = process.env.FIRECRAWL_API_KEY;
-const FIRECRAWL_API_URL = 'https://api.firecrawl.dev/v0';
+const { firecrawlApiUrl: FIRECRAWL_API_URL } = getApiConfig();
 
 interface FirecrawlRequest {
   action: 'scrape' | 'crawl' | 'search';

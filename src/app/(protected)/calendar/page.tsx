@@ -306,7 +306,7 @@ export default function CalendarPage() {
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-4">
               <div className="p-3 bg-gradient-to-br from-blue-500 to-cyan-600 rounded-2xl shadow-lg">
-                <CalendarIcon className="h-8 w-8 text-white" />
+                <CalendarIcon className="h-8 w-8 text-black font-bold" />
               </div>
               <div>
                 <h1 className="text-4xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
@@ -334,12 +334,12 @@ export default function CalendarPage() {
         <div className="bg-white/70 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/30 p-8 mb-8 hover:shadow-3xl hover:bg-white/80 transition-all duration-500">
           <div className="flex items-center gap-3 mb-6">
             <div className="p-3 bg-gradient-to-br from-purple-500 to-violet-600 rounded-2xl shadow-lg">
-              <Plus className="h-6 w-6 text-white" />
+              <Plus className="h-6 w-6 text-black font-bold" />
             </div>
             <div>
               <h2 className="text-2xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent flex items-center gap-3">
                 {t('createEvent')}
-                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg">
+                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs bg-gradient-to-r from-blue-500 to-purple-600 text-black font-bold shadow-lg">
                   🧠 Smart Scheduling
                 </span>
               </h2>

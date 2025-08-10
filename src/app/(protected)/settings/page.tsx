@@ -416,12 +416,12 @@ export default function SettingsPage() {
                       onClick={() => setActiveTab(tab.id)}
                       className={`w-full flex items-center space-x-3 px-4 py-3 rounded-2xl text-left transition-all duration-300 transform hover:scale-105 ${
                         activeTab === tab.id
-                          ? 'bg-gradient-to-r from-primary to-primary/80 text-white shadow-lg shadow-primary/20'
+                          ? 'bg-gradient-to-r from-primary to-primary/80 text-black font-bold shadow-lg shadow-primary/20'
                           : 'text-gray-700 hover:text-primary hover:bg-gradient-to-r hover:from-primary/10 hover:to-primary/5 hover:shadow-md hover:shadow-primary/10'
                       }`}
                     >
                       <Icon className={`h-5 w-5 transition-all duration-300 ${
-                        activeTab === tab.id ? 'text-white scale-110' : 'group-hover:scale-110'
+                        activeTab === tab.id ? 'text-black font-bold scale-110' : 'group-hover:scale-110'
                       }`} />
                       <span className="font-medium">{tab.label}</span>
                     </button>
@@ -438,7 +438,7 @@ export default function SettingsPage() {
               <div className="bg-white/70 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/30 p-8 hover:shadow-3xl hover:bg-white/80 transition-all duration-500">
                 <div className="flex items-center gap-3 mb-6">
                   <div className="p-3 bg-gradient-to-br from-blue-500 to-cyan-600 rounded-2xl shadow-lg">
-                    <User className="h-6 w-6 text-white" />
+                    <User className="h-6 w-6 text-black font-bold" />
                   </div>
                   <div>
                     <h2 className="text-2xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
@@ -519,7 +519,7 @@ export default function SettingsPage() {
               <div className="bg-white/70 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/30 p-8 hover:shadow-3xl hover:bg-white/80 transition-all duration-500">
                 <div className="flex items-center gap-3 mb-6">
                   <div className="p-3 bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl shadow-lg">
-                    <Bell className="h-6 w-6 text-white" />
+                    <Bell className="h-6 w-6 text-black font-bold" />
                   </div>
                   <div>
                     <h2 className="text-2xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
@@ -570,7 +570,7 @@ export default function SettingsPage() {
               <div className="bg-white/70 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/30 p-8 hover:shadow-3xl hover:bg-white/80 transition-all duration-500">
                 <div className="flex items-center gap-3 mb-6">
                   <div className="p-3 bg-gradient-to-br from-red-500 to-pink-600 rounded-2xl shadow-lg">
-                    <Shield className="h-6 w-6 text-white" />
+                    <Shield className="h-6 w-6 text-black font-bold" />
                   </div>
                   <div>
                     <h2 className="text-2xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
@@ -634,7 +634,7 @@ export default function SettingsPage() {
               <div className="bg-white/70 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/30 p-8 hover:shadow-3xl hover:bg-white/80 transition-all duration-500">
                 <div className="flex items-center gap-3 mb-6">
                   <div className="p-3 bg-gradient-to-br from-purple-500 to-violet-600 rounded-2xl shadow-lg">
-                    <Palette className="h-6 w-6 text-white" />
+                    <Palette className="h-6 w-6 text-black font-bold" />
                   </div>
                   <div>
                     <h2 className="text-2xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
@@ -746,7 +746,7 @@ export default function SettingsPage() {
               <div className="bg-white/70 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/30 p-8 hover:shadow-3xl hover:bg-white/80 transition-all duration-500">
                 <div className="flex items-center gap-3 mb-6">
                   <div className="p-3 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl shadow-lg">
-                    <Volume2 className="h-6 w-6 text-white" />
+                    <Volume2 className="h-6 w-6 text-black font-bold" />
                   </div>
                   <div>
                     <h2 className="text-2xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
@@ -838,7 +838,7 @@ export default function SettingsPage() {
                 <div className="bg-white/70 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/30 p-8 hover:shadow-3xl hover:bg-white/80 transition-all duration-500">
                   <div className="flex items-center gap-3 mb-6">
                     <div className="p-3 bg-gradient-to-br from-gray-500 to-slate-600 rounded-2xl shadow-lg">
-                      <Database className="h-6 w-6 text-white" />
+                      <Database className="h-6 w-6 text-black font-bold" />
                     </div>
                     <div>
                       <h2 className="text-2xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
@@ -889,7 +889,7 @@ export default function SettingsPage() {
                 <div className="bg-white/70 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/30 p-8 hover:shadow-3xl hover:bg-white/80 transition-all duration-500">
                   <div className="flex items-center gap-3 mb-6">
                     <div className="p-3 bg-gradient-to-br from-green-500 to-teal-600 rounded-2xl shadow-lg">
-                      <Fingerprint className="h-6 w-6 text-white" />
+                      <Fingerprint className="h-6 w-6 text-black font-bold" />
                     </div>
                     <div>
                       <h2 className="text-2xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">

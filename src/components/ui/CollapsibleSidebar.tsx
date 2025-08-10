@@ -77,7 +77,7 @@ export function CollapsibleSidebar({
             'absolute top-1/2 -translate-y-1/2 z-10',
             'w-8 h-8 rounded-full bg-gradient-to-r from-blue-500 to-purple-600',
             'hover:from-blue-600 hover:to-purple-700',
-            'text-white shadow-lg transition-all duration-300',
+            'text-black font-bold shadow-lg transition-all duration-300',
             'flex items-center justify-center',
             'hover:scale-110 hover:shadow-blue-500/25',
             sideClasses[side].buttonPosition,
@@ -126,7 +126,7 @@ export function CollapsibleSidebar({
         {/* Collapsed state icon */}
         {!isOpen && icon && (
           <div className="absolute top-6 left-1/2 -translate-x-1/2">
-            <div className="p-2 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl shadow-lg text-white">
+            <div className="p-2 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl shadow-lg text-black font-bold">
               {icon}
             </div>
           </div>

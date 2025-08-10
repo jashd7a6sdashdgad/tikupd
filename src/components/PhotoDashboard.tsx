@@ -309,7 +309,7 @@ export default function PhotoDashboard({ photos, smartAlbums, duplicateGroups, o
               <div className="flex items-start justify-between">
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-2">
-                    <div className={`p-2 rounded-lg ${insight.color} text-white`}>
+                    <div className={`p-2 rounded-lg ${insight.color} text-black font-bold`}>
                       {insight.icon}
                     </div>
                     <div>

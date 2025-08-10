@@ -221,8 +221,8 @@ export class Gmail {
   private async retryRequest<T>(
     requestFn: () => Promise<T>, 
     operation: string, 
-    maxRetries = 3, 
-    delay = 1000
+    maxRetries = parseInt(process.env.RETRY_COUNT || '3'), 
+    delay = parseInt(process.env.RETRY_DELAY || '1000')
   ): Promise<T> {
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {

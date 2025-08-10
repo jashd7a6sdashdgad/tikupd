@@ -153,7 +153,7 @@ export default function VoiceMessageDisplay({
       <div
         className={`max-w-xs p-3 rounded-lg ${
           message.type === 'sent'
-            ? 'bg-blue-500 text-white ml-auto'
+            ? 'bg-blue-500 text-black font-bold ml-auto'
             : 'bg-gray-200 text-gray-800 mr-auto'
         }`}
       >

@@ -151,7 +151,7 @@ export default function YouTubePage() {
         <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/20 p-6 mb-8 hover:shadow-3xl transition-all duration-300">
           <div className="flex items-center gap-4">
             <div className="p-3 bg-gradient-to-br from-red-500 to-red-600 rounded-2xl shadow-lg">
-              <Youtube className="h-8 w-8 text-white" />
+              <Youtube className="h-8 w-8 text-black font-bold" />
             </div>
             <div>
               <h1 className="text-4xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
@@ -306,7 +306,7 @@ export default function YouTubePage() {
                       {/* Play button overlay */}
                       <div className="absolute inset-0 bg-black bg-opacity-20 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity cursor-pointer"
                            onClick={() => watchVideo(video.id)}>
-                        <Play className="h-8 w-8 text-white" />
+                        <Play className="h-8 w-8 text-black font-bold" />
                       </div>
                     </div>
                     <div className="flex-1 p-4">
