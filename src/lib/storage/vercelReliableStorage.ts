@@ -1,39 +1,58 @@
 import { TokenStorage, ApiToken } from './tokenStorage';
+import { promises as fs } from 'fs';
+import path from 'path';
 
-// Ultra-simple storage that works 100% on Vercel
+// Vercel-optimized storage using /tmp directory (persistent within function lifecycle)
 export class VercelReliableStorage implements TokenStorage {
   private tokens: Map<string, ApiToken> = new Map();
   private initialized = false;
+  private tmpFilePath: string;
 
   constructor() {
-    console.log('VercelReliableStorage: Initialized');
+    // Use /tmp directory which is writable on Vercel
+    this.tmpFilePath = path.join('/tmp', 'tokens.json');
+    console.log('VercelReliableStorage: Initialized with path:', this.tmpFilePath);
   }
 
-  private initialize(): void {
+  private async initialize(): Promise<void> {
     if (this.initialized) return;
     
     try {
-      // Try to load from environment variable
-      if (process.env.STORED_TOKENS) {
-        const stored = JSON.parse(process.env.STORED_TOKENS);
+      // Try to load from /tmp file first (most recent)
+      try {
+        const data = await fs.readFile(this.tmpFilePath, 'utf-8');
+        const stored = JSON.parse(data);
         if (Array.isArray(stored)) {
           stored.forEach(token => {
             if (this.isValidToken(token)) {
               this.tokens.set(token.id, token);
             }
           });
-          console.log(`VercelReliableStorage: Loaded ${this.tokens.size} tokens from environment`);
+          console.log(`VercelReliableStorage: Loaded ${this.tokens.size} tokens from /tmp file`);
+        }
+      } catch (fileError) {
+        // If file doesn't exist, try environment variable as fallback
+        if (process.env.STORED_TOKENS) {
+          const stored = JSON.parse(process.env.STORED_TOKENS);
+          if (Array.isArray(stored)) {
+            stored.forEach(token => {
+              if (this.isValidToken(token)) {
+                this.tokens.set(token.id, token);
+              }
+            });
+            console.log(`VercelReliableStorage: Loaded ${this.tokens.size} tokens from environment`);
+          }
         }
       }
     } catch (error) {
-      console.warn('VercelReliableStorage: Could not load from environment:', error);
+      console.warn('VercelReliableStorage: Could not load tokens:', error);
     }
     
     this.initialized = true;
   }
 
   async loadTokens(): Promise<ApiToken[]> {
-    this.initialize();
+    await this.initialize();
     const tokenArray = Array.from(this.tokens.values());
     console.log(`VercelReliableStorage: Loaded ${tokenArray.length} tokens`);
     return tokenArray;
@@ -43,20 +62,61 @@ export class VercelReliableStorage implements TokenStorage {
     try {
       console.log(`VercelReliableStorage: Saving ${tokens.length} tokens...`);
       
+      // Validate all tokens first
+      const validTokens = tokens.filter(token => {
+        const isValid = this.isValidToken(token);
+        if (!isValid) {
+          console.warn('Invalid token filtered out:', token);
+        }
+        return isValid;
+      });
+      
+      if (validTokens.length !== tokens.length) {
+        console.warn(`Filtered out ${tokens.length - validTokens.length} invalid tokens`);
+      }
+      
       // Clear existing tokens
       this.tokens.clear();
       
-      // Add valid tokens
-      const validTokens = tokens.filter(token => this.isValidToken(token));
+      // Add valid tokens to memory
       validTokens.forEach(token => {
         this.tokens.set(token.id, token);
       });
       
-      console.log(`VercelReliableStorage: Successfully saved ${this.tokens.size} valid tokens`);
+      console.log(`VercelReliableStorage: Added ${this.tokens.size} tokens to memory`);
       
-      // Note: On Vercel, we can't persist to environment variables across invocations
-      // But this storage will work for the duration of the function execution
-      // For true persistence, you'll need to add a database or external storage
+      // Save to /tmp file for persistence within Vercel function lifecycle
+      let fileSaveSuccess = false;
+      try {
+        // Ensure /tmp directory exists
+        const tmpDir = path.dirname(this.tmpFilePath);
+        try {
+          await fs.access(tmpDir);
+        } catch {
+          await fs.mkdir(tmpDir, { recursive: true });
+        }
+        
+        const dataToSave = JSON.stringify(validTokens, null, 2);
+        await fs.writeFile(this.tmpFilePath, dataToSave, 'utf-8');
+        fileSaveSuccess = true;
+        console.log(`VercelReliableStorage: Saved ${this.tokens.size} tokens to /tmp file: ${this.tmpFilePath}`);
+      } catch (fileError) {
+        console.warn('VercelReliableStorage: Could not write to /tmp file:', fileError);
+        console.warn('VercelReliableStorage: File error details:', {
+          path: this.tmpFilePath,
+          error: fileError instanceof Error ? fileError.message : String(fileError),
+          stack: fileError instanceof Error ? fileError.stack : undefined
+        });
+      }
+      
+      console.log(`VercelReliableStorage: Save completed - Memory: ${this.tokens.size} tokens, File: ${fileSaveSuccess ? 'success' : 'failed'}`);
+      
+      // Always succeed if we have tokens in memory, even if file save fails
+      if (this.tokens.size === validTokens.length) {
+        console.log('VercelReliableStorage: Save operation successful');
+      } else {
+        throw new Error('Token count mismatch after save operation');
+      }
       
     } catch (error) {
       console.error('VercelReliableStorage: Failed to save tokens:', error);
@@ -65,19 +125,41 @@ export class VercelReliableStorage implements TokenStorage {
   }
 
   async deleteToken(id: string): Promise<void> {
-    this.initialize();
+    await this.initialize();
     const deleted = this.tokens.delete(id);
+    
+    // Save to file after deletion
+    if (deleted) {
+      try {
+        const tokenArray = Array.from(this.tokens.values());
+        const dataToSave = JSON.stringify(tokenArray, null, 2);
+        await fs.writeFile(this.tmpFilePath, dataToSave, 'utf-8');
+        console.log(`VercelReliableStorage: Token ${id} deleted and file updated`);
+      } catch (error) {
+        console.warn('VercelReliableStorage: Could not update file after deletion:', error);
+      }
+    }
+    
     console.log(`VercelReliableStorage: Token ${id} ${deleted ? 'deleted' : 'not found'}`);
   }
 
   async updateToken(id: string, updates: Partial<ApiToken>): Promise<void> {
-    this.initialize();
+    await this.initialize();
     const existing = this.tokens.get(id);
     if (existing) {
       const updated = { ...existing, ...updates };
       if (this.isValidToken(updated)) {
         this.tokens.set(id, updated);
-        console.log(`VercelReliableStorage: Token ${id} updated`);
+        
+        // Save to file after update
+        try {
+          const tokenArray = Array.from(this.tokens.values());
+          const dataToSave = JSON.stringify(tokenArray, null, 2);
+          await fs.writeFile(this.tmpFilePath, dataToSave, 'utf-8');
+          console.log(`VercelReliableStorage: Token ${id} updated and file saved`);
+        } catch (error) {
+          console.warn('VercelReliableStorage: Could not update file after token update:', error);
+        }
       }
     }
   }

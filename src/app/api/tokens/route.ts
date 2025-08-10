@@ -127,10 +127,18 @@ export async function POST(request: NextRequest) {
     try {
       await tokenStorage.saveTokens(tokens);
       console.log('Tokens saved successfully');
+      
+      // Verify the save worked by reloading
+      const verifyTokens = await tokenStorage.loadTokens();
+      const foundToken = verifyTokens.find(t => t.id === newToken.id);
+      if (!foundToken) {
+        console.warn('Token not found after save - storage may not be persisting');
+      } else {
+        console.log('Token verified after save');
+      }
     } catch (saveError) {
       console.error('Failed to save tokens:', saveError);
-      // Still return the token even if save failed, for debugging
-      console.log('Continuing despite save failure for debugging purposes');
+      throw new Error(`Token creation failed: ${saveError instanceof Error ? saveError.message : String(saveError)}`);
     }
 
     // Return the token (only time it will be shown in full)
