@@ -152,19 +152,36 @@ export default function TrackingPage() {
 
   // Separate bank categories for display
   const separateBankCategories = (expensesByCategory: { [key: string]: number }) => {
-    const separated = { ...expensesByCategory };
+    const separated: { [key: string]: number } = {};
     
-    // If there's a "Banks" category, we'll separate it into individual banks
-    if (separated['Banks']) {
-      const bankTotal = separated['Banks'];
-      delete separated['Banks'];
+    // Process each category and normalize bank names
+    Object.entries(expensesByCategory).forEach(([category, amount]) => {
+      if (!category || amount === 0) return;
       
-      // For demonstration, split the bank total across the three banks
-      // In real implementation, you'd get actual data for each bank
-      separated['Ahli Bank (Cards)'] = bankTotal * 0.4; // 40% to Ahli Bank cards
-      separated['Bank Muscat'] = bankTotal * 0.35; // 35% to Bank Muscat
-      separated['Ahli Bank (General)'] = bankTotal * 0.25; // 25% to Ahli Bank general
-    }
+      const normalizedCategory = category.toLowerCase().trim();
+      
+      // Map various bank name variations to standard names with color coding
+      if (normalizedCategory.includes('ahli') || normalizedCategory.includes('alhli')) {
+        if (normalizedCategory.includes('card') || normalizedCategory.includes('credit')) {
+          separated['Ahli Bank (Cards)'] = (separated['Ahli Bank (Cards)'] || 0) + amount;
+        } else {
+          separated['Ahli Bank (General)'] = (separated['Ahli Bank (General)'] || 0) + amount;
+        }
+      } else if (normalizedCategory.includes('muscat') || normalizedCategory.includes('bank muscat')) {
+        separated['Bank Muscat'] = (separated['Bank Muscat'] || 0) + amount;
+      } else if (normalizedCategory.includes('card') && !normalizedCategory.includes('ahli')) {
+        // Generic cards go to "Other Cards"  
+        separated['Other Cards'] = (separated['Other Cards'] || 0) + amount;
+      } else if (normalizedCategory.includes('bank')) {
+        // Other banks
+        const displayName = category.charAt(0).toUpperCase() + category.slice(1);
+        separated[displayName] = (separated[displayName] || 0) + amount;
+      } else {
+        // Keep other categories as-is but capitalize first letter
+        const displayName = category.charAt(0).toUpperCase() + category.slice(1);
+        separated[displayName] = (separated[displayName] || 0) + amount;
+      }
+    });
     
     return separated;
   };
@@ -605,19 +622,49 @@ export default function TrackingPage() {
                               {category === 'Ahli Bank (Cards)' && (
                                 <span className="px-2 py-1 bg-yellow-100 text-yellow-700 text-xs rounded-full flex items-center gap-1">
                                   <Flag className="h-3 w-3" />
-                                  Bank
+                                  Ahli Cards
                                 </span>
                               )}
                               {category === 'Bank Muscat' && (
                                 <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full flex items-center gap-1">
                                   <Flag className="h-3 w-3" />
-                                  Bank
+                                  Muscat
                                 </span>
                               )}
                               {category === 'Ahli Bank (General)' && (
                                 <span className="px-2 py-1 bg-red-100 text-red-700 text-xs rounded-full flex items-center gap-1">
                                   <Flag className="h-3 w-3" />
-                                  Bank
+                                  Ahli
+                                </span>
+                              )}
+                              {category === 'Other Cards' && (
+                                <span className="px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded-full flex items-center gap-1">
+                                  <Flag className="h-3 w-3" />
+                                  Cards
+                                </span>
+                              )}
+                              {(category.toLowerCase().includes('food') || category.toLowerCase().includes('restaurant')) && (
+                                <span className="px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full flex items-center gap-1">
+                                  🍽️
+                                  Food
+                                </span>
+                              )}
+                              {(category.toLowerCase().includes('transport') || category.toLowerCase().includes('gas')) && (
+                                <span className="px-2 py-1 bg-orange-100 text-orange-700 text-xs rounded-full flex items-center gap-1">
+                                  🚗
+                                  Transport
+                                </span>
+                              )}
+                              {(category.toLowerCase().includes('shopping') || category.toLowerCase().includes('retail')) && (
+                                <span className="px-2 py-1 bg-pink-100 text-pink-700 text-xs rounded-full flex items-center gap-1">
+                                  🛍️
+                                  Shopping
+                                </span>
+                              )}
+                              {category.toLowerCase().includes('entertainment') && (
+                                <span className="px-2 py-1 bg-teal-100 text-teal-700 text-xs rounded-full flex items-center gap-1">
+                                  🎬
+                                  Fun
                                 </span>
                               )}
                             </div>
@@ -631,6 +678,11 @@ export default function TrackingPage() {
                                 category === 'Ahli Bank (General)' ? 'bg-gradient-to-r from-red-400 to-red-500' :
                                 category === 'Ahli Bank (Cards)' ? 'bg-gradient-to-r from-yellow-400 to-yellow-500' :
                                 category === 'Bank Muscat' ? 'bg-gradient-to-r from-blue-400 to-blue-500' :
+                                category === 'Other Cards' ? 'bg-gradient-to-r from-purple-400 to-purple-500' :
+                                category.toLowerCase().includes('food') || category.toLowerCase().includes('restaurant') ? 'bg-gradient-to-r from-green-400 to-green-500' :
+                                category.toLowerCase().includes('transport') || category.toLowerCase().includes('gas') ? 'bg-gradient-to-r from-orange-400 to-orange-500' :
+                                category.toLowerCase().includes('shopping') || category.toLowerCase().includes('retail') ? 'bg-gradient-to-r from-pink-400 to-pink-500' :
+                                category.toLowerCase().includes('entertainment') ? 'bg-gradient-to-r from-teal-400 to-teal-500' :
                                 'bg-gradient-to-r from-indigo-400 to-indigo-500'
                               }`}
                               style={{ width: `${Math.max(percentage, 2)}%` }}
