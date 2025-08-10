@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server';
 
-interface ApiToken {
+export interface ApiToken {
   id: string;
   token: string;
   name: string;
@@ -11,27 +11,35 @@ interface ApiToken {
   isActive: boolean;
 }
 
-// In-memory storage for tokens (in production, this would use a database)
+// In-memory token store (replace with DB in production)
 const tokens: ApiToken[] = [];
 
-// Utility function to validate a token
-function validateApiToken(tokenString: string): ApiToken | null {
+/**
+ * Validate the token string:
+ * - Must start with 'mpa_'
+ * - Must be active, not expired
+ * Updates lastUsed timestamp on success.
+ */
+export async function validateApiToken(tokenString: string): Promise<ApiToken | null> {
   if (!tokenString || !tokenString.startsWith('mpa_')) {
     return null;
   }
 
-  const token = tokens.find(t => 
-    t.token === tokenString && 
+  // Find token in store
+  const token = tokens.find(t =>
+    t.token === tokenString &&
     t.isActive &&
     (!t.expiresAt || new Date(t.expiresAt) > new Date())
   );
 
   if (token) {
-    // Update last used timestamp
+    // Update lastUsed timestamp
     token.lastUsed = new Date().toISOString();
+    // TODO: persist update if using DB
+    return token;
   }
 
-  return token || null;
+  return null;
 }
 
 export interface TokenAuthResult {
@@ -41,116 +49,91 @@ export interface TokenAuthResult {
 }
 
 /**
- * Extract API token from request headers
+ * Extract API token from request headers or query string.
  */
 export function extractApiToken(request: NextRequest): string | null {
-  // Check Authorization header (Bearer token)
   const authHeader = request.headers.get('Authorization');
-  if (authHeader && authHeader.startsWith('Bearer ')) {
+  if (authHeader?.startsWith('Bearer ')) {
     return authHeader.substring(7);
   }
 
-  // Check X-API-Key header
   const apiKeyHeader = request.headers.get('X-API-Key');
   if (apiKeyHeader) {
     return apiKeyHeader;
   }
 
-  // Check query parameter
-  const url = new URL(request.url);
-  const tokenParam = url.searchParams.get('token');
-  if (tokenParam) {
-    return tokenParam;
+  try {
+    const url = new URL(request.url);
+    const tokenParam = url.searchParams.get('token');
+    if (tokenParam) return tokenParam;
+  } catch {
+    // ignore malformed URL error
   }
 
   return null;
 }
 
 /**
- * Authenticate request using API token
+ * Authenticate the request using extracted token.
  */
-export function authenticateWithToken(request: NextRequest): TokenAuthResult {
+export async function authenticateWithToken(request: NextRequest): Promise<TokenAuthResult> {
   try {
     const tokenString = extractApiToken(request);
-    
     if (!tokenString) {
-      return {
-        success: false,
-        error: 'No API token provided'
-      };
+      return { success: false, error: 'No API token provided' };
     }
 
-    const token = validateApiToken(tokenString);
-    
+    const token = await validateApiToken(tokenString);
     if (!token) {
-      return {
-        success: false,
-        error: 'Invalid or expired API token'
-      };
+      return { success: false, error: 'Invalid or expired API token' };
     }
 
-    return {
-      success: true,
-      token
-    };
+    return { success: true, token };
   } catch (error) {
     console.error('Token authentication error:', error);
-    return {
-      success: false,
-      error: 'Authentication failed'
-    };
+    return { success: false, error: 'Authentication failed' };
   }
 }
 
 /**
- * Check if token has required permission
+ * Check if token has the required permission.
+ * Wildcards '*' or 'admin' grant all permissions.
  */
 export function hasPermission(token: ApiToken, requiredPermission: string): boolean {
-  // If no permissions specified, grant full access
   if (!token.permissions || token.permissions.length === 0) {
-    return true;
+    return true; // default allow if no permissions specified
   }
 
-  // Check for specific permission or wildcard
-  return token.permissions.includes(requiredPermission) || 
-         token.permissions.includes('*') ||
-         token.permissions.includes('admin');
+  return (
+    token.permissions.includes(requiredPermission) ||
+    token.permissions.includes('*') ||
+    token.permissions.includes('admin')
+  );
 }
 
 /**
- * Middleware function for API routes that require token authentication
+ * Middleware helper for API routes:
+ * Returns auth result and token if valid, else error info.
  */
 export function requireApiToken(requiredPermission?: string) {
-  return (request: NextRequest) => {
-    const auth = authenticateWithToken(request);
-    
+  return async (request: NextRequest) => {
+    const auth = await authenticateWithToken(request);
     if (!auth.success) {
-      return { 
-        authenticated: false, 
-        error: auth.error 
-      };
+      return { authenticated: false, error: auth.error };
     }
 
-    // Check permission if required
     if (requiredPermission && auth.token && !hasPermission(auth.token, requiredPermission)) {
-      return { 
-        authenticated: false, 
-        error: 'Insufficient permissions' 
-      };
+      return { authenticated: false, error: 'Insufficient permissions' };
     }
 
-    return { 
-      authenticated: true, 
-      token: auth.token 
-    };
+    return { authenticated: true, token: auth.token };
   };
 }
 
 /**
- * Available permissions for tokens
+ * Constants for permissions.
  */
 export const PERMISSIONS = {
-  // Data access permissions
   READ_EXPENSES: 'read:expenses',
   WRITE_EXPENSES: 'write:expenses',
   READ_EMAILS: 'read:emails',
@@ -161,29 +144,25 @@ export const PERMISSIONS = {
   WRITE_CALENDAR: 'write:calendar',
   READ_DIARY: 'read:diary',
   WRITE_DIARY: 'write:diary',
-  
-  // System permissions
+
   ADMIN: 'admin',
   WILDCARD: '*',
-  
-  // Social media permissions
+
   READ_FACEBOOK: 'read:facebook',
   WRITE_FACEBOOK: 'write:facebook',
   READ_YOUTUBE: 'read:youtube',
   WRITE_YOUTUBE: 'write:youtube',
-  
-  // AI and automation permissions
+
   AI_ASSISTANT: 'ai:assistant',
   VOICE_COMMANDS: 'voice:commands',
   WORKFLOWS: 'workflows',
-  
-  // Analytics permissions
+
   READ_ANALYTICS: 'read:analytics',
-  READ_TRACKING: 'read:tracking'
+  READ_TRACKING: 'read:tracking',
 } as const;
 
 /**
- * Permission groups for easy assignment
+ * Permission groups for easy assignment.
  */
 export const PERMISSION_GROUPS = {
   READ_ONLY: [
@@ -195,11 +174,11 @@ export const PERMISSION_GROUPS = {
     PERMISSIONS.READ_FACEBOOK,
     PERMISSIONS.READ_YOUTUBE,
     PERMISSIONS.READ_ANALYTICS,
-    PERMISSIONS.READ_TRACKING
+    PERMISSIONS.READ_TRACKING,
   ],
-  
+
   FULL_ACCESS: [PERMISSIONS.WILDCARD],
-  
+
   N8N_AGENT: [
     PERMISSIONS.READ_EXPENSES,
     PERMISSIONS.WRITE_EXPENSES,
@@ -212,6 +191,6 @@ export const PERMISSION_GROUPS = {
     PERMISSIONS.AI_ASSISTANT,
     PERMISSIONS.VOICE_COMMANDS,
     PERMISSIONS.WORKFLOWS,
-    PERMISSIONS.READ_ANALYTICS
-  ]
+    PERMISSIONS.READ_ANALYTICS,
+  ],
 };

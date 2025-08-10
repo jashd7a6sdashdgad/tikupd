@@ -11,30 +11,31 @@ export function useAuth() {
   const [authState, setAuthState] = useState<AuthState>({
     user: null,
     loading: true,
-    isAuthenticated: false
+    isAuthenticated: false,
   });
 
-  // Check authentication status on mount
+  // Check authentication status on component mount
   useEffect(() => {
     checkAuth();
   }, []);
 
+  // Function to check current auth status
   const checkAuth = async () => {
     try {
       const response = await fetch('/api/auth/me');
       const data: AuthResponse = await response.json();
-      
+
       if (data.success && data.user) {
         setAuthState({
           user: data.user,
           loading: false,
-          isAuthenticated: true
+          isAuthenticated: true,
         });
       } else {
         setAuthState({
           user: null,
           loading: false,
-          isAuthenticated: false
+          isAuthenticated: false,
         });
       }
     } catch (error) {
@@ -42,11 +43,12 @@ export function useAuth() {
       setAuthState({
         user: null,
         loading: false,
-        isAuthenticated: false
+        isAuthenticated: false,
       });
     }
   };
 
+  // Function to log in the user
   const login = async (credentials: LoginCredentials): Promise<AuthResponse> => {
     try {
       const response = await fetch('/api/auth/login', {
@@ -58,12 +60,12 @@ export function useAuth() {
       });
 
       const data: AuthResponse = await response.json();
-      
+
       if (data.success && data.user) {
         setAuthState({
           user: data.user,
           loading: false,
-          isAuthenticated: true
+          isAuthenticated: true,
         });
       }
 
@@ -72,29 +74,30 @@ export function useAuth() {
       console.error('Login failed:', error);
       return {
         success: false,
-        message: error.message || 'Login failed'
+        message: error?.message || 'Login failed',
       };
     }
   };
 
+  // Function to log out the user
   const logout = async (): Promise<void> => {
     try {
       await fetch('/api/auth/logout', {
         method: 'POST',
       });
-      
+
       setAuthState({
         user: null,
         loading: false,
-        isAuthenticated: false
+        isAuthenticated: false,
       });
     } catch (error) {
       console.error('Logout failed:', error);
-      // Still clear local state even if API call fails
+      // Clear state anyway
       setAuthState({
         user: null,
         loading: false,
-        isAuthenticated: false
+        isAuthenticated: false,
       });
     }
   };
@@ -103,6 +106,6 @@ export function useAuth() {
     ...authState,
     login,
     logout,
-    refresh: checkAuth
+    refresh: checkAuth,
   };
 }

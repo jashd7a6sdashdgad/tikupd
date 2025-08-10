@@ -8,11 +8,17 @@ import { authenticateWithToken } from '@/lib/tokenAuth';
 export async function GET(request: NextRequest) {
   try {
     // Authenticate using token
-    const auth = authenticateWithToken(request);
+    const auth = await authenticateWithToken(request);
     
     if (!auth.success) {
+      console.error('Authentication failed:', auth.error);
       return NextResponse.json(
-        { error: auth.error, authenticated: false },
+        { 
+          error: 'Authorization failed - please check your credentials',
+          details: auth.error,
+          help: 'Ensure you are passing the token correctly in the Authorization header as: Bearer YOUR_TOKEN',
+          authenticated: false 
+        },
         { status: 401 }
       );
     }
@@ -53,7 +59,7 @@ export async function POST(request: NextRequest) {
     const { action, data } = body;
 
     // Authenticate using token
-    const auth = authenticateWithToken(request);
+    const auth = await authenticateWithToken(request);
     
     if (!auth.success) {
       return NextResponse.json(
