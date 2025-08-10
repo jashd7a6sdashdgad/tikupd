@@ -51,20 +51,6 @@ export default function FeaturesDemoPage() {
       ]
     },
     {
-      id: 'quick-actions',
-      title: 'Quick Actions Panel',
-      description: 'Floating action buttons for instant access',
-      icon: <Zap className="h-8 w-8" />,
-      color: 'from-purple-500 to-violet-600',
-      status: 'Active',
-      commands: [
-        'Click the + button (bottom-right)',
-        'Use Ctrl+Space to toggle panel',
-        'Keyboard shortcuts: Ctrl+Shift+Key',
-        'Customize actions in settings'
-      ]
-    },
-    {
       id: 'gesture-controls',
       title: 'Gesture Controls',
       description: 'Touch and swipe shortcuts for mobile navigation',
@@ -75,7 +61,7 @@ export default function FeaturesDemoPage() {
         'Swipe right: Go back',
         'Swipe left: Refresh page',
         'Swipe up: Go to dashboard',
-        'Double tap: Toggle quick actions'
+        'Double tap: Refresh page'
       ]
     }
   ];
@@ -258,11 +244,6 @@ export default function FeaturesDemoPage() {
                   Customize Widgets
                 </Button>
                 
-                <Button className="bg-gradient-to-r from-purple-500 to-violet-600 hover:from-purple-600 hover:to-violet-700 text-white">
-                  <Zap className="h-4 w-4 mr-2" />
-                  Quick Actions
-                </Button>
-                
                 <Button className="bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white">
                   <Hand className="h-4 w-4 mr-2" />
                   Gesture Controls
@@ -270,7 +251,7 @@ export default function FeaturesDemoPage() {
               </div>
               
               <div className="mt-6 text-sm text-gray-500">
-                <p>💡 Use Ctrl+Space for quick actions, or simply say "Help" for voice commands</p>
+                <p>💡 Simply say "Help" for voice commands or use touch gestures on mobile</p>
               </div>
             </div>
           </div>

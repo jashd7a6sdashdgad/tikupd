@@ -6,7 +6,6 @@ import { AuthGuard } from '@/components/AuthGuard';
 import { useTheme } from '@/hooks/useTheme';
 import { ModernVoiceWidget } from '@/components/ui/ModernVoiceWidget';
 import { VoiceNavigationSystem } from '@/components/VoiceNavigationSystem';
-import { QuickActionsPanel } from '@/components/QuickActionsPanel';
 import { GestureControls } from '@/components/GestureControls';
 
 function ProtectedLayoutContent({ children }: { children: React.ReactNode }) {
@@ -24,9 +23,6 @@ function ProtectedLayoutContent({ children }: { children: React.ReactNode }) {
       <div className="fixed bottom-4 left-4 z-50">
         <VoiceNavigationSystem compact={true} />
       </div>
-      
-      {/* Quick Actions Panel - Floating action button */}
-      <QuickActionsPanel />
       
       {/* Gesture Controls - Touch/swipe navigation */}
       <GestureControls showIndicator={true} />
