@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { validateApiToken, hasPermission } from '@/lib/api/auth/tokenValidation';
+import { expenseStorage } from '@/lib/storage/expenseStorage';
 
 // GET /api/expenses - Get all expenses (requires valid API token)
 export async function GET(request: NextRequest) {
@@ -34,41 +35,16 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // TODO: Replace this with actual expense data from your database
-    // For now, return sample data to test the integration
-    const sampleExpenses = [
-      {
-        id: '1',
-        amount: 25.50,
-        category: 'food',
-        description: 'Lunch at restaurant',
-        date: '2025-08-10',
-        merchant: 'Local Restaurant'
-      },
-      {
-        id: '2',
-        amount: 15.00,
-        category: 'transportation',
-        description: 'Bus fare',
-        date: '2025-08-10',
-        merchant: 'City Transit'
-      },
-      {
-        id: '3',
-        amount: 89.99,
-        category: 'shopping',
-        description: 'New headphones',
-        date: '2025-08-09',
-        merchant: 'Electronics Store'
-      }
-    ];
+    // Load expenses from storage
+    const expenses = await expenseStorage.loadExpenses();
 
     return NextResponse.json({
       success: true,
       message: 'Expenses retrieved successfully',
       data: {
-        expenses: sampleExpenses,
-        total: sampleExpenses.length,
+        expenses: expenses,
+        total: expenses.length,
+        storageType: expenseStorage.getStorageType(),
         token: {
           name: validToken.name,
           permissions: validToken.permissions,
@@ -131,17 +107,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // TODO: Save the expense to your actual database
-    // For now, just return success
-    const newExpense = {
-      id: Date.now().toString(),
+    // Save expense to storage
+    const newExpense = await expenseStorage.addExpense({
       amount: parseFloat(amount),
       category,
       description,
       date: date || new Date().toISOString().split('T')[0],
-      merchant: merchant || 'Unknown',
-      createdAt: new Date().toISOString()
-    };
+      merchant: merchant || 'Unknown'
+    });
 
     return NextResponse.json({
       success: true,

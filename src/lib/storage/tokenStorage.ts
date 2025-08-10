@@ -355,30 +355,30 @@ export class HybridTokenStorage implements TokenStorage {
     });
 
     // Priority order: FREE options only
-    // 1. Vercel Reliable Storage (guaranteed to work on Vercel, in-memory)
-    if (this.isVercelEnvironment()) {
-      console.log('Using Vercel Reliable storage (FREE, in-memory, guaranteed to work)');
-      this.storage = new VercelReliableStorage();
-    }
-    // 2. GitHub Gist (100% free, requires GitHub token)
-    else if (process.env.GITHUB_TOKEN && process.env.GITHUB_GIST_ID) {
-      console.log('Using GitHub Gist storage (FREE)');
+    // 1. GitHub Gist (100% free, requires GitHub token, most reliable)
+    if (process.env.GITHUB_TOKEN && process.env.GITHUB_GIST_ID) {
+      console.log('Using GitHub Gist storage (FREE, persistent)');
       this.storage = new GitHubGistTokenStorage();
     }
-    // 3. Vercel Blob Storage (reliable, free tier: 100GB, 1M requests/month)  
+    // 2. Vercel Blob Storage (reliable, free tier: 100GB, 1M requests/month)  
     else if (process.env.BLOB_READ_WRITE_TOKEN) {
       console.log('Using Vercel Blob storage (FREE, reliable)');
       this.storage = new VercelBlobTokenStorage();
     }
-    // 4. In-memory (free, but data resets)
-    else if (typeof process !== 'undefined' && process.env && process.env.NODE_ENV === 'production') {
+    // 3. Local file system (free, persistent locally and on some deployments)
+    else if (!this.isVercelEnvironment()) {
+      console.log('Using local file storage (FREE, persistent)');
+      this.storage = new LocalTokenStorage();
+    }
+    // 4. Vercel file storage with fallback (attempts file system first)
+    else if (this.isVercelEnvironment()) {
+      console.log('Using Vercel file storage with in-memory fallback');
+      this.storage = new VercelTokenStorage();
+    }
+    // 5. In-memory (free, but data resets - last resort)
+    else {
       console.log('Using in-memory storage (FREE, but data resets)');
       this.storage = new InMemoryTokenStorage();
-    }
-    // 5. Local file system (free, for development)
-    else {
-      console.log('Using local file storage (FREE, development only)');
-      this.storage = new LocalTokenStorage();
     }
     
     console.log('HybridTokenStorage: Initialized with', this.getStorageType(), 'storage');
