@@ -8,9 +8,18 @@ This guide covers deploying the Mahboob Personal Assistant to Vercel with proper
 The application now uses a hybrid storage system that automatically adapts to different environments:
 
 - **Local Development**: Uses local file system (`data/tokens.json`)
-- **Cloudflare**: Uses R2 bucket storage
+- **GitHub Gist**: Uses GitHub gists (100% FREE, recommended for production)
+- **Vercel KV**: Uses Vercel KV storage (FREE tier: 100MB, 100K requests/month)
+- **Cloudflare R2**: Uses R2 bucket storage (paid, but reliable)
 - **Vercel**: Uses Vercel-optimized storage with file system + fallback to in-memory
 - **Other Production**: Uses in-memory storage as fallback
+
+### Storage Priority (Production - FREE First)
+1. **GitHub Gist** (if `GITHUB_TOKEN` and `GITHUB_GIST_ID` are set) - **🆓 FREE & RECOMMENDED**
+2. **Vercel KV** (if `KV_URL` is set) - **🆓 FREE tier**
+3. **Cloudflare R2** (if `NEXT_INC_CACHE_R2_BUCKET` is set) - **💰 PAID**
+4. **Vercel File System** (if on Vercel platform) - **🆓 FREE**
+5. **In-Memory** (fallback, data resets on restart) - **🆓 FREE**
 
 ## Environment Variables
 
@@ -19,9 +28,31 @@ The application now uses a hybrid storage system that automatically adapts to di
 1. **NODE_ENV**: Set to `production`
 2. **TOKENS_DATA**: (Optional) Initial tokens data as JSON string
 
-### Optional for Cloudflare R2
+### 🆓 **FREE Options (Recommended)**
+
+#### Option 1: GitHub Gist (100% Free)
+```bash
+GITHUB_TOKEN=ghp_your_token_here
+GITHUB_GIST_ID=your_gist_id_here
+```
+**Benefits**: Unlimited storage, high reliability, version history
+
+#### Option 2: Vercel KV (Free Tier)
+```bash
+KV_URL=your_kv_url_here
+KV_REST_API_URL=your_rest_api_url_here
+KV_REST_API_TOKEN=your_rest_api_token_here
+KV_REST_API_READ_ONLY_TOKEN=your_readonly_token_here
+```
+**Benefits**: 100MB free, 100K requests/month, built-in Vercel integration
+
+### 💰 **Paid Option (Cloudflare R2)**
 
 1. **NEXT_INC_CACHE_R2_BUCKET**: R2 bucket binding name
+2. **CLOUDFLARE_ACCOUNT_ID**: Your Cloudflare account ID
+3. **CLOUDFLARE_API_TOKEN**: API token with R2 permissions
+
+**Why Free Options?** They solve the "failed to create token" issue on Vercel without any cost!
 
 ## Vercel Configuration
 
@@ -64,6 +95,33 @@ The new `VercelTokenStorage` class provides:
 - **Previous Issue**: Used `InMemoryTokenStorage` which lost data on every function call
 - **New Solution**: Uses file system when possible, falls back to in-memory only when necessary
 
+## 🆓 **Quick Fix: FREE Options Setup**
+
+**For immediate token persistence fix on Vercel (100% FREE):**
+
+### Option 1: GitHub Gist (Recommended)
+1. **Follow the complete setup guide**: `FREE_STORAGE_OPTIONS.md`
+2. **Set environment variables** in Vercel:
+   ```
+   GITHUB_TOKEN=ghp_your_token_here
+   GITHUB_GIST_ID=  # Leave empty initially
+   ```
+3. **Deploy** - check logs for gist ID, then set it and redeploy
+
+### Option 2: Vercel KV (Alternative)
+1. **Install Vercel KV**: `npm install @vercel/kv`
+2. **Create KV database** in Vercel Dashboard
+3. **Set environment variables** in Vercel:
+   ```
+   KV_URL=your_kv_url_here
+   KV_REST_API_URL=your_rest_api_url_here
+   KV_REST_API_TOKEN=your_rest_api_token_here
+   KV_REST_API_READ_ONLY_TOKEN=your_readonly_token_here
+   ```
+4. **Deploy** - tokens will now persist reliably
+
+**Both options are completely FREE and solve your token persistence issue!**
+
 ## Deployment Steps
 
 ### 1. Build and Deploy
@@ -87,6 +145,14 @@ curl https://your-domain.vercel.app/api/debug/storage
 ```
 
 **Expected Response**: Shows storage type, mode, and any issues
+
+### 4. Test R2 Setup (if using Cloudflare R2)
+Run the test script to verify everything works:
+```bash
+node test-r2-setup.js
+```
+
+**Expected Output**: All tests should pass, showing R2 is active and tokens persist
 
 ## Troubleshooting
 

@@ -1,6 +1,12 @@
 import { promises as fs } from 'fs';
 import path from 'path';
 
+// Import the new free storage options
+import { GitHubGistTokenStorage } from './githubGistStorage';
+import { VercelBlobTokenStorage } from './vercelBlobStorage';
+import { VercelSimpleStorage } from './vercelSimpleStorage';
+import { VercelReliableStorage } from './vercelReliableStorage';
+
 export interface ApiToken {
   id: string;
   name: string;
@@ -118,46 +124,64 @@ export class LocalTokenStorage implements TokenStorage {
 // Cloudflare R2 storage (for production)
 export class CloudflareTokenStorage implements TokenStorage {
   private readonly bucket: any;
+  private readonly bucketName: string;
 
   constructor() {
     // Access R2 bucket from Cloudflare Workers environment
     this.bucket = (globalThis as any).NEXT_INC_CACHE_R2_BUCKET || null;
+    this.bucketName = process.env.NEXT_INC_CACHE_R2_BUCKET || 'NEXT_INC_CACHE_R2_BUCKET';
+    
+    if (this.bucket) {
+      console.log('CloudflareTokenStorage: R2 bucket initialized successfully');
+    } else {
+      console.warn('CloudflareTokenStorage: R2 bucket not available. Set NEXT_INC_CACHE_R2_BUCKET environment variable.');
+    }
   }
 
   async loadTokens(): Promise<ApiToken[]> {
     if (!this.bucket) {
-      console.warn('R2 bucket not available, falling back to empty array');
+      console.warn('CloudflareTokenStorage: R2 bucket not available, falling back to empty array');
       return [];
     }
 
     try {
+      console.log('CloudflareTokenStorage: Loading tokens from R2 bucket');
       const object = await this.bucket.get('tokens.json');
-      if (!object) return [];
+      
+      if (!object) {
+        console.log('CloudflareTokenStorage: No existing tokens found, returning empty array');
+        return [];
+      }
       
       const data = await object.text();
       const tokens = JSON.parse(data);
-      return this.validateTokens(tokens);
+      const validTokens = this.validateTokens(tokens);
+      console.log(`CloudflareTokenStorage: Successfully loaded ${validTokens.length} tokens from R2`);
+      return validTokens;
     } catch (error) {
-      console.warn('Failed to load tokens from R2:', error);
+      console.error('CloudflareTokenStorage: Failed to load tokens from R2:', error);
       return [];
     }
   }
 
   async saveTokens(tokens: ApiToken[]): Promise<void> {
     if (!this.bucket) {
-      console.warn('R2 bucket not available, tokens not persisted');
+      console.warn('CloudflareTokenStorage: R2 bucket not available, tokens not persisted');
       return;
     }
 
     try {
       const validTokens = this.validateTokens(tokens);
       const data = JSON.stringify(validTokens, null, 2);
+      
+      console.log(`CloudflareTokenStorage: Saving ${validTokens.length} tokens to R2 bucket`);
       await this.bucket.put('tokens.json', data, {
         httpMetadata: { contentType: 'application/json' }
       });
+      console.log('CloudflareTokenStorage: Tokens successfully saved to R2 bucket');
     } catch (error) {
-      console.error('Failed to save tokens to R2:', error);
-      throw new Error('Failed to persist tokens');
+      console.error('CloudflareTokenStorage: Failed to save tokens to R2:', error);
+      throw new Error(`Failed to persist tokens to R2: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
@@ -186,6 +210,14 @@ export class CloudflareTokenStorage implements TokenStorage {
              typeof token.createdAt === 'string' &&
              (token.status === 'active' || token.status === 'inactive');
     });
+  }
+
+  getStorageMode(): string {
+    return this.bucket ? 'R2 Bucket Active' : 'R2 Bucket Not Available';
+  }
+
+  isAvailable(): boolean {
+    return !!this.bucket;
   }
 }
 
@@ -421,21 +453,35 @@ export class HybridTokenStorage implements TokenStorage {
       isVercel: typeof process !== 'undefined' && process.env && process.env.VERCEL_URL ? true : false
     });
 
-    // Check if we're in a Cloudflare environment
-    if (typeof globalThis !== 'undefined' && (globalThis as any).NEXT_INC_CACHE_R2_BUCKET) {
-      console.log('Using Cloudflare R2 storage');
+    // Priority order: Most reliable free options first
+    // 1. Vercel Reliable Storage (guaranteed to work on Vercel, in-memory)
+    if (this.isVercelEnvironment()) {
+      console.log('Using Vercel Reliable storage (FREE, in-memory, guaranteed to work)');
+      this.storage = new VercelReliableStorage();
+    }
+    // 2. GitHub Gist (100% free, requires GitHub token)
+    else if (process.env.GITHUB_TOKEN && process.env.GITHUB_GIST_ID) {
+      console.log('Using GitHub Gist storage (FREE)');
+      this.storage = new GitHubGistTokenStorage();
+    }
+    // 3. Vercel Blob Storage (reliable, free tier: 100GB, 1M requests/month)  
+    else if (process.env.BLOB_READ_WRITE_TOKEN) {
+      console.log('Using Vercel Blob storage (FREE, reliable)');
+      this.storage = new VercelBlobTokenStorage();
+    }
+    // 4. Cloudflare R2 (paid, but reliable)
+    else if (typeof globalThis !== 'undefined' && (globalThis as any).NEXT_INC_CACHE_R2_BUCKET) {
+      console.log('Using Cloudflare R2 storage (PAID)');
       this.storage = new CloudflareTokenStorage();
-    } else if (this.isVercelEnvironment()) {
-      // In Vercel environment, use Vercel-specific storage
-      console.log('Using Vercel-optimized storage');
-      this.storage = new VercelTokenStorage();
-    } else if (typeof process !== 'undefined' && process.env && process.env.NODE_ENV === 'production') {
-      // In other production environments, use in-memory storage as fallback
-      console.log('Using in-memory storage (production fallback)');
+    }
+    // 5. In-memory (free, but data resets)
+    else if (typeof process !== 'undefined' && process.env && process.env.NODE_ENV === 'production') {
+      console.log('Using in-memory storage (FREE, but data resets)');
       this.storage = new InMemoryTokenStorage();
-    } else {
-      // In development, use local file storage
-      console.log('Using local file storage');
+    }
+    // 6. Local file system (free, for development)
+    else {
+      console.log('Using local file storage (FREE, development only)');
       this.storage = new LocalTokenStorage();
     }
     
@@ -455,10 +501,13 @@ export class HybridTokenStorage implements TokenStorage {
 
   // Method to get current storage type for debugging
   getStorageType(): string {
-    if (this.storage instanceof CloudflareTokenStorage) return 'R2';
-    if (this.storage instanceof VercelTokenStorage) return `Vercel (${this.storage.getStorageMode()})`;
-    if (this.storage instanceof InMemoryTokenStorage) return 'InMemory';
-    if (this.storage instanceof LocalTokenStorage) return 'Local';
+    if (this.storage instanceof VercelReliableStorage) return 'Vercel Reliable (FREE)';
+    if (this.storage instanceof VercelBlobTokenStorage) return 'Vercel Blob (FREE)';
+    if (this.storage instanceof GitHubGistTokenStorage) return 'GitHub Gist (FREE)';
+    if (this.storage instanceof CloudflareTokenStorage) return 'R2 (PAID)';
+    if (this.storage instanceof VercelTokenStorage) return `Vercel File (FREE)`;
+    if (this.storage instanceof InMemoryTokenStorage) return 'InMemory (FREE)';
+    if (this.storage instanceof LocalTokenStorage) return 'Local (FREE)';
     return 'Unknown';
   }
 
@@ -479,10 +528,17 @@ export class HybridTokenStorage implements TokenStorage {
       environment = process.env.NODE_ENV || 'unknown';
     }
 
-    if (this.storage instanceof VercelTokenStorage) {
+    if (this.storage instanceof GitHubGistTokenStorage) {
+      const gistStorage = this.storage as GitHubGistTokenStorage;
+      details = gistStorage.getStorageInfo().details;
+    } else if (this.storage instanceof VercelBlobTokenStorage) {
+      const blobStorage = this.storage as VercelBlobTokenStorage;
+      details = blobStorage.getStorageInfo().details;
+    } else if (this.storage instanceof VercelTokenStorage) {
       details = `Mode: ${this.storage.getStorageMode()}`;
     } else if (this.storage instanceof CloudflareTokenStorage) {
-      details = 'Cloudflare R2 bucket storage';
+      const cloudflareStorage = this.storage as CloudflareTokenStorage;
+      details = `Cloudflare R2: ${cloudflareStorage.getStorageMode()}`;
     } else if (this.storage instanceof InMemoryTokenStorage) {
       details = 'In-memory storage (data resets on restart)';
     } else if (this.storage instanceof LocalTokenStorage) {

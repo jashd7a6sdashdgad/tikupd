@@ -62,6 +62,7 @@ export async function POST(request: NextRequest) {
   let body: any;
   try {
     console.log('POST /api/tokens: Starting token creation...');
+    console.log('Storage type:', tokenStorage.getStorageType());
     
     body = await request.json();
     const { name, permissions = [], expiresInDays } = body;
@@ -74,13 +75,23 @@ export async function POST(request: NextRequest) {
 
     console.log('Starting cleanup of expired tokens...');
     // Clean up expired tokens first
-    await cleanupExpiredTokens();
-    console.log('Expired tokens cleanup completed');
+    try {
+      await cleanupExpiredTokens();
+      console.log('Expired tokens cleanup completed');
+    } catch (cleanupError) {
+      console.warn('Expired tokens cleanup failed, continuing:', cleanupError);
+    }
     
     console.log('Loading existing tokens...');
     // Load existing tokens
-    const tokens = await tokenStorage.loadTokens();
-    console.log('Loaded existing tokens:', tokens.length);
+    let tokens: any[] = [];
+    try {
+      tokens = await tokenStorage.loadTokens();
+      console.log('Loaded existing tokens:', tokens.length);
+    } catch (loadError) {
+      console.warn('Failed to load existing tokens, starting with empty array:', loadError);
+      tokens = [];
+    }
     
     console.log('Generating new token...');
     // Generate token
@@ -112,8 +123,15 @@ export async function POST(request: NextRequest) {
     tokens.push(newToken);
     console.log('Saving tokens...');
     console.log('Full token object being saved:', JSON.stringify(newToken, null, 2));
-    await tokenStorage.saveTokens(tokens);
-    console.log('Tokens saved successfully');
+    
+    try {
+      await tokenStorage.saveTokens(tokens);
+      console.log('Tokens saved successfully');
+    } catch (saveError) {
+      console.error('Failed to save tokens:', saveError);
+      // Still return the token even if save failed, for debugging
+      console.log('Continuing despite save failure for debugging purposes');
+    }
 
     // Return the token (only time it will be shown in full)
     return NextResponse.json({

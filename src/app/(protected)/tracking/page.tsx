@@ -162,13 +162,40 @@ export default function TrackingPage() {
       
       // Map various bank name variations to standard names with color coding
       if (normalizedCategory.includes('ahli') || normalizedCategory.includes('alhli')) {
-        if (normalizedCategory.includes('card') || normalizedCategory.includes('credit')) {
+        if (normalizedCategory.includes('cards')) {
           separated['Ahli Bank (Cards)'] = (separated['Ahli Bank (Cards)'] || 0) + amount;
+        } else if (normalizedCategory.includes('credit')) {
+          separated['Ahli Bank (Credit)'] = (separated['Ahli Bank (Credit)'] || 0) + amount;
+        } else if (normalizedCategory.includes('debit')) {
+          separated['Ahli Bank (Debit)'] = (separated['Ahli Bank (Debit)'] || 0) + amount;
         } else {
           separated['Ahli Bank (General)'] = (separated['Ahli Bank (General)'] || 0) + amount;
         }
       } else if (normalizedCategory.includes('muscat') || normalizedCategory.includes('bank muscat')) {
         separated['Bank Muscat'] = (separated['Bank Muscat'] || 0) + amount;
+      } else if (normalizedCategory.includes('food')) {
+        separated['Food'] = (separated['Food'] || 0) + amount;
+      } else if (normalizedCategory.includes('transportation')) {
+        separated['Transportation'] = (separated['Transportation'] || 0) + amount;
+      } else if (normalizedCategory.includes('business')) {
+        separated['Business'] = (separated['Business'] || 0) + amount;
+      } else if (normalizedCategory.includes('medical')) {
+        separated['Medical'] = (separated['Medical'] || 0) + amount;
+      } else if (normalizedCategory.includes('entertainment')) {
+        separated['Entertainment'] = (separated['Entertainment'] || 0) + amount;
+      } else if (normalizedCategory.includes('shopping')) {
+        separated['Shopping'] = (separated['Shopping'] || 0) + amount;
+      } else if (normalizedCategory.includes('utilities')) {
+        separated['Utilities'] = (separated['Utilities'] || 0) + amount;
+      } else if (normalizedCategory.includes('travel')) {
+        separated['Travel'] = (separated['Travel'] || 0) + amount;
+      } else if (normalizedCategory.includes('education')) {
+        separated['Education'] = (separated['Education'] || 0) + amount;
+      } else if (normalizedCategory.includes('general')) {
+        separated['General'] = (separated['General'] || 0) + amount;
+      } else if (normalizedCategory.includes('uncategorized')) {
+        // Handle uncategorized expenses
+        separated['Uncategorized'] = (separated['Uncategorized'] || 0) + amount;
       } else if (normalizedCategory.includes('card') && !normalizedCategory.includes('ahli')) {
         // Generic cards go to "Other Cards"  
         separated['Other Cards'] = (separated['Other Cards'] || 0) + amount;
@@ -176,6 +203,9 @@ export default function TrackingPage() {
         // Other banks
         const displayName = category.charAt(0).toUpperCase() + category.slice(1);
         separated[displayName] = (separated[displayName] || 0) + amount;
+      } else if (normalizedCategory.startsWith('category ')) {
+        // Handle generated category names like "Category 0", "Category 10"
+        separated['Miscellaneous'] = (separated['Miscellaneous'] || 0) + amount;
       } else {
         // Keep other categories as-is but capitalize first letter
         const displayName = category.charAt(0).toUpperCase() + category.slice(1);
@@ -637,6 +667,18 @@ export default function TrackingPage() {
                                   Ahli
                                 </span>
                               )}
+                              {category === 'Ahli Bank (Credit)' && (
+                                <span className="px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full flex items-center gap-1">
+                                  <Flag className="h-3 w-3" />
+                                  Credit
+                                </span>
+                              )}
+                              {category === 'Ahli Bank (Debit)' && (
+                                <span className="px-2 py-1 bg-orange-100 text-orange-700 text-xs rounded-full flex items-center gap-1">
+                                  <Flag className="h-3 w-3" />
+                                  Debit
+                                </span>
+                              )}
                               {category === 'Other Cards' && (
                                 <span className="px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded-full flex items-center gap-1">
                                   <Flag className="h-3 w-3" />
@@ -667,6 +709,156 @@ export default function TrackingPage() {
                                   Fun
                                 </span>
                               )}
+                              {category === 'Bank Transactions' && (
+                                <span className="px-2 py-1 bg-indigo-100 text-indigo-700 text-xs rounded-full flex items-center gap-1">
+                                  🏦
+                                  Banking
+                                </span>
+                              )}
+                              {category === 'General Expenses' && (
+                                <span className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-full flex items-center gap-1">
+                                  💰
+                                  General
+                                </span>
+                              )}
+                              {category === 'Uncategorized' && (
+                                <span className="px-2 py-1 bg-slate-100 text-slate-700 text-xs rounded-full flex items-center gap-1">
+                                  ❓
+                                  Unknown
+                                </span>
+                              )}
+                              {category === 'Miscellaneous' && (
+                                <span className="px-2 py-1 bg-amber-100 text-amber-700 text-xs rounded-full flex items-center gap-1">
+                                  📝
+                                  Misc
+                                </span>
+                              )}
+                              {category === 'Bank Transfers' && (
+                                <span className="px-2 py-1 bg-indigo-100 text-indigo-700 text-xs rounded-full flex items-center gap-1">
+                                  💸
+                                  Transfers
+                                </span>
+                              )}
+                              {category === 'Food & Dining' && (
+                                <span className="px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full flex items-center gap-1">
+                                  🍽️
+                                  Food
+                                </span>
+                              )}
+                              {category === 'Transport' && (
+                                <span className="px-2 py-1 bg-orange-100 text-orange-700 text-xs rounded-full flex items-center gap-1">
+                                  🚗
+                                  Transport
+                                </span>
+                              )}
+                              {category === 'Shopping' && (
+                                <span className="px-2 py-1 bg-pink-100 text-pink-700 text-xs rounded-full flex items-center gap-1">
+                                  🛍️
+                                  Shopping
+                                </span>
+                              )}
+                              {category === 'Large Transactions' && (
+                                <span className="px-2 py-1 bg-red-100 text-red-700 text-xs rounded-full flex items-center gap-1">
+                                  💰
+                                  Large
+                                </span>
+                              )}
+                              {category === 'Medium Expenses' && (
+                                <span className="px-2 py-1 bg-yellow-100 text-yellow-700 text-xs rounded-full flex items-center gap-1">
+                                  💵
+                                  Medium
+                                </span>
+                              )}
+                              {category === 'Central Bank of Oman' && (
+                                <span className="px-2 py-1 bg-emerald-100 text-emerald-700 text-xs rounded-full flex items-center gap-1">
+                                  <Flag className="h-3 w-3" />
+                                  CBO
+                                </span>
+                              )}
+                              {category === 'HSBC Bank' && (
+                                <span className="px-2 py-1 bg-red-100 text-red-700 text-xs rounded-full flex items-center gap-1">
+                                  <Flag className="h-3 w-3" />
+                                  HSBC
+                                </span>
+                              )}
+                              {category === 'Standard Chartered' && (
+                                <span className="px-2 py-1 bg-cyan-100 text-cyan-700 text-xs rounded-full flex items-center gap-1">
+                                  <Flag className="h-3 w-3" />
+                                  SC
+                                </span>
+                              )}
+                              {category === 'National Bank of Oman' && (
+                                <span className="px-2 py-1 bg-lime-100 text-lime-700 text-xs rounded-full flex items-center gap-1">
+                                  <Flag className="h-3 w-3" />
+                                  NBO
+                                </span>
+                              )}
+                              {category === 'Income' && (
+                                <span className="px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full flex items-center gap-1">
+                                  💰
+                                  Income
+                                </span>
+                              )}
+                              {category === 'Housing' && (
+                                <span className="px-2 py-1 bg-orange-100 text-orange-700 text-xs rounded-full flex items-center gap-1">
+                                  🏠
+                                  Housing
+                                </span>
+                              )}
+                              {category === 'Transportation' && (
+                                <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full flex items-center gap-1">
+                                  🚗
+                                  Transport
+                                </span>
+                              )}
+                              {category === 'Utilities' && (
+                                <span className="px-2 py-1 bg-yellow-100 text-yellow-700 text-xs rounded-full flex items-center gap-1">
+                                  ⚡
+                                  Utilities
+                                </span>
+                              )}
+                              {category === 'Food' && (
+                                <span className="px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full flex items-center gap-1">
+                                  🍽️
+                                  Food
+                                </span>
+                              )}
+                              {category === 'Business' && (
+                                <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full flex items-center gap-1">
+                                  💼
+                                  Business
+                                </span>
+                              )}
+                              {category === 'Medical' && (
+                                <span className="px-2 py-1 bg-red-100 text-red-700 text-xs rounded-full flex items-center gap-1">
+                                  🏥
+                                  Medical
+                                </span>
+                              )}
+                              {category === 'Entertainment' && (
+                                <span className="px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded-full flex items-center gap-1">
+                                  🎬
+                                  Entertainment
+                                </span>
+                              )}
+                              {category === 'Travel' && (
+                                <span className="px-2 py-1 bg-indigo-100 text-indigo-700 text-xs rounded-full flex items-center gap-1">
+                                  ✈️
+                                  Travel
+                                </span>
+                              )}
+                              {category === 'Education' && (
+                                <span className="px-2 py-1 bg-amber-100 text-amber-700 text-xs rounded-full flex items-center gap-1">
+                                  📚
+                                  Education
+                                </span>
+                              )}
+                              {category === 'General' && (
+                                <span className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-full flex items-center gap-1">
+                                  📋
+                                  General
+                                </span>
+                              )}
                             </div>
                             <span className="text-base font-bold text-gray-800">
                               {formatCurrency(amount)}
@@ -677,13 +869,26 @@ export default function TrackingPage() {
                               className={`h-3 rounded-full transition-all duration-500 shadow-sm ${
                                 category === 'Ahli Bank (General)' ? 'bg-gradient-to-r from-red-400 to-red-500' :
                                 category === 'Ahli Bank (Cards)' ? 'bg-gradient-to-r from-yellow-400 to-yellow-500' :
+                                category === 'Ahli Bank (Credit)' ? 'bg-gradient-to-r from-green-400 to-green-500' :
+                                category === 'Ahli Bank (Debit)' ? 'bg-gradient-to-r from-orange-400 to-orange-500' :
                                 category === 'Bank Muscat' ? 'bg-gradient-to-r from-blue-400 to-blue-500' :
+                                category === 'Food' ? 'bg-gradient-to-r from-green-400 to-green-500' :
+                                category === 'Transportation' ? 'bg-gradient-to-r from-orange-400 to-orange-500' :
+                                category === 'Business' ? 'bg-gradient-to-r from-blue-400 to-blue-500' :
+                                category === 'Medical' ? 'bg-gradient-to-r from-red-400 to-red-500' :
+                                category === 'Entertainment' ? 'bg-gradient-to-r from-purple-400 to-purple-500' :
+                                category === 'Shopping' ? 'bg-gradient-to-r from-pink-400 to-pink-500' :
+                                category === 'Utilities' ? 'bg-gradient-to-r from-yellow-400 to-yellow-500' :
+                                category === 'Travel' ? 'bg-gradient-to-r from-indigo-400 to-indigo-500' :
+                                category === 'Education' ? 'bg-gradient-to-r from-amber-400 to-amber-500' :
+                                category === 'General' ? 'bg-gradient-to-r from-gray-400 to-gray-500' :
+                                category === 'Uncategorized' ? 'bg-gradient-to-r from-slate-400 to-slate-500' :
                                 category === 'Other Cards' ? 'bg-gradient-to-r from-purple-400 to-purple-500' :
                                 category.toLowerCase().includes('food') || category.toLowerCase().includes('restaurant') ? 'bg-gradient-to-r from-green-400 to-green-500' :
                                 category.toLowerCase().includes('transport') || category.toLowerCase().includes('gas') ? 'bg-gradient-to-r from-orange-400 to-orange-500' :
                                 category.toLowerCase().includes('shopping') || category.toLowerCase().includes('retail') ? 'bg-gradient-to-r from-pink-400 to-pink-500' :
                                 category.toLowerCase().includes('entertainment') ? 'bg-gradient-to-r from-teal-400 to-teal-500' :
-                                'bg-gradient-to-r from-indigo-400 to-indigo-500'
+                                'bg-gradient-to-r from-cyan-400 to-cyan-500'
                               }`}
                               style={{ width: `${Math.max(percentage, 2)}%` }}
                             ></div>

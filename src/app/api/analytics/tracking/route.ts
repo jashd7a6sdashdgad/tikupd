@@ -276,13 +276,128 @@ export async function GET(request: NextRequest) {
       categories: {
         expensesByCategory: processedData.expenses.length > 1 ? 
           processedData.expenses.slice(1).reduce((acc: {[key: string]: number}, row: any) => {
-            if (Array.isArray(row) && row.length >= 4) {
+            if (Array.isArray(row) && row.length >= 3) {
               try {
                 const amount = parseFloat(row[2]) || 0; // Amount in column 3
-                const category = row[3] || 'Other'; // Category in column 4
-                acc[category] = (acc[category] || 0) + Math.abs(amount);
+                let category = row[3] || row[4] || 'Other'; // Try column 4 or 5 for category
+                const description = row[1] || ''; // Description in column 2
+                const date = row[0] || ''; // Date in column 1
+                
+                // Debug logging for first few rows
+                if (Object.keys(acc).length < 5) {
+                  console.log('Processing expense row:', {
+                    date: date,
+                    description: description,
+                    amount: amount,
+                    originalCategory: category,
+                    rowLength: row.length,
+                    fullRow: row
+                  });
+                }
+                
+                // Smart category detection - check ALL columns for bank indicators
+                if (typeof category === 'number' || !isNaN(Number(category)) || 
+                    category === 'Other' || category === '' || !category) {
+                  
+                  // Check all row data for bank indicators
+                  const fullRowText = row.join(' ').toLowerCase();
+                  const desc = String(description).toLowerCase();
+                  const dateText = String(date).toLowerCase();
+                  
+                  // Enhanced bank detection - check all possible columns
+                  if (fullRowText.includes('ahli') || fullRowText.includes('alhli') || 
+                      desc.includes('ahli') || desc.includes('alhli') ||
+                      dateText.includes('ahli') || dateText.includes('alhli')) {
+                    
+                    // More specific Ahli Bank detection
+                    if (fullRowText.includes('card') || fullRowText.includes('visa') || 
+                        fullRowText.includes('mastercard') || fullRowText.includes('debit card') ||
+                        fullRowText.includes('credit card')) {
+                      category = 'Ahli Bank (Cards)';
+                    } else if (fullRowText.includes('credit') || fullRowText.includes('cr ') ||
+                              fullRowText.includes('credit transaction')) {
+                      category = 'Ahli Bank (Credit)';  
+                    } else if (fullRowText.includes('debit') || fullRowText.includes('dr ') ||
+                              fullRowText.includes('debit transaction')) {
+                      category = 'Ahli Bank (Debit)';
+                    } else {
+                      category = 'Ahli Bank (General)';
+                    }
+                  } else if (fullRowText.includes('muscat') || fullRowText.includes('bank muscat') || 
+                           fullRowText.includes('nbm') || fullRowText.includes('bm ') ||
+                           desc.includes('muscat') || desc.includes('bank muscat') || desc.includes('nbm')) {
+                    category = 'Bank Muscat';
+                  } else if (fullRowText.includes('oman') || fullRowText.includes('cbo') ||
+                           fullRowText.includes('central bank')) {
+                    category = 'Central Bank of Oman';
+                  } else if (fullRowText.includes('hsbc')) {
+                    category = 'HSBC Bank';
+                  } else if (fullRowText.includes('standard chartered') || fullRowText.includes('scb')) {
+                    category = 'Standard Chartered';
+                  } else if (fullRowText.includes('national bank') || fullRowText.includes('nbo')) {
+                    category = 'National Bank of Oman';
+                  } else {
+                    // Categorize by specific transaction types you requested
+                    if (fullRowText.includes('food') || fullRowText.includes('restaurant') || 
+                        fullRowText.includes('grocery') || fullRowText.includes('supermarket') ||
+                        fullRowText.includes('dining') || fullRowText.includes('cafe') ||
+                        fullRowText.includes('mcdonald') || fullRowText.includes('kfc') ||
+                        fullRowText.includes('pizza') || fullRowText.includes('burger')) {
+                      category = 'Food';
+                    } else if (fullRowText.includes('shopping') || fullRowText.includes('store') || 
+                             fullRowText.includes('mall') || fullRowText.includes('retail') ||
+                             fullRowText.includes('purchase') || fullRowText.includes('buy') ||
+                             fullRowText.includes('carrefour') || fullRowText.includes('lulu') ||
+                             fullRowText.includes('center') || fullRowText.includes('shop')) {
+                      category = 'Shopping';
+                    } else if (fullRowText.includes('transport') || fullRowText.includes('taxi') || 
+                             fullRowText.includes('uber') || fullRowText.includes('fuel') || 
+                             fullRowText.includes('petrol') || fullRowText.includes('gas') ||
+                             fullRowText.includes('parking') || fullRowText.includes('toll')) {
+                      category = 'Transportation';
+                    } else if (fullRowText.includes('business') || fullRowText.includes('office') || 
+                             fullRowText.includes('meeting') || fullRowText.includes('company') ||
+                             fullRowText.includes('work') || fullRowText.includes('professional')) {
+                      category = 'Business';
+                    } else if (fullRowText.includes('medical') || fullRowText.includes('hospital') || 
+                             fullRowText.includes('doctor') || fullRowText.includes('pharmacy') ||
+                             fullRowText.includes('clinic') || fullRowText.includes('health')) {
+                      category = 'Medical';
+                    } else if (fullRowText.includes('entertainment') || fullRowText.includes('movie') || 
+                             fullRowText.includes('cinema') || fullRowText.includes('game') ||
+                             fullRowText.includes('music') || fullRowText.includes('sport')) {
+                      category = 'Entertainment';
+                    } else if (fullRowText.includes('utility') || fullRowText.includes('electric') || 
+                             fullRowText.includes('water') || fullRowText.includes('internet') ||
+                             fullRowText.includes('phone') || fullRowText.includes('bill')) {
+                      category = 'Utilities';
+                    } else if (fullRowText.includes('travel') || fullRowText.includes('hotel') || 
+                             fullRowText.includes('flight') || fullRowText.includes('vacation') ||
+                             fullRowText.includes('trip') || fullRowText.includes('tourism')) {
+                      category = 'Travel';
+                    } else if (fullRowText.includes('education') || fullRowText.includes('school') || 
+                             fullRowText.includes('university') || fullRowText.includes('course') ||
+                             fullRowText.includes('training') || fullRowText.includes('book')) {
+                      category = 'Education';
+                    } else {
+                      // Default to General for any unidentified transactions
+                      category = 'General';
+                    }
+                  }
+                } else if (typeof category === 'string') {
+                  category = category.trim();
+                  if (category === '' || category === 'null' || category === 'undefined') {
+                    category = 'Uncategorized';
+                  }
+                }
+                
+                // Only process if amount is valid and category is not null
+                if (amount !== 0 && category && category !== null) {
+                  acc[category] = (acc[category] || 0) + Math.abs(amount);
+                }
               } catch (error) {
                 // Skip invalid rows
+                console.warn('Invalid expense row:', row);
               }
             }
             return acc;
