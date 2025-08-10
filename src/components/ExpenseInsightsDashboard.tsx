@@ -25,6 +25,7 @@ import {
   Tag,
   Brain,
   Eye,
+  Calendar,
 } from 'lucide-react';
 // Simple toast replacement
 const toast = {

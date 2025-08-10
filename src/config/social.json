@@ -60,6 +60,7 @@
       "username": "mahboobagents.fun",
       "url": "https://mahboobagents.fun",
       "description": "Main website with services and contact info",
+      "verified": true,
       "isActive": true
     }
   },

@@ -385,7 +385,7 @@ export const translations: Record<string, Translation> = {
     // Expense Categories
     food: "Food",
     transportation: "Transportation",
-    business: "Business",
+    businessExpense: "Business",
     medical: "Medical",
     entertainment: "Entertainment",
     shopping: "Shopping",
@@ -1034,7 +1034,6 @@ export const translations: Record<string, Translation> = {
     // Expense Categories
     food: "طعام",
     transportation: "مواصلات",
-    business: "أعمال",
     medical: "طبي",
     entertainment: "ترفيه",
     shopping: "تسوق",

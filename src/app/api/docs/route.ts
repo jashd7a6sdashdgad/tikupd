@@ -41,7 +41,10 @@ export async function GET(request: NextRequest) {
         },
         "POST": {
           description: "Validate token and get app context",
-          body: { action: "validate" | "get_context", data: {} },
+          body: { 
+            action: "validate" as const, 
+            data: {} 
+          },
           response: {
             valid: true,
             permissions: ["*"]

@@ -37,8 +37,7 @@ import {
   CheckCircle,
   Clock,
   Globe,
-  Coins,
-  ExchangeIcon
+  Coins
 } from 'lucide-react';
 
 interface TravelExpense {

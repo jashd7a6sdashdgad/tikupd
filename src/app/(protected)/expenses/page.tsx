@@ -87,7 +87,7 @@ export default function ExpensesPage() {
   const categories = [
     { value: 'Food', label: t('food') },
     { value: 'Transportation', label: t('transportation') },
-    { value: 'Business', label: t('business') },
+            { value: 'Business', label: t('businessExpense') },
     { value: 'Medical', label: t('medical') },
     { value: 'Entertainment', label: t('entertainment') },
     { value: 'Shopping', label: t('shopping') },

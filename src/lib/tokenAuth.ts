@@ -11,8 +11,28 @@ interface ApiToken {
   isActive: boolean;
 }
 
-// Import tokens from the API route (in production, this would use a database)
-import { validateApiToken } from '@/app/api/tokens/route';
+// In-memory storage for tokens (in production, this would use a database)
+const tokens: ApiToken[] = [];
+
+// Utility function to validate a token
+function validateApiToken(tokenString: string): ApiToken | null {
+  if (!tokenString || !tokenString.startsWith('mpa_')) {
+    return null;
+  }
+
+  const token = tokens.find(t => 
+    t.token === tokenString && 
+    t.isActive &&
+    (!t.expiresAt || new Date(t.expiresAt) > new Date())
+  );
+
+  if (token) {
+    // Update last used timestamp
+    token.lastUsed = new Date().toISOString();
+  }
+
+  return token || null;
+}
 
 export interface TokenAuthResult {
   success: boolean;

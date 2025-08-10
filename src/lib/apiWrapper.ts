@@ -30,7 +30,7 @@ export function withAuth(
   return async (request: NextRequest) => {
     try {
       let isAuthenticated = false;
-      let tokenAuth = null;
+      let tokenAuth: any = null;
       let hasRequiredPermission = true;
 
       // If authentication is required

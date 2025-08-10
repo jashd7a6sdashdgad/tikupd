@@ -13,7 +13,7 @@ interface ApiToken {
 }
 
 // In-memory storage for tokens (in production, use a database)
-let tokens: ApiToken[] = [];
+const tokens: ApiToken[] = [];
 
 // Generate a secure random token
 function generateSecureToken(): string {
@@ -178,7 +178,7 @@ export async function PUT(request: NextRequest) {
 }
 
 // Utility function to validate a token (used by other API routes)
-export function validateApiToken(tokenString: string): ApiToken | null {
+function validateApiToken(tokenString: string): ApiToken | null {
   if (!tokenString || !tokenString.startsWith('mpa_')) {
     return null;
   }
@@ -197,5 +197,3 @@ export function validateApiToken(tokenString: string): ApiToken | null {
   return token || null;
 }
 
-// Export the tokens array for use in other files (development only)
-export { tokens };
