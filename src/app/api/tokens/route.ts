@@ -10,7 +10,10 @@ function generateSecureToken(): string {
 // Clean up expired tokens
 async function cleanupExpiredTokens(): Promise<void> {
   try {
+    console.log('cleanupExpiredTokens: Starting cleanup...');
     const tokens = await tokenStorage.loadTokens();
+    console.log(`cleanupExpiredTokens: Loaded ${tokens.length} tokens for cleanup check`);
+    
     const now = new Date();
     const validTokens = tokens.filter(token => {
       if (!token.expiresAt) return true; // No expiration
@@ -18,11 +21,14 @@ async function cleanupExpiredTokens(): Promise<void> {
     });
     
     if (validTokens.length !== tokens.length) {
-      console.log(`Cleaning up ${tokens.length - validTokens.length} expired tokens`);
+      console.log(`cleanupExpiredTokens: Cleaning up ${tokens.length - validTokens.length} expired tokens`);
       await tokenStorage.saveTokens(validTokens);
+      console.log('cleanupExpiredTokens: Cleanup completed');
+    } else {
+      console.log('cleanupExpiredTokens: No expired tokens found');
     }
   } catch (error) {
-    console.error('Error cleaning up expired tokens:', error);
+    console.error('cleanupExpiredTokens: Error during cleanup:', error);
   }
 }
 
@@ -55,20 +61,28 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   let body: any;
   try {
+    console.log('POST /api/tokens: Starting token creation...');
+    
     body = await request.json();
     const { name, permissions = [], expiresInDays } = body;
+    console.log('Request body:', { name, permissions, expiresInDays });
 
     if (!name || typeof name !== 'string') {
+      console.log('Validation failed: name is required and must be string');
       return NextResponse.json({ error: 'Token name is required' }, { status: 400 });
     }
 
+    console.log('Starting cleanup of expired tokens...');
     // Clean up expired tokens first
     await cleanupExpiredTokens();
+    console.log('Expired tokens cleanup completed');
     
+    console.log('Loading existing tokens...');
     // Load existing tokens
     const tokens = await tokenStorage.loadTokens();
     console.log('Loaded existing tokens:', tokens.length);
     
+    console.log('Generating new token...');
     // Generate token
     const token = generateSecureToken();
     const id = crypto.randomUUID();
@@ -116,16 +130,21 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Error creating token:', error);
-    console.error('Error details:', {
+    console.error('POST /api/tokens: Error creating token:', error);
+    console.error('POST /api/tokens: Error details:', {
       name: body?.name,
       permissions: body?.permissions,
       expiresInDays: body?.expiresInDays,
-      error: error instanceof Error ? error.message : String(error)
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : 'No stack trace'
     });
+    
+    // Return more detailed error information for debugging
     return NextResponse.json({ 
       error: 'Failed to create token',
-      details: error instanceof Error ? error.message : String(error)
+      details: error instanceof Error ? error.message : String(error),
+      timestamp: new Date().toISOString(),
+      storageType: 'tokenStorage' in globalThis ? 'available' : 'not available'
     }, { status: 500 });
   }
 }
@@ -193,4 +212,43 @@ export async function PUT(request: NextRequest) {
 }
 
 // Note: validateApiToken function has been moved to src/lib/api/auth/tokenValidation.ts
+
+// Test endpoint to check storage system
+export async function PATCH(request: NextRequest) {
+  try {
+    console.log('PATCH /api/tokens: Testing storage system...');
+    
+    // Test storage initialization
+    const storageType = tokenStorage.getStorageType();
+    console.log('Storage type:', storageType);
+    
+    // Test loading tokens
+    const tokens = await tokenStorage.loadTokens();
+    console.log('Current tokens count:', tokens.length);
+    
+    // Test saving tokens (just save the current ones to test)
+    await tokenStorage.saveTokens(tokens);
+    console.log('Storage test completed successfully');
+    
+    return NextResponse.json({ 
+      message: 'Storage test completed',
+      storageType,
+      tokensCount: tokens.length,
+      timestamp: new Date().toISOString(),
+      environment: {
+        nodeEnv: process.env.NODE_ENV,
+        hasProcess: typeof process !== 'undefined',
+        hasEnv: typeof process !== 'undefined' && !!process.env,
+        cwd: typeof process !== 'undefined' ? process.cwd() : 'undefined'
+      }
+    });
+  } catch (error) {
+    console.error('PATCH /api/tokens: Storage test failed:', error);
+    return NextResponse.json({ 
+      error: 'Storage test failed',
+      details: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : 'No stack trace'
+    }, { status: 500 });
+  }
+}
 

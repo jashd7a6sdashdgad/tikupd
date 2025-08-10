@@ -540,7 +540,882 @@ Return ONLY valid JSON in this format:
       throw error;
     }
   }
+
+  /**
+   * Update an existing workflow
+   */
+  async updateWorkflow(workflowId: string, updates: Partial<WorkflowTemplate>): Promise<boolean> {
+    try {
+      const n8nApiUrl = process.env.N8N_API_URL;
+      const n8nApiKey = process.env.N8N_API_KEY;
+      
+      if (!n8nApiUrl || !n8nApiKey) {
+        throw new Error('N8N configuration is incomplete');
+      }
+
+      // Try MCP first
+      if (mcpClient) {
+        try {
+          await mcpClient.updateWorkflow(workflowId, updates);
+          return true;
+        } catch (mcpError) {
+          console.warn('MCP update failed, falling back to direct API:', mcpError);
+        }
+      }
+
+      // Fallback to direct API
+      const response = await fetch(`${n8nApiUrl}/api/v1/workflows/${workflowId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-N8N-API-KEY': n8nApiKey,
+        },
+        body: JSON.stringify(updates)
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to update workflow: ${response.statusText}`);
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Error updating workflow:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Delete a workflow
+   */
+  async deleteWorkflow(workflowId: string): Promise<boolean> {
+    try {
+      const n8nApiUrl = process.env.N8N_API_URL;
+      const n8nApiKey = process.env.N8N_API_KEY;
+      
+      if (!n8nApiUrl || !n8nApiKey) {
+        throw new Error('N8N configuration is incomplete');
+      }
+
+      // Try MCP first
+      if (mcpClient) {
+        try {
+          await mcpClient.deleteWorkflow(workflowId);
+          return true;
+        } catch (mcpError) {
+          console.warn('MCP delete failed, falling back to direct API:', mcpError);
+        }
+      }
+
+      // Fallback to direct API
+      const response = await fetch(`${n8nApiUrl}/api/v1/workflows/${workflowId}`, {
+        method: 'DELETE',
+        headers: {
+          'X-N8N-API-KEY': n8nApiKey,
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to delete workflow: ${response.statusText}`);
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Error deleting workflow:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get workflow execution history
+   */
+  async getWorkflowExecutions(workflowId: string, limit: number = 10): Promise<any[]> {
+    try {
+      const n8nApiUrl = process.env.N8N_API_URL;
+      const n8nApiKey = process.env.N8N_API_KEY;
+      
+      if (!n8nApiUrl || !n8nApiKey) {
+        throw new Error('N8N configuration is incomplete');
+      }
+
+      // Try MCP first
+      if (mcpClient) {
+        try {
+          return await mcpClient.getWorkflowExecutions(workflowId, limit);
+        } catch (mcpError) {
+          console.warn('MCP get executions failed, falling back to direct API:', mcpError);
+        }
+      }
+
+      // Fallback to direct API
+      const response = await fetch(
+        `${n8nApiUrl}/api/v1/workflows/${workflowId}/executions?limit=${limit}`,
+        {
+          headers: {
+            'X-N8N-API-KEY': n8nApiKey,
+          }
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`Failed to get workflow executions: ${response.statusText}`);
+      }
+
+      const result = await response.json();
+      return result.data || [];
+    } catch (error) {
+      console.error('Error getting workflow executions:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Activate/deactivate a workflow
+   */
+  async toggleWorkflowStatus(workflowId: string, active: boolean): Promise<boolean> {
+    try {
+      const n8nApiUrl = process.env.N8N_API_URL;
+      const n8nApiKey = process.env.N8N_API_KEY;
+      
+      if (!n8nApiUrl || !n8nApiKey) {
+        throw new Error('N8N configuration is incomplete');
+      }
+
+      // Try MCP first
+      if (mcpClient) {
+        try {
+          await mcpClient.updateWorkflow(workflowId, { active });
+          return true;
+        } catch (mcpError) {
+          console.warn('MCP toggle status failed, falling back to direct API:', mcpError);
+        }
+      }
+
+      // Fallback to direct API
+      const response = await fetch(`${n8nApiUrl}/api/v1/workflows/${workflowId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-N8N-API-KEY': n8nApiKey,
+        },
+        body: JSON.stringify({ active })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to toggle workflow status: ${response.statusText}`);
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Error toggling workflow status:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Test workflow execution with sample data
+   */
+  async testWorkflow(workflowId: string, testData?: any): Promise<any> {
+    try {
+      const n8nApiUrl = process.env.N8N_API_URL;
+      const n8nApiKey = process.env.N8N_API_KEY;
+      
+      if (!n8nApiUrl || !n8nApiKey) {
+        throw new Error('N8N configuration is incomplete');
+      }
+
+      // Try MCP first
+      if (mcpClient) {
+        try {
+          return await mcpClient.executeWorkflow(workflowId, testData);
+        } catch (mcpError) {
+          console.warn('MCP test workflow failed, falling back to direct API:', mcpError);
+        }
+      }
+
+      // Fallback to direct API
+      const response = await fetch(`${n8nApiUrl}/api/v1/workflows/${workflowId}/test`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-N8N-API-KEY': n8nApiKey,
+        },
+        body: JSON.stringify({ data: testData || {} })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to test workflow: ${response.statusText}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error testing workflow:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get workflow statistics and metrics
+   */
+  async getWorkflowStats(workflowId: string): Promise<any> {
+    try {
+      const n8nApiUrl = process.env.N8N_API_URL;
+      const n8nApiKey = process.env.N8N_API_KEY;
+      
+      if (!n8nApiUrl || !n8nApiKey) {
+        throw new Error('N8N configuration is incomplete');
+      }
+
+      // Try MCP first
+      if (mcpClient) {
+        try {
+          return await mcpClient.getWorkflow(workflowId);
+        } catch (mcpError) {
+          console.warn('MCP get stats failed, falling back to direct API:', mcpError);
+        }
+      }
+
+      // Fallback to direct API
+      const response = await fetch(`${n8nApiUrl}/api/v1/workflows/${workflowId}/stats`, {
+        headers: {
+          'X-N8N-API-KEY': n8nApiKey,
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to get workflow stats: ${response.statusText}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error getting workflow stats:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Validate workflow configuration
+   */
+  async validateWorkflow(workflow: WorkflowTemplate): Promise<{ valid: boolean; errors: string[] }> {
+    const errors: string[] = [];
+
+    // Check required fields
+    if (!workflow.name) errors.push('Workflow name is required');
+    if (!workflow.trigger) errors.push('Workflow trigger is required');
+    if (!workflow.nodes || workflow.nodes.length === 0) errors.push('Workflow must have at least one node');
+
+    // Validate nodes
+    workflow.nodes?.forEach((node, index) => {
+      if (!node.id) errors.push(`Node ${index + 1} must have an ID`);
+      if (!node.type) errors.push(`Node ${index + 1} must have a type`);
+      if (!node.position) errors.push(`Node ${index + 1} must have a position`);
+    });
+
+    // Validate connections
+    workflow.connections?.forEach((conn, index) => {
+      if (!conn.sourceNode) errors.push(`Connection ${index + 1} must have a source node`);
+      if (!conn.targetNode) errors.push(`Connection ${index + 1} must have a target node`);
+      
+      // Check if referenced nodes exist
+      const sourceExists = workflow.nodes?.some(n => n.id === conn.sourceNode);
+      const targetExists = workflow.nodes?.some(n => n.id === conn.targetNode);
+      
+      if (!sourceExists) errors.push(`Connection ${index + 1} references non-existent source node: ${conn.sourceNode}`);
+      if (!targetExists) errors.push(`Connection ${index + 1} references non-existent target node: ${conn.targetNode}`);
+    });
+
+    return {
+      valid: errors.length === 0,
+      errors
+    };
+  }
+
+  /**
+   * Export workflow as JSON
+   */
+  exportWorkflow(workflow: WorkflowTemplate): string {
+    return JSON.stringify(workflow, null, 2);
+  }
+
+  /**
+   * Import workflow from JSON
+   */
+  async importWorkflow(jsonString: string): Promise<WorkflowTemplate> {
+    try {
+      const workflow = JSON.parse(jsonString);
+      const validation = await this.validateWorkflow(workflow);
+      
+      if (!validation.valid) {
+        throw new Error(`Invalid workflow: ${validation.errors.join(', ')}`);
+      }
+      
+      return workflow;
+    } catch (error) {
+      if (error instanceof SyntaxError) {
+        throw new Error('Invalid JSON format');
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Clone workflow with new ID
+   */
+  cloneWorkflow(workflow: WorkflowTemplate, newName?: string): WorkflowTemplate {
+    const cloned = JSON.parse(JSON.stringify(workflow));
+    cloned.id = `cloned_${Date.now()}`;
+    cloned.name = newName || `${workflow.name} (Copy)`;
+    
+    // Update node IDs to avoid conflicts
+    const nodeIdMap = new Map<string, string>();
+    cloned.nodes?.forEach((node: WorkflowNode) => {
+      const oldId = node.id;
+      node.id = `cloned_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      nodeIdMap.set(oldId, node.id);
+    });
+    
+    // Update connections with new node IDs
+    cloned.connections?.forEach((conn: WorkflowConnection) => {
+      if (nodeIdMap.has(conn.sourceNode)) {
+        conn.sourceNode = nodeIdMap.get(conn.sourceNode)!;
+      }
+      if (nodeIdMap.has(conn.targetNode)) {
+        conn.targetNode = nodeIdMap.get(conn.targetNode)!;
+      }
+    });
+    
+    return cloned;
+  }
+
+  /**
+   * Get all workflows from N8N instance
+   */
+  async getAllWorkflows(): Promise<WorkflowTemplate[]> {
+    try {
+      const n8nApiUrl = process.env.N8N_API_URL;
+      const n8nApiKey = process.env.N8N_API_KEY;
+      
+      if (!n8nApiUrl || !n8nApiKey) {
+        throw new Error('N8N configuration is incomplete');
+      }
+
+      // Try MCP first
+      if (mcpClient) {
+        try {
+          const workflows = await mcpClient.listWorkflows();
+          return workflows.map((w: any) => this.convertFromN8NFormat(w));
+        } catch (mcpError) {
+          console.warn('MCP list workflows failed, falling back to direct API:', mcpError);
+        }
+      }
+
+      // Fallback to direct API
+      const response = await fetch(`${n8nApiUrl}/api/v1/workflows`, {
+        headers: {
+          'X-N8N-API-KEY': n8nApiKey,
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to get workflows: ${response.statusText}`);
+      }
+
+      const result = await response.json();
+      return result.data?.map((w: any) => this.convertFromN8NFormat(w)) || [];
+    } catch (error) {
+      console.error('Error getting all workflows:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Convert N8N format back to our WorkflowTemplate format
+   */
+  private convertFromN8NFormat(n8nWorkflow: any): WorkflowTemplate {
+    return {
+      id: n8nWorkflow.id,
+      name: n8nWorkflow.name,
+      description: n8nWorkflow.description || '',
+      category: this.detectCategory(n8nWorkflow),
+      trigger: this.extractTrigger(n8nWorkflow),
+      nodes: n8nWorkflow.nodes?.map((node: any) => ({
+        id: node.id,
+        name: node.name,
+        type: node.type,
+        position: { x: node.position[0], y: node.position[1] },
+        parameters: node.parameters || {}
+      })) || [],
+      connections: this.convertFromN8NConnections(n8nWorkflow.connections)
+    };
+  }
+
+  /**
+   * Convert N8N connections back to our format
+   */
+  private convertFromN8NConnections(n8nConnections: any): WorkflowConnection[] {
+    const connections: WorkflowConnection[] = [];
+    
+    if (!n8nConnections) return connections;
+    
+    Object.entries(n8nConnections).forEach(([sourceNode, outputs]: [string, any]) => {
+      Object.entries(outputs).forEach(([sourceOutput, targets]: [string, any]) => {
+        if (Array.isArray(targets)) {
+          targets.forEach((target: any) => {
+            connections.push({
+              sourceNode,
+              sourceOutput,
+              targetNode: target.node,
+              targetInput: target.type
+            });
+          });
+        }
+      });
+    });
+    
+    return connections;
+  }
+
+  /**
+   * Detect workflow category based on nodes and connections
+   */
+  private detectCategory(workflow: any): WorkflowTemplate['category'] {
+    const nodeTypes = workflow.nodes?.map((n: any) => n.type) || [];
+    
+    if (nodeTypes.some((t: string) => t.includes('Gmail') || t.includes('Email'))) {
+      return 'communication';
+    }
+    if (nodeTypes.some((t: string) => t.includes('GoogleSheets') || t.includes('Expense'))) {
+      return 'finance';
+    }
+    if (nodeTypes.some((t: string) => t.includes('GoogleCalendar') || t.includes('Schedule'))) {
+      return 'productivity';
+    }
+    if (nodeTypes.some((t: string) => t.includes('Health') || t.includes('Fitness'))) {
+      return 'health';
+    }
+    
+    return 'automation';
+  }
+
+  /**
+   * Extract trigger information from N8N workflow
+   */
+  private extractTrigger(workflow: any): WorkflowTemplate['trigger'] {
+    const triggerNode = workflow.nodes?.find((n: any) => 
+      n.type.includes('Trigger') || n.type.includes('Webhook') || n.type.includes('Schedule')
+    );
+    
+    if (!triggerNode) {
+      return {
+        type: 'webhook',
+        config: {}
+      };
+    }
+    
+    if (triggerNode.type.includes('Schedule')) {
+      return {
+        type: 'schedule',
+        config: { cron: triggerNode.parameters?.rule || '0 * * * *' }
+      };
+    }
+    
+    if (triggerNode.type.includes('Webhook')) {
+      return {
+        type: 'webhook',
+        config: { path: triggerNode.parameters?.path || 'webhook' }
+      };
+    }
+    
+    return {
+      type: 'condition',
+      config: {}
+    };
+  }
+
+  /**
+   * Validate N8N configuration
+   */
+  validateConfiguration(): { valid: boolean; errors: string[] } {
+    const errors: string[] = [];
+    
+    if (!process.env.GEMINI_API_KEY) {
+      errors.push('GEMINI_API_KEY environment variable is required');
+    }
+    
+    if (!process.env.N8N_API_URL) {
+      errors.push('N8N_API_URL environment variable is required');
+    }
+    
+    if (!process.env.N8N_API_KEY) {
+      errors.push('N8N_API_KEY environment variable is required');
+    }
+    
+    if (!process.env.N8N_WEBHOOK_URL) {
+      errors.push('N8N_WEBHOOK_URL environment variable is required');
+    }
+    
+    return {
+      valid: errors.length === 0,
+      errors
+    };
+  }
+
+  /**
+   * Get service health status
+   */
+  async getHealthStatus(): Promise<{
+    status: 'healthy' | 'degraded' | 'unhealthy';
+    checks: {
+      gemini: boolean;
+      n8n: boolean;
+      mcp: boolean;
+    };
+    details: string[];
+  }> {
+    const checks = {
+      gemini: false,
+      n8n: false,
+      mcp: false
+    };
+    
+    const details: string[] = [];
+    
+    // Check Gemini
+    try {
+      await this.model.generateContent('test');
+      checks.gemini = true;
+    } catch (error) {
+      details.push(`Gemini API error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+    
+    // Check N8N
+    try {
+      const n8nApiUrl = process.env.N8N_API_URL;
+      if (n8nApiUrl) {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000);
+        
+        try {
+          const response = await fetch(`${n8nApiUrl}/api/v1/health`, { 
+            signal: controller.signal 
+          });
+          clearTimeout(timeoutId);
+          checks.n8n = response.ok;
+          if (!response.ok) {
+            details.push(`N8N health check failed: ${response.status} ${response.statusText}`);
+          }
+        } catch (fetchError) {
+          clearTimeout(timeoutId);
+          if (fetchError instanceof Error && fetchError.name === 'AbortError') {
+            details.push('N8N health check timed out after 5 seconds');
+          } else {
+            throw fetchError;
+          }
+        }
+      } else {
+        details.push('N8N_API_URL not configured');
+      }
+    } catch (error) {
+      details.push(`N8N connection error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+    
+    // Check MCP
+    try {
+      if (mcpClient) {
+        await mcpClient.initialize();
+        checks.mcp = true;
+      } else {
+        details.push('MCP client not available');
+      }
+    } catch (error) {
+      details.push(`MCP error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+    
+    const healthyChecks = Object.values(checks).filter(Boolean).length;
+    let status: 'healthy' | 'degraded' | 'unhealthy';
+    
+    if (healthyChecks === 3) {
+      status = 'healthy';
+    } else if (healthyChecks >= 1) {
+      status = 'degraded';
+    } else {
+      status = 'unhealthy';
+    }
+    
+    return { status, checks, details };
+  }
+
+  /**
+   * Get workflow execution logs
+   */
+  async getWorkflowLogs(workflowId: string, executionId?: string): Promise<any[]> {
+    try {
+      const n8nApiUrl = process.env.N8N_API_URL;
+      const n8nApiKey = process.env.N8N_API_KEY;
+      
+      if (!n8nApiUrl || !n8nApiKey) {
+        throw new Error('N8N configuration is incomplete');
+      }
+
+      let url = `${n8nApiUrl}/api/v1/workflows/${workflowId}/executions`;
+      if (executionId) {
+        url += `/${executionId}/logs`;
+      } else {
+        url += '/logs';
+      }
+
+      const response = await fetch(url, {
+        headers: {
+          'X-N8N-API-KEY': n8nApiKey,
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to get workflow logs: ${response.statusText}`);
+      }
+
+      const result = await response.json();
+      return result.data || [];
+    } catch (error) {
+      console.error('Error getting workflow logs:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Retry failed workflow execution
+   */
+  async retryWorkflowExecution(workflowId: string, executionId: string): Promise<any> {
+    try {
+      const n8nApiUrl = process.env.N8N_API_URL;
+      const n8nApiKey = process.env.N8N_API_KEY;
+      
+      if (!n8nApiUrl || !n8nApiKey) {
+        throw new Error('N8N configuration is incomplete');
+      }
+
+      const response = await fetch(`${n8nApiUrl}/api/v1/workflows/${workflowId}/executions/${executionId}/retry`, {
+        method: 'POST',
+        headers: {
+          'X-N8N-API-KEY': n8nApiKey,
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to retry workflow execution: ${response.statusText}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error retrying workflow execution:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get workflow performance metrics
+   */
+  async getWorkflowMetrics(workflowId: string, timeRange: '1h' | '24h' | '7d' | '30d' = '24h'): Promise<any> {
+    try {
+      const n8nApiUrl = process.env.N8N_API_URL;
+      const n8nApiKey = process.env.N8N_API_KEY;
+      
+      if (!n8nApiUrl || !n8nApiKey) {
+        throw new Error('N8N configuration is incomplete');
+      }
+
+      const now = new Date();
+      let startTime: Date;
+      
+      switch (timeRange) {
+        case '1h':
+          startTime = new Date(now.getTime() - 60 * 60 * 1000);
+          break;
+        case '24h':
+          startTime = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+          break;
+        case '7d':
+          startTime = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+          break;
+        case '30d':
+          startTime = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+          break;
+        default:
+          startTime = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+      }
+
+      const response = await fetch(
+        `${n8nApiUrl}/api/v1/workflows/${workflowId}/executions?since=${startTime.toISOString()}`,
+        {
+          headers: {
+            'X-N8N-API-KEY': n8nApiKey,
+          }
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`Failed to get workflow metrics: ${response.statusText}`);
+      }
+
+      const executions = await response.json();
+      const data = executions.data || [];
+      
+      // Calculate metrics
+      const totalExecutions = data.length;
+      const successfulExecutions = data.filter((e: any) => e.finished && !e.error).length;
+      const failedExecutions = data.filter((e: any) => e.finished && e.error).length;
+      const averageExecutionTime = data
+        .filter((e: any) => e.finished && e.startedAt && e.finishedAt)
+        .reduce((acc: number, e: any) => {
+          const duration = new Date(e.finishedAt).getTime() - new Date(e.startedAt).getTime();
+          return acc + duration;
+        }, 0) / Math.max(successfulExecutions, 1);
+
+      return {
+        timeRange,
+        totalExecutions,
+        successfulExecutions,
+        failedExecutions,
+        successRate: totalExecutions > 0 ? (successfulExecutions / totalExecutions) * 100 : 0,
+        averageExecutionTime: Math.round(averageExecutionTime),
+        executions: data
+      };
+    } catch (error) {
+      console.error('Error getting workflow metrics:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Create workflow backup
+   */
+  async createWorkflowBackup(workflowId: string): Promise<string> {
+    try {
+      const workflow = await this.getWorkflow(workflowId);
+      const backup = {
+        ...workflow,
+        backupCreatedAt: new Date().toISOString(),
+        backupVersion: '1.0'
+      };
+      
+      return JSON.stringify(backup, null, 2);
+    } catch (error) {
+      console.error('Error creating workflow backup:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Restore workflow from backup
+   */
+  async restoreWorkflowFromBackup(backupJson: string, newName?: string): Promise<WorkflowTemplate> {
+    try {
+      const backup = JSON.parse(backupJson);
+      
+      // Validate backup format
+      if (!backup.id || !backup.name || !backup.nodes) {
+        throw new Error('Invalid backup format');
+      }
+      
+      // Create new workflow with backup data
+      const restoredWorkflow = {
+        ...backup,
+        id: `restored_${Date.now()}`,
+        name: newName || `${backup.name} (Restored)`,
+        backupCreatedAt: undefined,
+        backupVersion: undefined
+      };
+      
+      // Validate the restored workflow
+      const validation = await this.validateWorkflow(restoredWorkflow);
+      if (!validation.valid) {
+        throw new Error(`Invalid restored workflow: ${validation.errors.join(', ')}`);
+      }
+      
+      return restoredWorkflow;
+    } catch (error) {
+      console.error('Error restoring workflow from backup:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get workflow by ID (helper method)
+   */
+  private async getWorkflow(workflowId: string): Promise<any> {
+    try {
+      const n8nApiUrl = process.env.N8N_API_URL;
+      const n8nApiKey = process.env.N8N_API_KEY;
+      
+      if (!n8nApiUrl || !n8nApiKey) {
+        throw new Error('N8N configuration is incomplete');
+      }
+
+      // Try MCP first
+      if (mcpClient) {
+        try {
+          return await mcpClient.getWorkflow(workflowId);
+        } catch (mcpError) {
+          console.warn('MCP get workflow failed, falling back to direct API:', mcpError);
+        }
+      }
+
+      // Fallback to direct API
+      const response = await fetch(`${n8nApiUrl}/api/v1/workflows/${workflowId}`, {
+        headers: {
+          'X-N8N-API-KEY': n8nApiKey,
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to get workflow: ${response.statusText}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error getting workflow:', error);
+      throw error;
+    }
+  }
 }
 
+// Export the service instance and types
 export const n8nMCPService = new N8NMCPService();
-export type { WorkflowTemplate, WorkflowNode, WorkflowConnection, WorkflowExecutionContext };
+export type { 
+  WorkflowTemplate, 
+  WorkflowNode, 
+  WorkflowConnection, 
+  WorkflowExecutionContext 
+};
+
+// Export utility functions for easier access
+export const n8nUtils = {
+  /**
+   * Quick workflow validation
+   */
+  validateWorkflow: (workflow: WorkflowTemplate) => n8nMCPService.validateWorkflow(workflow),
+  
+  /**
+   * Export workflow to JSON string
+   */
+  exportWorkflow: (workflow: WorkflowTemplate) => n8nMCPService.exportWorkflow(workflow),
+  
+  /**
+   * Import workflow from JSON string
+   */
+  importWorkflow: (jsonString: string) => n8nMCPService.importWorkflow(jsonString),
+  
+  /**
+   * Clone workflow
+   */
+  cloneWorkflow: (workflow: WorkflowTemplate, newName?: string) => n8nMCPService.cloneWorkflow(workflow, newName),
+  
+  /**
+   * Validate configuration
+   */
+  validateConfiguration: () => n8nMCPService.validateConfiguration(),
+  
+  /**
+   * Get health status
+   */
+  getHealthStatus: () => n8nMCPService.getHealthStatus()
+};
