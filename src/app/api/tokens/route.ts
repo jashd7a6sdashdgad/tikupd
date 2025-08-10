@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
+import { promises as fs } from 'fs';
+import path from 'path';
 
 interface ApiToken {
   id: string;
@@ -12,8 +14,36 @@ interface ApiToken {
   isActive: boolean;
 }
 
-// In-memory storage for tokens (in production, use a database)
-const tokens: ApiToken[] = [];
+// File path for persistent storage
+const TOKENS_FILE = path.join(process.cwd(), 'data', 'tokens.json');
+
+// Ensure data directory exists and load tokens from file
+async function ensureDataDir() {
+  const dataDir = path.dirname(TOKENS_FILE);
+  try {
+    await fs.access(dataDir);
+  } catch {
+    await fs.mkdir(dataDir, { recursive: true });
+  }
+}
+
+// Load tokens from file
+async function loadTokens(): Promise<ApiToken[]> {
+  try {
+    await ensureDataDir();
+    const data = await fs.readFile(TOKENS_FILE, 'utf-8');
+    return JSON.parse(data);
+  } catch {
+    // File doesn't exist or is invalid, return empty array
+    return [];
+  }
+}
+
+// Save tokens to file
+async function saveTokens(tokens: ApiToken[]): Promise<void> {
+  await ensureDataDir();
+  await fs.writeFile(TOKENS_FILE, JSON.stringify(tokens, null, 2));
+}
 
 // Generate a secure random token
 function generateSecureToken(): string {
@@ -23,6 +53,8 @@ function generateSecureToken(): string {
 // GET /api/tokens - List all tokens
 export async function GET() {
   try {
+    const tokens = await loadTokens();
+    
     // Return tokens without the actual token value for security
     const safeTokens = tokens.map(token => ({
       id: token.id,
@@ -51,6 +83,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Token name is required' }, { status: 400 });
     }
 
+    // Load existing tokens
+    const tokens = await loadTokens();
+    
     // Generate token
     const token = generateSecureToken();
     const id = crypto.randomUUID();
@@ -74,8 +109,9 @@ export async function POST(request: NextRequest) {
       isActive: true
     };
 
-    // Store token
+    // Add token and save to file
     tokens.push(newToken);
+    await saveTokens(tokens);
 
     // Return the token (only time it will be shown in full)
     return NextResponse.json({
@@ -108,14 +144,16 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Token ID is required' }, { status: 400 });
     }
 
+    const tokens = await loadTokens();
     const tokenIndex = tokens.findIndex(token => token.id === tokenId);
     
     if (tokenIndex === -1) {
       return NextResponse.json({ error: 'Token not found' }, { status: 404 });
     }
 
-    // Remove token
+    // Remove token and save to file
     tokens.splice(tokenIndex, 1);
+    await saveTokens(tokens);
 
     return NextResponse.json({ message: 'Token deleted successfully' });
 
@@ -137,6 +175,7 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'Token ID is required' }, { status: 400 });
     }
 
+    const tokens = await loadTokens();
     const tokenIndex = tokens.findIndex(token => token.id === tokenId);
     
     if (tokenIndex === -1) {
@@ -158,6 +197,9 @@ export async function PUT(request: NextRequest) {
       tokens[tokenIndex].isActive = isActive;
     }
 
+    // Save updated tokens to file
+    await saveTokens(tokens);
+
     return NextResponse.json({
       message: 'Token updated successfully',
       token: {
@@ -177,23 +219,5 @@ export async function PUT(request: NextRequest) {
   }
 }
 
-// Utility function to validate a token (used by other API routes)
-function validateApiToken(tokenString: string): ApiToken | null {
-  if (!tokenString || !tokenString.startsWith('mpa_')) {
-    return null;
-  }
-
-  const token = tokens.find(t => 
-    t.token === tokenString && 
-    t.isActive &&
-    (!t.expiresAt || new Date(t.expiresAt) > new Date())
-  );
-
-  if (token) {
-    // Update last used timestamp
-    token.lastUsed = new Date().toISOString();
-  }
-
-  return token || null;
-}
+// Note: validateApiToken function has been moved to src/lib/api/auth/tokenValidation.ts
 

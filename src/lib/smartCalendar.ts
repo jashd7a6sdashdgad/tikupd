@@ -146,7 +146,10 @@ export class SmartCalendarEngine {
   constructor() {
     this.preferences = this.getDefaultPreferences();
     this.initializeNLPPatterns();
-    this.loadEventsFromStorage();
+    // Only load from storage if we're in the browser
+    if (typeof window !== 'undefined') {
+      this.loadEventsFromStorage();
+    }
   }
 
   private getDefaultPreferences(): CalendarPreferences {
@@ -962,6 +965,9 @@ export class SmartCalendarEngine {
 
   private saveEventsToStorage(): void {
     try {
+      // Only save to storage if we're in the browser
+      if (typeof window === 'undefined') return;
+      
       const eventsArray = Array.from(this.events.entries()).map(([id, event]) => [
         id,
         {
@@ -979,6 +985,9 @@ export class SmartCalendarEngine {
 
   private loadEventsFromStorage(): void {
     try {
+      // Only load from storage if we're in the browser
+      if (typeof window === 'undefined') return;
+      
       const stored = localStorage.getItem('smart_calendar_events');
       if (stored) {
         const eventsArray = JSON.parse(stored);
@@ -1056,7 +1065,10 @@ export class SmartCalendarEngine {
 
   updatePreferences(updates: Partial<CalendarPreferences>): void {
     this.preferences = { ...this.preferences, ...updates };
-    localStorage.setItem('smart_calendar_preferences', JSON.stringify(this.preferences));
+    // Only save to storage if we're in the browser
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('smart_calendar_preferences', JSON.stringify(this.preferences));
+    }
   }
 }
 
