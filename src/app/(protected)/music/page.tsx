@@ -9,15 +9,18 @@ import {
   SkipBack,
   SkipForward,
   Volume2,
+  VolumeX,
   Heart,
-  Plus,
+  HeartOff,
   Search,
+  Plus,
+  MoreHorizontal,
   Music,
   Shuffle,
   Repeat,
   ExternalLink,
-  Spotify,
-  Youtube,
+  Music2,
+  Video,
   Download,
   List,
   Grid,
@@ -247,7 +250,7 @@ export default function MusicPage() {
               onClick={() => openExternalLink(currentSong.spotifyUrl!)}
               className="text-green-600"
             >
-              <Spotify className="h-4 w-4" />
+              <Music2 className="h-4 w-4" />
             </Button>
           )}
           
@@ -258,7 +261,7 @@ export default function MusicPage() {
               onClick={() => openExternalLink(currentSong.youtubeUrl!)}
               className="text-red-600"
             >
-              <Youtube className="h-4 w-4" />
+              <Video className="h-4 w-4" />
             </Button>
           )}
         </div>
@@ -308,7 +311,7 @@ export default function MusicPage() {
                 onClick={() => openExternalLink(song.spotifyUrl!)}
                 className="text-green-600"
               >
-                <Spotify className="h-4 w-4" />
+                <Music2 className="h-4 w-4" />
               </Button>
             )}
             
@@ -319,7 +322,7 @@ export default function MusicPage() {
                 onClick={() => openExternalLink(song.youtubeUrl!)}
                 className="text-red-600"
               >
-                <Youtube className="h-4 w-4" />
+                <Video className="h-4 w-4" />
               </Button>
             )}
           </div>
@@ -386,11 +389,11 @@ export default function MusicPage() {
               
               <div className="flex items-center gap-3">
                 <Button className="bg-green-600 hover:bg-green-700 text-white">
-                  <Spotify className="h-4 w-4 mr-2" />
+                  <Music2 className="h-4 w-4 mr-2" />
                   Connect Spotify
                 </Button>
                 <Button className="bg-red-600 hover:bg-red-700 text-white">
-                  <Youtube className="h-4 w-4 mr-2" />
+                  <Video className="h-4 w-4 mr-2" />
                   Connect YouTube
                 </Button>
               </div>
@@ -416,14 +419,14 @@ export default function MusicPage() {
             {/* View Toggle */}
             <div className="flex items-center gap-2">
               <Button
-                variant={currentView === 'grid' ? 'default' : 'ghost'}
+                variant={currentView === 'grid' ? 'primary' : 'ghost'}
                 size="sm"
                 onClick={() => setCurrentView('grid')}
               >
                 <Grid className="h-4 w-4" />
               </Button>
               <Button
-                variant={currentView === 'list' ? 'default' : 'ghost'}
+                variant={currentView === 'list' ? 'primary' : 'ghost'}
                 size="sm"
                 onClick={() => setCurrentView('list')}
               >

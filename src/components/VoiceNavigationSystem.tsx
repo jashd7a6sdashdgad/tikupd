@@ -60,9 +60,9 @@ export const VoiceNavigationSystem: React.FC<VoiceNavigationSystemProps> = ({
   const [isEnabled, setIsEnabled] = useState(true);
   const [showCommands, setShowCommands] = useState(false);
   
-  const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const recognitionRef = useRef<any>(null);
   const synthRef = useRef<SpeechSynthesis | null>(null);
-  const timeoutRef = useRef<NodeJS.Timeout>();
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Voice commands configuration
   const voiceCommands: VoiceCommand[] = [

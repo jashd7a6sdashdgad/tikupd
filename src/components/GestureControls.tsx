@@ -69,7 +69,7 @@ export const GestureControls: React.FC<GestureControlsProps> = ({
 
   const touchStartRef = useRef<TouchPoint | null>(null);
   const touchMoveRef = useRef<TouchPoint[]>([]);
-  const gestureTimeoutRef = useRef<NodeJS.Timeout>();
+  const gestureTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Default gesture configurations

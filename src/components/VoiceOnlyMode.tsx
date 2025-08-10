@@ -4,64 +4,16 @@ import { useEffect, useRef, useState } from 'react';
 import { useSession } from 'next-auth/react';
 
 // Add missing typings for SpeechRecognitionEvent to avoid errors
-interface SpeechRecognitionResult {
-  readonly isFinal: boolean;
-  readonly length: number;
-  item(index: number): SpeechRecognitionAlternative;
-  [index: number]: SpeechRecognitionAlternative;
-}
-interface SpeechRecognitionAlternative {
-  readonly transcript: string;
-  readonly confidence: number;
-}
-interface SpeechRecognitionResultList {
-  readonly length: number;
-  item(index: number): SpeechRecognitionResult;
-  [index: number]: SpeechRecognitionResult;
-}
-interface SpeechRecognitionEvent extends Event {
-  readonly resultIndex: number;
-  readonly results: SpeechRecognitionResultList;
-}
+// SpeechRecognition interfaces are already declared globally elsewhere
 
-declare global {
-  interface SpeechRecognition extends EventTarget {
-    lang: string;
-    continuous: boolean;
-    interimResults: boolean;
-    maxAlternatives: number;
-    onaudiostart: ((event: Event) => void) | null;
-    onaudioend: ((event: Event) => void) | null;
-    onend: ((event: Event) => void) | null;
-    onerror: ((event: any) => void) | null;
-    onnomatch: ((event: Event) => void) | null;
-    onresult: ((event: SpeechRecognitionEvent) => void) | null;
-    onsoundstart: ((event: Event) => void) | null;
-    onspeechend: ((event: Event) => void) | null;
-    onspeechstart: ((event: Event) => void) | null;
-    onstart: ((event: Event) => void) | null;
-    abort(): void;
-    start(): void;
-    stop(): void;
-  }
-
-  var SpeechRecognition: {
-    prototype: SpeechRecognition;
-    new (): SpeechRecognition;
-  };
-
-  var webkitSpeechRecognition: {
-    prototype: SpeechRecognition;
-    new (): SpeechRecognition;
-  };
-}
+// SpeechRecognition interfaces are already declared globally elsewhere
 
 export default function VoiceOnlyMode() {
   const [isListening, setIsListening] = useState(false);
   const [continuousMode, setContinuousMode] = useState(false);
   const [feedbackMode, setFeedbackMode] = useState<'text' | 'voice'>('voice');
 
-  const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const recognitionRef = useRef<any>(null);
   const { data: session } = useSession();
 
   useEffect(() => {
@@ -80,9 +32,9 @@ export default function VoiceOnlyMode() {
     recognition.interimResults = false;
     recognition.lang = 'en-US';
 
-    recognition.onresult = (event: SpeechRecognitionEvent) => {
+    recognition.onresult = (event: any) => {
       const transcript = Array.from(event.results)
-        .map(result => result[0].transcript)
+        .map((result: any) => result[0].transcript)
         .join('');
       console.log('Recognized:', transcript);
       // TODO: Process transcript here

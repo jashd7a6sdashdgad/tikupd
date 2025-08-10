@@ -21,7 +21,7 @@ export interface VoiceNavigationState {
 }
 
 class VoiceNavigationSystem {
-  private recognition: SpeechRecognition | null = null;
+  private recognition: any = null;
   private synthesis: SpeechSynthesis;
   private commands: Map<string, VoiceCommand> = new Map();
   private state: VoiceNavigationState;

@@ -1,42 +1,5 @@
 // src/lib/voiceRecognition.ts
-// Web Speech API type declarations
-declare global {
-  interface Window {
-    SpeechRecognition: typeof SpeechRecognition;
-    webkitSpeechRecognition: typeof SpeechRecognition;
-  }
-}
-
-interface SpeechRecognition extends EventTarget {
-  continuous: boolean;
-  interimResults: boolean;
-  lang: string;
-  maxAlternatives: number;
-  start(): void;
-  stop(): void;
-  abort(): void;
-  onresult: ((this: SpeechRecognition, ev: SpeechRecognitionEvent) => any) | null;
-  onerror: ((this: SpeechRecognition, ev: SpeechRecognitionErrorEvent) => any) | null;
-  onstart: ((this: SpeechRecognition, ev: Event) => any) | null;
-  onend: ((this: SpeechRecognition, ev: Event) => any) | null;
-  onspeechstart: ((this: SpeechRecognition, ev: Event) => any) | null;
-  onspeechend: ((this: SpeechRecognition, ev: Event) => any) | null;
-}
-
-interface SpeechRecognitionEvent extends Event {
-  results: SpeechRecognitionResultList;
-  resultIndex: number;
-}
-
-interface SpeechRecognitionErrorEvent extends Event {
-  error: string;
-  message?: string;
-}
-
-declare const SpeechRecognition: {
-  prototype: SpeechRecognition;
-  new(): SpeechRecognition;
-};
+// Web Speech API type declarations - using any types to avoid conflicts
 
 export interface VoiceRecognitionConfig {
   language: string;
@@ -64,7 +27,7 @@ export interface VoiceRecognitionCallbacks {
 // Export the class directly without creating a singleton instance.
 // This allows the consuming hook (useVoiceInput) to instantiate it only on the client.
 export class VoiceRecognition {
-  private recognition: SpeechRecognition | null = null;
+  private recognition: any = null;
   private isListening: boolean = false;
   private isSupported: boolean = false;
   private config: VoiceRecognitionConfig;
@@ -135,7 +98,7 @@ export class VoiceRecognition {
       this.callbacks.onSpeechEnd?.();
     };
 
-    this.recognition.onresult = (event: SpeechRecognitionEvent) => {
+    this.recognition.onresult = (event: any) => {
       let transcript = '';
       let confidence = 0;
       let isInterim = false;
@@ -165,7 +128,7 @@ export class VoiceRecognition {
       }
     };
 
-    this.recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
+    this.recognition.onerror = (event: any) => {
       let errorMessage = 'Speech recognition error occurred';
       
       switch (event.error) {
