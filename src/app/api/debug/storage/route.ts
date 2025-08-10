@@ -23,7 +23,6 @@ export async function GET() {
       VERCEL_URL: process.env.VERCEL_URL ? 'set' : 'not set',
       VERCEL: process.env.VERCEL ? 'set' : 'not set',
       VERCEL_ENV: process.env.VERCEL_ENV,
-      NEXT_INC_CACHE_R2_BUCKET: process.env.NEXT_INC_CACHE_R2_BUCKET ? 'set' : 'not set',
       hasProcess: typeof process !== 'undefined',
       hasEnv: typeof process !== 'undefined' && !!process.env,
       cwd: typeof process !== 'undefined' ? process.cwd() : 'not available'
@@ -55,7 +54,7 @@ function getRecommendations(storageInfo: any, envInfo: any): string[] {
   const recommendations: string[] = [];
 
   if (storageInfo.vercelDetected && storageInfo.type.includes('InMemory')) {
-    recommendations.push('Vercel detected but using in-memory storage. Consider setting up Cloudflare R2 for persistence.');
+    recommendations.push('Vercel detected but using in-memory storage. Consider setting up GitHub Gist or Vercel Blob for persistence.');
   }
 
   if (storageInfo.type.includes('fallback')) {

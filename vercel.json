@@ -3,8 +3,5 @@
     "src/app/api/tokens/route.ts": {
       "maxDuration": 30
     }
-  },
-  "env": {
-    "NEXT_INC_CACHE_R2_BUCKET": "@mahboob-personal-assistant-r2"
   }
 } 
