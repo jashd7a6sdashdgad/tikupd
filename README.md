@@ -79,6 +79,7 @@ A truly intelligent personal assistant application built with Next.js 15, featur
 - Node.js 18+ and npm
 - Google Cloud Platform account
 - Google Sheets created for data storage
+- Vercel account (for token persistence in production)
 
 ### Installation
 
@@ -117,6 +118,9 @@ EXPENSES_SHEET_ID=your-expenses-sheet-id
 CONTACTS_SHEET_ID=your-contacts-sheet-id
 HOTEL_EXPENSES_SHEET_ID=your-hotel-expenses-sheet-id
 DIARY_SHEET_ID=your-diary-sheet-id
+
+# Token Storage (Vercel Blob - FREE)
+BLOB_READ_WRITE_TOKEN=your-vercel-blob-token
 
 # Optional integrations
 N8N_WEBHOOK_URL=https://n8n.srv903406.hstgr.cloud/webhook/990e6a3a-6881-4ae3-a345-5d5ef28f5f58
@@ -172,7 +176,51 @@ FIRECRAWL_API_KEY=your-firecrawl-api-key
    
    Copy each sheet ID from the URL and add to `.env.local`
 
-6. **Run the development server:**
+6. **Set up Vercel Blob Storage (for token persistence):**
+
+   **Option A: Using the setup script:**
+   ```bash
+   ./setup-vercel-blob.sh
+   ```
+
+   **Option B: Manual setup:**
+   
+   **Step 1: Create Blob Storage in Vercel Dashboard:**
+   1. Go to [Vercel Dashboard](https://vercel.com/dashboard)
+   2. Select your project
+   3. Navigate to the "Storage" tab
+   4. Click "Create Database"
+   5. Select "Blob" storage type
+   6. Name it `tokens-storage`
+   7. Click "Create"
+   8. Copy the `BLOB_READ_WRITE_TOKEN` from the connection details
+
+   **Alternative: Use Vercel CLI:**
+   ```bash
+   # Create blob store via CLI (interactive)
+   vercel blob store
+   ```
+
+   **Step 2: Add Environment Variable:**
+   ```bash
+   # Add the token via CLI:
+   vercel env add BLOB_READ_WRITE_TOKEN
+
+   # Or add manually in Vercel dashboard:
+   # 1. Go to project settings
+   # 2. Environment Variables
+   # 3. Add BLOB_READ_WRITE_TOKEN with the token value
+   # 4. Set for all environments (Development, Preview, Production)
+   ```
+
+   **Testing your setup:**
+   ```bash
+   # After deployment, test the storage:
+   curl https://your-app.vercel.app/api/test-blob
+   curl https://your-app.vercel.app/api/debug/storage-status
+   ```
+
+7. **Run the development server:**
 ```bash
 npm run dev
 ```
@@ -306,6 +354,37 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - Web Speech API for voice functionality
 - Tailwind CSS for styling
 - Icons by Lucide React
+
+## 🛠️ Troubleshooting
+
+### Token Persistence Issues
+If tokens disappear after refresh on Vercel:
+
+1. **Check Blob Storage Setup:**
+   ```bash
+   # Test blob storage
+   curl https://your-app.vercel.app/api/test-blob
+   ```
+
+2. **Verify Environment Variables:**
+   - Ensure `BLOB_READ_WRITE_TOKEN` is set in Vercel dashboard
+   - Check all environments (Development, Preview, Production)
+
+3. **Debug Storage Status:**
+   ```bash
+   # Check storage type being used
+   curl https://your-app.vercel.app/api/debug/storage-status
+   ```
+
+4. **Common Solutions:**
+   - Redeploy after adding environment variables
+   - Clear browser cache and cookies
+   - Check Vercel function logs for errors
+
+### Google API Issues
+- Verify all required APIs are enabled in Google Cloud Console
+- Check OAuth redirect URIs match exactly
+- Ensure Google Sheets have the correct column headers
 
 ## 🆘 Support
 

@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { ModernCard } from '@/components/ui/ModernCard';
 import { Button } from '@/components/ui/button';
+import { MusicPlayer } from '@/components/MusicPlayer';
 import {
   Play,
   Pause,
@@ -42,14 +43,17 @@ interface Song {
   id: string;
   title: string;
   artist: string;
+  artists: string[];
   album: string;
-  duration: string;
+  duration: number;
   imageUrl: string;
   spotifyUrl?: string;
   youtubeUrl?: string;
+  previewUrl?: string;
   isLiked: boolean;
   genre: string;
   year: number;
+  platform: 'spotify' | 'youtube' | 'local';
 }
 
 interface Playlist {
@@ -76,6 +80,11 @@ export default function MusicPage() {
   const [isShuffled, setIsShuffled] = useState(false);
   const [repeatMode, setRepeatMode] = useState<'off' | 'one' | 'all'>('off');
   const [volume, setVolume] = useState(75);
+  const [isLoading, setIsLoading] = useState(false);
+  const [searchResults, setSearchResults] = useState<Song[]>([]);
+  const [userLibrary, setUserLibrary] = useState<Song[]>([]);
+  const [currentPlaylist, setCurrentPlaylist] = useState<Song[]>([]);
+  const [error, setError] = useState<string | null>(null);
 
   // Sample data
   const sampleSongs: Song[] = [
@@ -83,40 +92,46 @@ export default function MusicPage() {
       id: '1',
       title: 'Bohemian Rhapsody',
       artist: 'Queen',
+      artists: ['Queen'],
       album: 'A Night at the Opera',
-      duration: '5:55',
+      duration: 355000,
       imageUrl: '/api/placeholder/300/300',
       spotifyUrl: 'https://open.spotify.com/track/7tFiyTwD0nx5a1eklYtX2J',
       youtubeUrl: 'https://www.youtube.com/watch?v=fJ9rUzIMcZQ',
       isLiked: true,
       genre: 'Rock',
-      year: 1975
+      year: 1975,
+      platform: 'spotify'
     },
     {
       id: '2',
       title: 'Blinding Lights',
       artist: 'The Weeknd',
+      artists: ['The Weeknd'],
       album: 'After Hours',
-      duration: '3:20',
+      duration: 200000,
       imageUrl: '/api/placeholder/300/300',
       spotifyUrl: 'https://open.spotify.com/track/0VjIjW4GlUKNGf0rE8vstt',
       youtubeUrl: 'https://www.youtube.com/watch?v=4NRXx6U8ABQ',
       isLiked: false,
       genre: 'Pop',
-      year: 2019
+      year: 2019,
+      platform: 'spotify'
     },
     {
       id: '3',
       title: 'Hotel California',
       artist: 'Eagles',
+      artists: ['Eagles'],
       album: 'Hotel California',
-      duration: '6:30',
+      duration: 390000,
       imageUrl: '/api/placeholder/300/300',
       spotifyUrl: 'https://open.spotify.com/track/40riOy7x9W7GXjyGp4pjAv',
       youtubeUrl: 'https://www.youtube.com/watch?v=09839DpTctU',
       isLiked: true,
       genre: 'Rock',
-      year: 1976
+      year: 1976,
+      platform: 'spotify'
     }
   ];
 
@@ -142,132 +157,223 @@ export default function MusicPage() {
   ];
 
   useEffect(() => {
-    setAllSongs(sampleSongs);
-    setPlaylists(samplePlaylists);
+    loadUserData();
   }, []);
 
-  const filteredSongs = allSongs.filter(song =>
+  const loadUserData = async () => {
+    try {
+      setIsLoading(true);
+      
+      // Load user library
+      const libraryResponse = await fetch('/api/music/library?action=get_all');
+      if (libraryResponse.ok) {
+        const libraryData = await libraryResponse.json();
+        setUserLibrary(libraryData.data.songs || []);
+        setAllSongs(libraryData.data.songs || []);
+      }
+      
+      // Load user playlists
+      const playlistsResponse = await fetch('/api/music/playlists');
+      if (playlistsResponse.ok) {
+        const playlistsData = await playlistsResponse.json();
+        setPlaylists(playlistsData.data.playlists || []);
+      }
+      
+      // If no songs in library, show sample songs
+      if (allSongs.length === 0) {
+        setAllSongs(sampleSongs);
+      }
+      
+    } catch (error) {
+      console.error('Error loading user data:', error);
+      // Fallback to sample data
+      setAllSongs(sampleSongs);
+      setPlaylists(samplePlaylists);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const displayedSongs = searchQuery && searchResults.length > 0 ? searchResults : allSongs;
+  const filteredSongs = displayedSongs.filter(song =>
+    !searchQuery || 
     song.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
     song.artist.toLowerCase().includes(searchQuery.toLowerCase()) ||
     song.album.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const togglePlayPause = (song?: Song) => {
+  // Debounce search
+  useEffect(() => {
+    if (searchQuery.trim()) {
+      const timeoutId = setTimeout(() => {
+        searchMusic(searchQuery);
+      }, 500);
+      return () => clearTimeout(timeoutId);
+    } else {
+      setSearchResults([]);
+    }
+  }, [searchQuery]);
+
+  const togglePlayPause = useCallback((song?: Song) => {
     if (song && song.id !== currentSong?.id) {
       setCurrentSong(song);
+      setCurrentPlaylist(searchResults.length > 0 ? searchResults : allSongs);
       setIsPlaying(true);
+      
+      // Increment play count in library
+      incrementPlayCount(song.id);
     } else {
       setIsPlaying(!isPlaying);
     }
-  };
+  }, [currentSong, searchResults, allSongs]);
 
-  const toggleLike = (songId: string) => {
-    setAllSongs(prev => prev.map(song =>
-      song.id === songId ? { ...song, isLiked: !song.isLiked } : song
-    ));
-  };
+  const toggleLike = useCallback(async (songId: string) => {
+    try {
+      const response = await fetch('/api/music/library', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'toggle_like',
+          songId
+        })
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        const updatedSong = data.data.song;
+        
+        // Update local state
+        setAllSongs(prev => prev.map(song =>
+          song.id === songId ? { ...song, isLiked: updatedSong.isLiked } : song
+        ));
+        setUserLibrary(prev => prev.map(song =>
+          song.id === songId ? { ...song, isLiked: updatedSong.isLiked } : song
+        ));
+        setSearchResults(prev => prev.map(song =>
+          song.id === songId ? { ...song, isLiked: updatedSong.isLiked } : song
+        ));
+        
+        if (currentSong?.id === songId) {
+          setCurrentSong(prev => prev ? { ...prev, isLiked: updatedSong.isLiked } : null);
+        }
+      }
+    } catch (error) {
+      console.error('Error toggling like:', error);
+      setError('Failed to update like status');
+    }
+  }, [currentSong]);
 
-  const openExternalLink = (url: string) => {
+  const openExternalLink = useCallback((url: string) => {
     window.open(url, '_blank');
-  };
+  }, []);
 
-  const formatDuration = (duration: string) => {
-    return duration;
-  };
+  const searchMusic = useCallback(async (query: string) => {
+    if (!query.trim()) {
+      setSearchResults([]);
+      return;
+    }
+    
+    try {
+      setIsLoading(true);
+      setError(null);
+      
+      const response = await fetch('/api/music', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'search',
+          query,
+          platform: 'both',
+          limit: 20
+        })
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setSearchResults(data.data.tracks || []);
+      } else {
+        setError('Search failed. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error searching music:', error);
+      setError('Search failed. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
 
-  const PlayerControls = () => (
-    <ModernCard className="fixed bottom-4 left-4 right-4 lg:left-80 z-40 p-4" blur="xl" gradient="none">
-      <div className="flex items-center gap-4">
-        {/* Song Info */}
-        <div className="flex items-center gap-3 flex-1 min-w-0">
-          <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center flex-shrink-0">
-            <Music className="h-6 w-6 text-white" />
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="text-sm font-medium text-gray-900 truncate">
-              {currentSong?.title || 'No song selected'}
-            </p>
-            <p className="text-xs text-gray-500 truncate">
-              {currentSong?.artist || 'Select a song to play'}
-            </p>
-          </div>
-        </div>
+  const addToLibrary = useCallback(async (song: Song) => {
+    try {
+      const response = await fetch('/api/music/library', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'add',
+          song
+        })
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.data.isNew) {
+          setUserLibrary(prev => [data.data.song, ...prev]);
+          setAllSongs(prev => [data.data.song, ...prev]);
+        }
+      }
+    } catch (error) {
+      console.error('Error adding to library:', error);
+      setError('Failed to add song to library');
+    }
+  }, []);
 
-        {/* Controls */}
-        <div className="flex items-center gap-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setIsShuffled(!isShuffled)}
-            className={isShuffled ? 'text-blue-600' : 'text-gray-600'}
-          >
-            <Shuffle className="h-4 w-4" />
-          </Button>
-          
-          <Button variant="ghost" size="sm">
-            <SkipBack className="h-4 w-4" />
-          </Button>
-          
-          <Button
-            onClick={() => togglePlayPause()}
-            className="bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white rounded-full w-10 h-10 p-0"
-          >
-            {isPlaying ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
-          </Button>
-          
-          <Button variant="ghost" size="sm">
-            <SkipForward className="h-4 w-4" />
-          </Button>
-          
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setRepeatMode(
-              repeatMode === 'off' ? 'all' : repeatMode === 'all' ? 'one' : 'off'
-            )}
-            className={repeatMode !== 'off' ? 'text-blue-600' : 'text-gray-600'}
-          >
-            <Repeat className="h-4 w-4" />
-          </Button>
-        </div>
+  const incrementPlayCount = useCallback(async (songId: string) => {
+    try {
+      await fetch('/api/music/library', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'increment_play',
+          songId
+        })
+      });
+    } catch (error) {
+      console.error('Error incrementing play count:', error);
+    }
+  }, []);
 
-        {/* Volume & External Links */}
-        <div className="hidden lg:flex items-center gap-2">
-          <Volume2 className="h-4 w-4 text-gray-600" />
-          <input
-            type="range"
-            min="0"
-            max="100"
-            value={volume}
-            onChange={(e) => setVolume(parseInt(e.target.value))}
-            className="w-20"
-          />
-          
-          {currentSong?.spotifyUrl && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => openExternalLink(currentSong.spotifyUrl!)}
-              className="text-green-600"
-            >
-              <Music2 className="h-4 w-4" />
-            </Button>
-          )}
-          
-          {currentSong?.youtubeUrl && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => openExternalLink(currentSong.youtubeUrl!)}
-              className="text-red-600"
-            >
-              <Video className="h-4 w-4" />
-            </Button>
-          )}
-        </div>
-      </div>
-    </ModernCard>
-  );
+  const playNext = useCallback(() => {
+    if (!currentPlaylist.length || !currentSong) return;
+    
+    const currentIndex = currentPlaylist.findIndex(song => song.id === currentSong.id);
+    let nextIndex;
+    
+    if (isShuffled) {
+      nextIndex = Math.floor(Math.random() * currentPlaylist.length);
+    } else {
+      nextIndex = (currentIndex + 1) % currentPlaylist.length;
+    }
+    
+    const nextSong = currentPlaylist[nextIndex];
+    setCurrentSong(nextSong);
+    incrementPlayCount(nextSong.id);
+  }, [currentPlaylist, currentSong, isShuffled]);
+
+  const playPrevious = useCallback(() => {
+    if (!currentPlaylist.length || !currentSong) return;
+    
+    const currentIndex = currentPlaylist.findIndex(song => song.id === currentSong.id);
+    let prevIndex;
+    
+    if (isShuffled) {
+      prevIndex = Math.floor(Math.random() * currentPlaylist.length);
+    } else {
+      prevIndex = currentIndex > 0 ? currentIndex - 1 : currentPlaylist.length - 1;
+    }
+    
+    const prevSong = currentPlaylist[prevIndex];
+    setCurrentSong(prevSong);
+    incrementPlayCount(prevSong.id);
+  }, [currentPlaylist, currentSong, isShuffled]);
 
   const SongCard = ({ song }: { song: Song }) => (
     <ModernCard className="group hover:shadow-lg transition-all duration-300" gradient="none" blur="lg">
@@ -293,7 +399,7 @@ export default function MusicPage() {
         <p className="text-xs text-gray-500 truncate mb-3">{song.album} • {song.year}</p>
         
         <div className="flex items-center justify-between">
-          <span className="text-xs text-gray-500">{song.duration}</span>
+          <span className="text-xs text-gray-500">{Math.floor(song.duration / 60000)}:{Math.floor((song.duration % 60000) / 1000).toString().padStart(2, '0')}</span>
           <div className="flex items-center gap-1">
             <Button
               variant="ghost"
@@ -372,7 +478,7 @@ export default function MusicPage() {
                     Music & Playlist Library
                   </h1>
                   <p className="text-gray-600 font-medium mt-2 text-lg">
-                    Store your favorite playlists and songs
+                    Search, discover, and organize your music
                   </p>
                   <div className="flex items-center gap-4 mt-4">
                     <div className="flex items-center gap-2">
@@ -413,7 +519,13 @@ export default function MusicPage() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-10 pr-4 py-2 bg-white/50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                disabled={isLoading}
               />
+              {isLoading && (
+                <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                </div>
+              )}
             </div>
             
             {/* View Toggle */}
@@ -458,20 +570,89 @@ export default function MusicPage() {
           </div>
         </ModernCard>
 
+        {/* Error Message */}
+        {error && (
+          <ModernCard gradient="none" blur="lg" className="p-4 bg-red-50 border border-red-200">
+            <p className="text-red-600">{error}</p>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="mt-2"
+              onClick={() => setError(null)}
+            >
+              Dismiss
+            </Button>
+          </ModernCard>
+        )}
+
+        {/* Loading State */}
+        {isLoading && (
+          <ModernCard gradient="none" blur="lg" className="p-12 text-center">
+            <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">Loading...</h3>
+            <p className="text-gray-500">Please wait while we fetch your music</p>
+          </ModernCard>
+        )}
+
         {/* Content */}
-        {activeTab === 'library' && (
-          <div className={`grid gap-6 ${
-            currentView === 'grid' 
-              ? 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5' 
-              : 'grid-cols-1'
-          }`}>
-            {filteredSongs.map((song) => (
-              <SongCard key={song.id} song={song} />
-            ))}
+        {!isLoading && activeTab === 'library' && (
+          <div>
+            {searchQuery && searchResults.length > 0 && (
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                  Search Results ({searchResults.length})
+                </h3>
+                <div className="grid gap-4 grid-cols-1">
+                  {searchResults.map((song) => (
+                    <div key={`${song.platform}-${song.id}`} className="flex items-center gap-4 p-4 bg-white rounded-lg border">
+                      <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <Music className="h-6 w-6 text-white" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-medium text-gray-900 truncate">{song.title}</h4>
+                        <p className="text-sm text-gray-600 truncate">{song.artist}</p>
+                        <p className="text-xs text-gray-500 truncate">{song.album} • {song.platform}</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => addToLibrary(song)}
+                        >
+                          <Plus className="h-4 w-4 mr-1" />
+                          Add
+                        </Button>
+                        <Button
+                          onClick={() => togglePlayPause(song)}
+                          size="sm"
+                          className="bg-blue-600 hover:bg-blue-700 text-white"
+                        >
+                          {currentSong?.id === song.id && isPlaying ? (
+                            <Pause className="h-4 w-4" />
+                          ) : (
+                            <Play className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            
+            <div className={`grid gap-6 ${
+              currentView === 'grid' 
+                ? 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5' 
+                : 'grid-cols-1'
+            }`}>
+              {filteredSongs.map((song) => (
+                <SongCard key={song.id} song={song} />
+              ))}
+            </div>
           </div>
         )}
 
-        {activeTab === 'playlists' && (
+        {activeTab === 'playlists' && !isLoading && (
           <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {playlists.map((playlist) => (
               <PlaylistCard key={playlist.id} playlist={playlist} />
@@ -491,7 +672,7 @@ export default function MusicPage() {
           </div>
         )}
 
-        {activeTab === 'discover' && (
+        {activeTab === 'discover' && !isLoading && (
           <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
             <ModernCard gradient="orange" blur="lg" className="p-6">
               <div className="flex items-center gap-4">
@@ -525,7 +706,7 @@ export default function MusicPage() {
           </div>
         )}
 
-        {filteredSongs.length === 0 && searchQuery && (
+        {filteredSongs.length === 0 && searchQuery && !isLoading && (
           <ModernCard gradient="none" blur="lg" className="p-12 text-center">
             <Search className="h-16 w-16 text-gray-300 mx-auto mb-4" />
             <h3 className="text-lg font-medium text-gray-900 mb-2">No songs found</h3>
@@ -534,8 +715,30 @@ export default function MusicPage() {
         )}
       </div>
 
-      {/* Player Controls */}
-      <PlayerControls />
+      {/* Music Player */}
+      {currentSong && (
+        <div className="fixed bottom-4 left-4 right-4 lg:left-80 z-40">
+          <MusicPlayer
+            currentSong={currentSong}
+            playlist={currentPlaylist}
+            isPlaying={isPlaying}
+            volume={volume}
+            isShuffled={isShuffled}
+            repeatMode={repeatMode}
+            onPlay={() => setIsPlaying(true)}
+            onPause={() => setIsPlaying(false)}
+            onNext={playNext}
+            onPrevious={playPrevious}
+            onVolumeChange={setVolume}
+            onToggleShuffle={() => setIsShuffled(!isShuffled)}
+            onToggleRepeat={() => setRepeatMode(
+              repeatMode === 'off' ? 'all' : repeatMode === 'all' ? 'one' : 'off'
+            )}
+            onToggleLike={toggleLike}
+            onAddToPlaylist={(song) => console.log('Add to playlist:', song)}
+          />
+        </div>
+      )}
     </div>
   );
 }

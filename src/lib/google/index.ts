@@ -2,12 +2,12 @@
 const globalFetch = typeof fetch !== 'undefined' ? fetch : globalThis.fetch;
 
 // Google OAuth configuration
-const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
+const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
-const REDIRECT_URI = `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/google/callback`;
+const REDIRECT_URI = `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/google/callback`;
 
-if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET) {
-  console.error('❌ Missing Google OAuth credentials. Please set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET in your environment variables.');
+if (!GOOGLE_CLIENT_ID) {
+  console.error('❌ Missing Google OAuth credentials. Please set NEXT_PUBLIC_GOOGLE_CLIENT_ID in your environment variables.');
 }
 
 // Generate Google OAuth authorization URL

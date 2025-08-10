@@ -18,19 +18,87 @@ import {
   BarChart3,
   Settings,
   Globe,
-  Smartphone
+  Smartphone,
+  Loader2,
+  RefreshCw
 } from 'lucide-react';
+
+interface SocialMediaStats {
+  facebookFollowers: number;
+  instagramFollowers: number;
+  monthlyWebsiteViews: number;
+  engagementRate: number;
+  isLoading: boolean;
+  error: string | null;
+}
 
 export default function SocialMediaPage() {
   const { language } = useSettings();
   const t = useTranslation(language);
   const [activeTab, setActiveTab] = useState<'overview' | 'widgets' | 'analytics' | 'profiles' | 'login'>('overview');
   const [showMessenger, setShowMessenger] = useState(true);
+  const [stats, setStats] = useState<SocialMediaStats>({
+    facebookFollowers: 0,
+    instagramFollowers: 0,
+    monthlyWebsiteViews: 0,
+    engagementRate: 0,
+    isLoading: true,
+    error: null
+  });
 
   useEffect(() => {
     // Set page title
     document.title = 'Social Media Integration - Mahboob Personal Assistant';
+    // Fetch real social media stats
+    fetchSocialMediaStats();
   }, []);
+
+  const fetchSocialMediaStats = async () => {
+    setStats(prev => ({ ...prev, isLoading: true, error: null }));
+    
+    try {
+      // Fetch Facebook page stats
+      const facebookResponse = await fetch('/api/facebook?action=page_info');
+      const facebookData = await facebookResponse.json();
+      
+      // Fetch Instagram stats (if available)
+      const instagramResponse = await fetch('/api/social/instagram?action=stats');
+      const instagramData = await instagramResponse.json();
+      
+      // Fetch website analytics (if available)
+      const analyticsResponse = await fetch('/api/analytics/overview');
+      const analyticsData = await analyticsResponse.json();
+      
+      // Fetch N8N integration stats
+      const n8nResponse = await fetch('/api/n8n/stats');
+      const n8nData = await n8nResponse.json();
+
+      setStats({
+        facebookFollowers: facebookData.success ? facebookData.data?.followers_count || 0 : 0,
+        instagramFollowers: instagramData.success ? instagramData.data?.followers_count || 0 : 0,
+        monthlyWebsiteViews: analyticsData.success ? analyticsData.data?.monthlyViews || 0 : 0,
+        engagementRate: facebookData.success ? facebookData.data?.engagement_rate || 0 : 0,
+        isLoading: false,
+        error: null
+      });
+    } catch (error) {
+      console.error('Error fetching social media stats:', error);
+      setStats(prev => ({
+        ...prev,
+        isLoading: false,
+        error: 'Failed to load social media stats'
+      }));
+    }
+  };
+
+  const formatNumber = (num: number): string => {
+    if (num >= 1000000) {
+      return (num / 1000000).toFixed(1) + 'M';
+    } else if (num >= 1000) {
+      return (num / 1000).toFixed(1) + 'K';
+    }
+    return num.toString();
+  };
 
   const tabs = [
     { id: 'overview', label: 'Overview', icon: BarChart3 },
@@ -197,27 +265,64 @@ export default function SocialMediaPage() {
               </Card>
             </div>
 
-            {/* Quick Stats */}
+            {/* Real Social Media Stats */}
             <Card>
               <CardHeader>
-                <CardTitle className="text-black">Social Media Quick Stats</CardTitle>
+                <CardTitle className="flex items-center justify-between text-black">
+                  <span>Social Media Quick Stats</span>
+                  <Button
+                    onClick={fetchSocialMediaStats}
+                    disabled={stats.isLoading}
+                    size="sm"
+                    variant="outline"
+                    className="flex items-center gap-2"
+                  >
+                    {stats.isLoading ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <RefreshCw className="h-4 w-4" />
+                    )}
+                    Refresh
+                  </Button>
+                </CardTitle>
               </CardHeader>
               <CardContent>
+                {stats.error && (
+                  <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                    <p className="text-sm text-red-600">{stats.error}</p>
+                  </div>
+                )}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <div className="text-center p-4 bg-blue-50 rounded-lg">
-                    <p className="text-2xl font-bold text-blue-600">1.2K</p>
+                    {stats.isLoading ? (
+                      <Loader2 className="h-8 w-8 mx-auto mb-2 text-blue-600 animate-spin" />
+                    ) : (
+                      <p className="text-2xl font-bold text-blue-600">{formatNumber(stats.facebookFollowers)}</p>
+                    )}
                     <p className="text-sm text-black">Facebook Followers</p>
                   </div>
                   <div className="text-center p-4 bg-pink-50 rounded-lg">
-                    <p className="text-2xl font-bold text-pink-600">890</p>
+                    {stats.isLoading ? (
+                      <Loader2 className="h-8 w-8 mx-auto mb-2 text-pink-600 animate-spin" />
+                    ) : (
+                      <p className="text-2xl font-bold text-pink-600">{formatNumber(stats.instagramFollowers)}</p>
+                    )}
                     <p className="text-sm text-black">Instagram Followers</p>
                   </div>
                   <div className="text-center p-4 bg-green-50 rounded-lg">
-                    <p className="text-2xl font-bold text-green-600">15.4K</p>
+                    {stats.isLoading ? (
+                      <Loader2 className="h-8 w-8 mx-auto mb-2 text-green-600 animate-spin" />
+                    ) : (
+                      <p className="text-2xl font-bold text-green-600">{formatNumber(stats.monthlyWebsiteViews)}</p>
+                    )}
                     <p className="text-sm text-black">Monthly Website Views</p>
                   </div>
                   <div className="text-center p-4 bg-purple-50 rounded-lg">
-                    <p className="text-2xl font-bold text-purple-600">8.2%</p>
+                    {stats.isLoading ? (
+                      <Loader2 className="h-8 w-8 mx-auto mb-2 text-purple-600 animate-spin" />
+                    ) : (
+                      <p className="text-2xl font-bold text-purple-600">{stats.engagementRate.toFixed(1)}%</p>
+                    )}
                     <p className="text-sm text-black">Avg. Engagement Rate</p>
                   </div>
                 </div>

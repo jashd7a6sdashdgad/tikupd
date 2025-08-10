@@ -61,10 +61,10 @@ export class SocialAuthManager {
     }
 
     // Google (for additional social features)
-    if (process.env.GOOGLE_CLIENT_ID) {
+    if (process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID) {
       this.providers.set('google', {
         name: 'Google',
-        clientId: process.env.GOOGLE_CLIENT_ID,
+        clientId: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID,
         redirectUri: `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/auth/google/callback`,
         scopes: [
           'https://www.googleapis.com/auth/userinfo.email',

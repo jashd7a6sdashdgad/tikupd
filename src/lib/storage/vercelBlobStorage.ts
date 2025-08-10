@@ -17,30 +17,39 @@ export class VercelBlobTokenStorage implements TokenStorage {
     try {
       console.log('VercelBlobTokenStorage: Loading tokens...');
       
-      // Check if blob exists
+      if (!process.env.BLOB_READ_WRITE_TOKEN) {
+        console.error('VercelBlobTokenStorage: BLOB_READ_WRITE_TOKEN not found');
+        return [];
+      }
+      
+      // Check if blob exists and get its URL
+      let blobUrl: string;
       try {
         const headResult = await head(this.fileName);
         console.log('VercelBlobTokenStorage: Blob exists, size:', headResult.size);
+        blobUrl = headResult.url;
       } catch (error) {
         console.log('VercelBlobTokenStorage: Blob does not exist, returning empty array');
         return [];
       }
 
-      // Fetch blob content
-      const response = await fetch(`https://blob.vercel-storage.com/${this.fileName}`, {
-        headers: {
-          'Authorization': `Bearer ${process.env.BLOB_READ_WRITE_TOKEN}`,
-        },
-      });
+      // Fetch blob content using the actual blob URL
+      const response = await fetch(blobUrl);
 
       if (!response.ok) {
-        console.warn('VercelBlobTokenStorage: Failed to fetch blob content');
+        console.warn('VercelBlobTokenStorage: Failed to fetch blob content, status:', response.status);
         return [];
       }
 
       const data = await response.text();
+      
+      if (!data.trim()) {
+        console.log('VercelBlobTokenStorage: Empty blob content, returning empty array');
+        return [];
+      }
+      
       const tokens = JSON.parse(data);
-      const validTokens = this.validateTokens(tokens);
+      const validTokens = this.validateTokens(Array.isArray(tokens) ? tokens : []);
       
       console.log(`VercelBlobTokenStorage: Successfully loaded ${validTokens.length} tokens`);
       return validTokens;

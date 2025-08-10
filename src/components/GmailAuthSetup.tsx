@@ -41,10 +41,10 @@ export default function GmailAuthSetup({ onAuthSuccess, onAuthError }: GmailAuth
   const [showSecrets, setShowSecrets] = useState(false);
   const [error, setError] = useState('');
 
-  // OAuth configuration
+  // OAuth configuration - client secret should not be exposed to client
   const OAUTH_CONFIG = {
     clientId: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '',
-    redirectUri: process.env.NEXT_PUBLIC_GOOGLE_REDIRECT_URI || 'http://localhost:3000/auth/callback',
+    redirectUri: process.env.NEXT_PUBLIC_BASE_URL ? `${process.env.NEXT_PUBLIC_BASE_URL}/api/auth/google` : 'http://localhost:3000/api/auth/google',
     scope: 'https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/gmail.send https://www.googleapis.com/auth/gmail.modify',
     responseType: 'code',
     accessType: 'offline',
@@ -67,7 +67,7 @@ export default function GmailAuthSetup({ onAuthSuccess, onAuthError }: GmailAuth
     setStep('authorize');
   }, []);
 
-  // Exchange auth code for tokens
+  // Exchange auth code for tokens via server-side API
   const exchangeAuthCode = async () => {
     if (!authCode.trim()) {
       setError('Please enter the authorization code');
@@ -78,17 +78,15 @@ export default function GmailAuthSetup({ onAuthSuccess, onAuthError }: GmailAuth
     setError('');
 
     try {
-      const response = await fetch('https://oauth2.googleapis.com/token', {
+      // Use server-side API to exchange code for tokens (keeps client secret secure)
+      const response = await fetch('/api/auth/google/exchange', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
+          'Content-Type': 'application/json',
         },
-        body: new URLSearchParams({
-          grant_type: 'authorization_code',
-          client_id: OAUTH_CONFIG.clientId,
-          client_secret: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_SECRET || '',
-          redirect_uri: OAUTH_CONFIG.redirectUri,
+        body: JSON.stringify({
           code: authCode,
+          redirectUri: OAUTH_CONFIG.redirectUri,
         }),
       });
 
@@ -102,7 +100,7 @@ export default function GmailAuthSetup({ onAuthSuccess, onAuthError }: GmailAuth
         accessToken: tokens.access_token,
         refreshToken: tokens.refresh_token,
         clientId: OAUTH_CONFIG.clientId,
-        clientSecret: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_SECRET
+        clientSecret: '' // Not stored on client for security
       };
 
       setCredentials(gmailCredentials);
@@ -111,7 +109,7 @@ export default function GmailAuthSetup({ onAuthSuccess, onAuthError }: GmailAuth
       const gmailService = initializeGmailApi(gmailCredentials);
       await gmailService.getProfile();
       
-      // Store credentials securely
+      // Store credentials securely (without client secret)
       localStorage.setItem('gmail_credentials', JSON.stringify(gmailCredentials));
       
       setStep('success');
