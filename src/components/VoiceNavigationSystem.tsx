@@ -43,11 +43,13 @@ interface VoiceCommand {
 interface VoiceNavigationSystemProps {
   className?: string;
   compact?: boolean;
+  showLabel?: boolean;
 }
 
 export const VoiceNavigationSystem: React.FC<VoiceNavigationSystemProps> = ({
   className = '',
-  compact = false
+  compact = false,
+  showLabel = true
 }) => {
   const router = useRouter();
   const [isListening, setIsListening] = useState(false);
@@ -384,6 +386,41 @@ export const VoiceNavigationSystem: React.FC<VoiceNavigationSystemProps> = ({
           <span className="text-xs text-blue-600 font-medium animate-fade-in">
             {feedback}
           </span>
+        )}
+      </div>
+    );
+  }
+
+  // Compact mode - just show the voice control button
+  if (compact) {
+    return (
+      <div className={`flex items-center gap-2 ${className}`}>
+        <Button
+          onClick={toggleListening}
+          disabled={!isEnabled}
+          className={`flex items-center gap-2 rounded-2xl px-4 py-3 text-sm font-semibold transition-all duration-300 ${
+            isListening
+              ? 'bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white shadow-lg animate-pulse'
+              : 'bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white shadow-lg hover:shadow-xl transform hover:scale-105'
+          }`}
+        >
+          {isListening ? (
+            <MicOff className="h-5 w-5" />
+          ) : (
+            <Mic className="h-5 w-5" />
+          )}
+          {showLabel && (
+            <span className="hidden sm:inline">
+              {isListening ? 'Stop' : 'Voice'}
+            </span>
+          )}
+        </Button>
+        
+        {isListening && (
+          <div className="flex items-center gap-1 text-red-600 animate-pulse text-xs">
+            <div className="w-2 h-2 bg-red-500 rounded-full animate-ping"></div>
+            <span className="hidden md:inline font-medium">Listening</span>
+          </div>
         )}
       </div>
     );
