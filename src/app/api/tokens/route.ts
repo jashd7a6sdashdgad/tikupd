@@ -122,15 +122,15 @@ export async function POST(request: NextRequest) {
     // Return the token (only time it will be shown in full)
     return NextResponse.json({
       message: 'Token created successfully',
-              token: {
-          id: newToken.id,
-          token: newToken.token, // Full token returned only on creation
-          name: newToken.name,
-          permissions: newToken.permissions,
-          createdAt: newToken.createdAt,
-          expiresAt: newToken.expiresAt,
-          status: newToken.status
-        }
+      token: {
+        id: newToken.id,
+        token: newToken.token, // Full token returned only on creation
+        name: newToken.name,
+        permissions: newToken.permissions,
+        createdAt: newToken.createdAt,
+        expiresAt: newToken.expiresAt,
+        status: newToken.status
+      }
     });
 
   } catch (error) {
