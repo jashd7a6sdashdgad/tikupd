@@ -38,6 +38,12 @@ export function withAuth(
         // Try token-based authentication first
         if (allowTokenAuth) {
           const auth = authenticateWithToken(request);
+          if (auth.error) {
+            return NextResponse.json(
+              { error: 'Authorization failed - please check your credentials', details: auth.error },
+              { status: 401 }
+            );
+          }
           if (auth.success && auth.token) {
             isAuthenticated = true;
             tokenAuth = auth.token;
