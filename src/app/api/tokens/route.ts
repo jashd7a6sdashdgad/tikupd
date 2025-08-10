@@ -3,19 +3,14 @@ import crypto from 'crypto';
 import { promises as fs } from 'fs';
 import path from 'path';
 
-interface ApiToken {
-  id: string;
-  token: string;
-  name: string;
-  permissions: string[];
-  createdAt: string;
-  expiresAt?: string;
-  lastUsed?: string;
-  isActive: boolean;
-}
+import { ApiToken } from '@/lib/api/auth/tokenValidation';
+
+// Use the base ApiToken interface directly
 
 // File path for persistent storage
 const TOKENS_FILE = path.join(process.cwd(), 'data', 'tokens.json');
+console.log('Tokens file path:', TOKENS_FILE);
+console.log('Current working directory:', process.cwd());
 
 // Ensure data directory exists and load tokens from file
 async function ensureDataDir() {
@@ -23,6 +18,7 @@ async function ensureDataDir() {
   try {
     await fs.access(dataDir);
   } catch {
+    console.log('Creating data directory:', dataDir);
     await fs.mkdir(dataDir, { recursive: true });
   }
 }
@@ -41,8 +37,12 @@ async function loadTokens(): Promise<ApiToken[]> {
 
 // Save tokens to file
 async function saveTokens(tokens: ApiToken[]): Promise<void> {
+  console.log('Ensuring data directory exists...');
   await ensureDataDir();
+  console.log('Writing tokens to file:', TOKENS_FILE);
+  console.log('Tokens to save:', tokens.length);
   await fs.writeFile(TOKENS_FILE, JSON.stringify(tokens, null, 2));
+  console.log('Tokens written to file successfully');
 }
 
 // Generate a secure random token
@@ -62,8 +62,7 @@ export async function GET() {
       permissions: token.permissions,
       createdAt: token.createdAt,
       expiresAt: token.expiresAt,
-      lastUsed: token.lastUsed,
-      isActive: token.isActive
+      status: token.status
     }));
 
     return NextResponse.json({ tokens: safeTokens });
@@ -75,8 +74,9 @@ export async function GET() {
 
 // POST /api/tokens - Create a new token
 export async function POST(request: NextRequest) {
+  let body: any;
   try {
-    const body = await request.json();
+    body = await request.json();
     const { name, permissions = [], expiresInDays } = body;
 
     if (!name || typeof name !== 'string') {
@@ -85,10 +85,12 @@ export async function POST(request: NextRequest) {
 
     // Load existing tokens
     const tokens = await loadTokens();
+    console.log('Loaded existing tokens:', tokens.length);
     
     // Generate token
     const token = generateSecureToken();
     const id = crypto.randomUUID();
+    console.log('Generated token with ID:', id);
     
     // Calculate expiration date if specified
     let expiresAt: string | undefined;
@@ -106,30 +108,43 @@ export async function POST(request: NextRequest) {
       permissions: Array.isArray(permissions) ? permissions : [],
       createdAt: new Date().toISOString(),
       expiresAt,
-      isActive: true
+      status: 'active'
     };
+    console.log('Created token object:', { id: newToken.id, name: newToken.name, permissions: newToken.permissions });
 
     // Add token and save to file
     tokens.push(newToken);
+    console.log('Saving tokens to file...');
+    console.log('Full token object being saved:', JSON.stringify(newToken, null, 2));
     await saveTokens(tokens);
+    console.log('Tokens saved successfully');
 
     // Return the token (only time it will be shown in full)
     return NextResponse.json({
       message: 'Token created successfully',
-      token: {
-        id: newToken.id,
-        token: newToken.token, // Full token returned only on creation
-        name: newToken.name,
-        permissions: newToken.permissions,
-        createdAt: newToken.createdAt,
-        expiresAt: newToken.expiresAt,
-        isActive: newToken.isActive
-      }
+              token: {
+          id: newToken.id,
+          token: newToken.token, // Full token returned only on creation
+          name: newToken.name,
+          permissions: newToken.permissions,
+          createdAt: newToken.createdAt,
+          expiresAt: newToken.expiresAt,
+          status: newToken.status
+        }
     });
 
   } catch (error) {
     console.error('Error creating token:', error);
-    return NextResponse.json({ error: 'Failed to create token' }, { status: 500 });
+    console.error('Error details:', {
+      name: body?.name,
+      permissions: body?.permissions,
+      expiresInDays: body?.expiresInDays,
+      error: error instanceof Error ? error.message : String(error)
+    });
+    return NextResponse.json({ 
+      error: 'Failed to create token',
+      details: error instanceof Error ? error.message : String(error)
+    }, { status: 500 });
   }
 }
 
@@ -183,7 +198,7 @@ export async function PUT(request: NextRequest) {
     }
 
     // Update allowed fields
-    const { name, permissions, isActive } = body;
+    const { name, permissions, status } = body;
     
     if (name && typeof name === 'string') {
       tokens[tokenIndex].name = name.trim();
@@ -193,8 +208,8 @@ export async function PUT(request: NextRequest) {
       tokens[tokenIndex].permissions = permissions;
     }
     
-    if (typeof isActive === 'boolean') {
-      tokens[tokenIndex].isActive = isActive;
+    if (status && (status === 'active' || status === 'inactive')) {
+      tokens[tokenIndex].status = status;
     }
 
     // Save updated tokens to file
@@ -202,15 +217,14 @@ export async function PUT(request: NextRequest) {
 
     return NextResponse.json({
       message: 'Token updated successfully',
-      token: {
-        id: tokens[tokenIndex].id,
-        name: tokens[tokenIndex].name,
-        permissions: tokens[tokenIndex].permissions,
-        createdAt: tokens[tokenIndex].createdAt,
-        expiresAt: tokens[tokenIndex].expiresAt,
-        lastUsed: tokens[tokenIndex].lastUsed,
-        isActive: tokens[tokenIndex].isActive
-      }
+              token: {
+          id: tokens[tokenIndex].id,
+          name: tokens[tokenIndex].name,
+          permissions: tokens[tokenIndex].permissions,
+          createdAt: tokens[tokenIndex].createdAt,
+          expiresAt: tokens[tokenIndex].expiresAt,
+          status: tokens[tokenIndex].status
+        }
     });
 
   } catch (error) {
