@@ -176,3 +176,47 @@ export function getFeatureConfig(): FeatureConfig {
     debugMode: process.env.NODE_ENV === 'development' || process.env.DEBUG_MODE === 'true'
   };
 }
+
+/**
+ * Get the base URL for internal API calls - handles Vercel deployment properly
+ */
+export function getBaseUrl(): string {
+  // Priority order for determining base URL:
+  // 1. NEXTAUTH_URL (NextAuth configuration)
+  // 2. NEXT_PUBLIC_APP_URL (public app URL)
+  // 3. VERCEL_URL (Vercel deployment URL)
+  // 4. Local development fallback
+  
+  if (process.env.NEXTAUTH_URL) {
+    return process.env.NEXTAUTH_URL;
+  }
+  
+  if (process.env.NEXT_PUBLIC_APP_URL) {
+    return process.env.NEXT_PUBLIC_APP_URL;
+  }
+  
+  if (process.env.VERCEL_URL) {
+    return `https://${process.env.VERCEL_URL}`;
+  }
+  
+  return 'http://localhost:3000';
+}
+
+/**
+ * Configuration for external API environments
+ */
+export interface DeploymentConfig {
+  isProduction: boolean;
+  isVercel: boolean;
+  baseUrl: string;
+  nodeEnv: string;
+}
+
+export function getDeploymentConfig(): DeploymentConfig {
+  return {
+    isProduction: process.env.NODE_ENV === 'production',
+    isVercel: !!process.env.VERCEL,
+    baseUrl: getBaseUrl(),
+    nodeEnv: process.env.NODE_ENV || 'development'
+  };
+}

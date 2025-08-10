@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useSettings } from '@/contexts/SettingsContext';
 import { useTranslation } from '@/lib/translations';
@@ -327,6 +326,23 @@ export default function TrackingPage() {
     }
   };
 
+  const initiateGoogleAuth = async () => {
+    try {
+      console.log('🔄 Initiating Google OAuth...');
+      const response = await fetch('/api/google/auth');
+      const data = await response.json();
+      
+      if (data.success && data.authUrl) {
+        console.log('✅ Got OAuth URL, redirecting...');
+        window.location.href = data.authUrl;
+      } else {
+        console.error('❌ Failed to get OAuth URL:', data.message);
+      }
+    } catch (error) {
+      console.error('❌ Error initiating Google OAuth:', error);
+    }
+  };
+
   // Enhanced glassmorphism effects like dashboard
   const cardHoverEffects = "hover:shadow-3xl hover:scale-[1.02] transition-all duration-500 transform";
 
@@ -347,6 +363,12 @@ export default function TrackingPage() {
                     Analytics & Tracking
                   </h1>
                   <p className="text-gray-600 font-medium mt-2 text-lg">Real-time insights and performance metrics</p>
+                  <div className="flex items-center gap-2 mt-2">
+                    <div className={`w-2 h-2 rounded-full ${analyticsData.overview.totalEvents > 0 ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                    <span className="text-sm text-gray-500">
+                      {analyticsData.overview.totalEvents > 0 ? 'Google Connected' : 'Google Not Connected'}
+                    </span>
+                  </div>
                 </div>
               </div>
               
@@ -367,6 +389,13 @@ export default function TrackingPage() {
                 <Button onClick={exportData} className="bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white">
                   <Download className="h-4 w-4 mr-2" />
                   Export
+                </Button>
+                <Button 
+                  onClick={initiateGoogleAuth} 
+                  className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white"
+                >
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Connect Google
                 </Button>
               </div>
             </div> {/* closes .flex items-center justify-between */}
@@ -806,129 +835,165 @@ export default function TrackingPage() {
             {/* Performance Indicators & Recommendations Card */}
             <ModernCard gradient="none" blur="lg" className={cardHoverEffects}>
               <div className="p-6">
-                <Card>
-                  <CardContent>
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="p-2 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl">
+                    <Star className="h-6 w-6 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-gray-800">Performance Insights</h3>
+                    <p className="text-gray-600">Key indicators and smart recommendations</p>
+                  </div>
+                </div>
+                
                 {/* Performance Indicators */}
-                <div>
-                  <h4 className="font-semibold text-black mb-3">{t('analytics')}</h4>
-                  <div className="space-y-3">
-                    <div className="p-3 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg">
-                      <div className="flex items-center justify-between mb-2">
+                <div className="mb-6">
+                  <h4 className="font-semibold text-gray-800 mb-4">Performance Scores</h4>
+                  <div className="space-y-4">
+                    <div className="p-4 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl">
+                      <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center">
-                          <TrendingUp className="h-4 w-4 mr-2 text-green-600" />
-                          <span className="text-sm font-medium text-green-800">{t('statistics')}</span>
+                          <TrendingUp className="h-5 w-5 mr-2 text-green-600" />
+                          <span className="text-sm font-semibold text-green-800">Overall Performance</span>
                         </div>
-                        <span className="text-lg font-bold text-green-700">{dynamicMetrics.overallScore}</span>
+                        <span className="text-2xl font-bold text-green-700">{dynamicMetrics.overallScore}</span>
                       </div>
-                      <div className="w-full bg-green-200 rounded-full h-2">
-                        <div className="bg-green-600 h-2 rounded-full" style={{ width: `${dynamicMetrics.overallScore}%` }}></div>
+                      <div className="w-full bg-green-200 rounded-full h-3">
+                        <div className="bg-gradient-to-r from-green-500 to-emerald-600 h-3 rounded-full shadow-sm" style={{ width: `${dynamicMetrics.overallScore}%` }}></div>
                       </div>
-                      <p className="text-xs text-green-700 mt-1">↗ +8% from last week</p>
+                      <p className="text-xs text-green-700 mt-2 font-medium">↗ +8% from last week</p>
                     </div>
                     
-                    <div className="p-3 bg-gradient-to-r from-blue-50 to-cyan-50 border border-blue-200 rounded-lg">
-                      <div className="flex items-center justify-between mb-2">
+                    <div className="p-4 bg-gradient-to-r from-blue-50 to-cyan-50 border border-blue-200 rounded-xl">
+                      <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center">
-                          <Eye className="h-4 w-4 mr-2 text-blue-600" />
-                          <span className="text-sm font-medium text-blue-800">{t('statistics')}</span>
+                          <Eye className="h-5 w-5 mr-2 text-blue-600" />
+                          <span className="text-sm font-semibold text-blue-800">Engagement Rate</span>
                         </div>
-                        <span className="text-lg font-bold text-blue-700">{dynamicMetrics.engagementRate}%</span>
+                        <span className="text-2xl font-bold text-blue-700">{dynamicMetrics.engagementRate}%</span>
                       </div>
-                      <div className="w-full bg-blue-200 rounded-full h-2">
-                        <div className="bg-blue-600 h-2 rounded-full" style={{ width: `${dynamicMetrics.engagementRate}%` }}></div>
+                      <div className="w-full bg-blue-200 rounded-full h-3">
+                        <div className="bg-gradient-to-r from-blue-500 to-cyan-600 h-3 rounded-full shadow-sm" style={{ width: `${dynamicMetrics.engagementRate}%` }}></div>
                       </div>
-                      <p className="text-xs text-blue-700 mt-1">↗ +12% from last week</p>
+                      <p className="text-xs text-blue-700 mt-2 font-medium">↗ +12% from last week</p>
                     </div>
                   </div>
                 </div>
 
-                {/* Recommendations */}
+                {/* Smart Recommendations */}
                 <div>
-                  <h4 className="font-semibold text-black mb-3">{t('overview')}</h4>
-                  <div className="space-y-2">
-                    <div className="p-2 bg-yellow-50 border-l-4 border-yellow-400 rounded">
-                      <p className="text-xs text-yellow-800">📈 Schedule more events in the afternoon for better productivity</p>
+                  <h4 className="font-semibold text-gray-800 mb-4">Smart Recommendations</h4>
+                  <div className="space-y-3">
+                    <div className="p-3 bg-gradient-to-r from-yellow-50 to-amber-50 border-l-4 border-yellow-400 rounded-lg">
+                      <p className="text-sm text-yellow-800 font-medium">📈 Schedule more events in the afternoon for better productivity</p>
                     </div>
-                    <div className="p-2 bg-blue-50 border-l-4 border-blue-400 rounded">
-                      <p className="text-xs text-blue-800">💡 Consider batching similar tasks on Tuesdays</p>
+                    <div className="p-3 bg-gradient-to-r from-blue-50 to-indigo-50 border-l-4 border-blue-400 rounded-lg">
+                      <p className="text-sm text-blue-800 font-medium">💡 Consider batching similar tasks on Tuesdays</p>
                     </div>
-                    <div className="p-2 bg-green-50 border-l-4 border-green-400 rounded">
-                      <p className="text-xs text-green-800">✨ Great job maintaining your expense budget!</p>
+                    <div className="p-3 bg-gradient-to-r from-green-50 to-emerald-50 border-l-4 border-green-400 rounded-lg">
+                      <p className="text-sm text-green-800 font-medium">✨ Great job maintaining your expense budget!</p>
                     </div>
                   </div>
                 </div>
-                  </CardContent>
-                </Card>
               </div>
             </ModernCard>
 
           </div>
         </div>
 
-        {/* Monthly Trends */}
-        <Card>
-            <CardHeader>
-            <CardTitle className="flex items-center">
-              <TrendingUp className="h-5 w-5 mr-2" />
-              {t('statistics')}
-            </CardTitle>
-            <CardDescription>{t('overview')}</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              <div className="text-center">
-                <div className="text-3xl font-bold text-primary mb-2">
-                  {analyticsData.trends.eventsThisMonth}
-                </div>
-                <div className="text-sm text-black mb-1">{t('events')}</div>
-                <div className={`text-xs ${
-                  calculateChange(analyticsData.trends.eventsThisMonth, analyticsData.trends.lastMonthEvents) >= 0 
-                    ? 'text-green-600' 
-                    : 'text-red-600'
-                }`}>
-                  {formatPercentage(calculateChange(
-                    analyticsData.trends.eventsThisMonth, 
-                    analyticsData.trends.lastMonthEvents
-                  ))} vs last month
+        {/* Monthly Trends - Dashboard Style */}
+        <ModernCard gradient="none" blur="lg" className={cardHoverEffects}>
+          <div className="p-6">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="p-2 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl">
+                <TrendingUp className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-gray-800">Monthly Trends</h3>
+                <p className="text-gray-600">Performance comparison vs last month</p>
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="p-4 bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl border border-blue-200">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-semibold text-blue-700 uppercase tracking-wider">Events</p>
+                    <p className="text-3xl font-bold text-blue-800 mt-1">{analyticsData.trends.eventsThisMonth}</p>
+                    <div className="flex items-center mt-2">
+                      <span className={`text-sm font-medium flex items-center gap-1 ${
+                        calculateChange(analyticsData.trends.eventsThisMonth, analyticsData.trends.lastMonthEvents) >= 0 
+                          ? 'text-green-600' 
+                          : 'text-red-600'
+                      }`}>
+                        {calculateChange(analyticsData.trends.eventsThisMonth, analyticsData.trends.lastMonthEvents) >= 0 
+                          ? <TrendingUp className="h-3 w-3" /> 
+                          : <TrendingDown className="h-3 w-3" />
+                        }
+                        {formatPercentage(calculateChange(
+                          analyticsData.trends.eventsThisMonth, 
+                          analyticsData.trends.lastMonthEvents
+                        ))}
+                      </span>
+                    </div>
+                  </div>
+                  <Calendar className="h-12 w-12 text-blue-500" />
                 </div>
               </div>
               
-              <div className="text-center">
-                <div className="text-3xl font-bold text-primary mb-2">
-                  {analyticsData.trends.emailsThisMonth}
-                </div>
-                <div className="text-sm text-black mb-1">{t('email')}</div>
-                <div className={`text-xs ${
-                  calculateChange(analyticsData.trends.emailsThisMonth, analyticsData.trends.lastMonthEmails) >= 0 
-                    ? 'text-green-600' 
-                    : 'text-red-600'
-                }`}>
-                  {formatPercentage(calculateChange(
-                    analyticsData.trends.emailsThisMonth, 
-                    analyticsData.trends.lastMonthEmails
-                  ))} vs last month
+              <div className="p-4 bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl border border-green-200">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-semibold text-green-700 uppercase tracking-wider">Emails</p>
+                    <p className="text-3xl font-bold text-green-800 mt-1">{analyticsData.trends.emailsThisMonth}</p>
+                    <div className="flex items-center mt-2">
+                      <span className={`text-sm font-medium flex items-center gap-1 ${
+                        calculateChange(analyticsData.trends.emailsThisMonth, analyticsData.trends.lastMonthEmails) >= 0 
+                          ? 'text-green-600' 
+                          : 'text-red-600'
+                      }`}>
+                        {calculateChange(analyticsData.trends.emailsThisMonth, analyticsData.trends.lastMonthEmails) >= 0 
+                          ? <TrendingUp className="h-3 w-3" /> 
+                          : <TrendingDown className="h-3 w-3" />
+                        }
+                        {formatPercentage(calculateChange(
+                          analyticsData.trends.emailsThisMonth, 
+                          analyticsData.trends.lastMonthEmails
+                        ))}
+                      </span>
+                    </div>
+                  </div>
+                  <Mail className="h-12 w-12 text-green-500" />
                 </div>
               </div>
               
-              <div className="text-center">
-                <div className="text-3xl font-bold text-primary mb-2">
-                  {formatCurrency(analyticsData.trends.expensesThisMonth)}
-                </div>
-                <div className="text-sm text-black mb-1">{t('expenses')}</div>
-                <div className={`text-xs ${
-                  calculateChange(analyticsData.trends.expensesThisMonth, analyticsData.trends.lastMonthExpenses) >= 0 
-                    ? 'text-red-600' 
-                    : 'text-green-600'
-                }`}>
-                  {formatPercentage(calculateChange(
-                    analyticsData.trends.expensesThisMonth, 
-                    analyticsData.trends.lastMonthExpenses
-                  ))} vs last month
+              <div className="p-4 bg-gradient-to-br from-orange-50 to-red-50 rounded-xl border border-orange-200">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-semibold text-orange-700 uppercase tracking-wider">Expenses</p>
+                    <p className="text-2xl font-bold text-orange-800 mt-1">{formatCurrency(analyticsData.trends.expensesThisMonth)}</p>
+                    <div className="flex items-center mt-2">
+                      <span className={`text-sm font-medium flex items-center gap-1 ${
+                        calculateChange(analyticsData.trends.expensesThisMonth, analyticsData.trends.lastMonthExpenses) >= 0 
+                          ? 'text-red-600' 
+                          : 'text-green-600'
+                      }`}>
+                        {calculateChange(analyticsData.trends.expensesThisMonth, analyticsData.trends.lastMonthExpenses) >= 0 
+                          ? <TrendingUp className="h-3 w-3" /> 
+                          : <TrendingDown className="h-3 w-3" />
+                        }
+                        {formatPercentage(calculateChange(
+                          analyticsData.trends.expensesThisMonth, 
+                          analyticsData.trends.lastMonthExpenses
+                        ))}
+                      </span>
+                    </div>
+                  </div>
+                  <DollarSign className="h-12 w-12 text-orange-500" />
                 </div>
               </div>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </ModernCard>
       </div>
     </div>
   );

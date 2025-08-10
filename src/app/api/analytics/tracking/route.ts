@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyToken, COOKIE_OPTIONS } from '@/lib/auth';
+import { getBaseUrl, getDeploymentConfig, getTimeoutConfig } from '@/lib/config';
 
 export async function GET(request: NextRequest) {
   try {
@@ -13,20 +14,56 @@ export async function GET(request: NextRequest) {
     }
     
     const user = verifyToken(token);
-    console.log('🔄 Fetching comprehensive analytics data...');
+    const deploymentConfig = getDeploymentConfig();
+    const timeoutConfig = getTimeoutConfig();
+    
+    console.log('🔄 Fetching comprehensive analytics data...', {
+      environment: deploymentConfig.nodeEnv,
+      isVercel: deploymentConfig.isVercel,
+      baseUrl: deploymentConfig.baseUrl
+    });
 
     // Helper function to make authenticated API calls
     const makeAuthenticatedCall = async (url: string) => {
       try {
-        const response = await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}${url}`, {
+        const baseUrl = getBaseUrl();
+        const fullUrl = `${baseUrl}${url}`;
+        
+        console.log(`🔗 Making API call to: ${fullUrl}`);
+        
+        const response = await fetch(fullUrl, {
           headers: {
-            'Cookie': `${COOKIE_OPTIONS.name}=${token}; google_access_token=${request.cookies.get('google_access_token')?.value || ''}; google_refresh_token=${request.cookies.get('google_refresh_token')?.value || ''}`
-          }
+            'Cookie': `${COOKIE_OPTIONS.name}=${token}; google_access_token=${request.cookies.get('google_access_token')?.value || ''}; google_refresh_token=${request.cookies.get('google_refresh_token')?.value || ''}`,
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+            'User-Agent': 'Analytics-API/1.0'
+          },
+          // Use configured timeout
+          signal: AbortSignal.timeout(timeoutConfig.apiTimeout)
         });
-        return await response.json();
+        
+        if (!response.ok) {
+          console.error(`API call failed with status ${response.status} for ${url}`, {
+            status: response.status,
+            statusText: response.statusText
+          });
+          return { success: false, error: `HTTP ${response.status}: ${response.statusText}` };
+        }
+        
+        const result = await response.json();
+        console.log(`✅ API call successful for ${url}:`, { 
+          success: result.success, 
+          dataCount: Array.isArray(result.data) ? result.data.length : (result.data ? 'object' : 'none')
+        });
+        
+        return result;
       } catch (error) {
-        console.error(`API call failed for ${url}:`, error);
-        return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+        console.error(`❌ API call failed for ${url}:`, error);
+        return { 
+          success: false, 
+          error: error instanceof Error ? error.message : 'Unknown error',
+          details: error
+        };
       }
     };
 
@@ -50,13 +87,39 @@ export async function GET(request: NextRequest) {
     ]);
 
     console.log('📊 Raw API responses:', {
-      calendar: { success: calendarData.success, count: calendarData.data?.length || 0 },
-      email: { success: emailData.success, count: emailData.data?.length || 0 },
-      expenses: { success: expensesData.success, count: Array.isArray(expensesData.data) ? expensesData.data.length : (expensesData.data?.expenses?.length || 0) },
-      contacts: { success: contactsData.success, count: Array.isArray(contactsData.data) ? contactsData.data.length : (contactsData.data?.contacts?.length || 0) },
-      diary: { success: diaryData.success, count: Array.isArray(diaryData.data) ? diaryData.data.length : (diaryData.data?.entries?.length || 0) },
-      facebook: facebookData.success,
-      youtube: youtubeData.success
+      calendar: { 
+        success: calendarData.success, 
+        count: calendarData.data?.length || 0,
+        error: calendarData.error || null
+      },
+      email: { 
+        success: emailData.success, 
+        count: emailData.data?.length || 0,
+        error: emailData.error || null
+      },
+      expenses: { 
+        success: expensesData.success, 
+        count: Array.isArray(expensesData.data) ? expensesData.data.length : (expensesData.data?.expenses?.length || 0),
+        error: expensesData.error || null
+      },
+      contacts: { 
+        success: contactsData.success, 
+        count: Array.isArray(contactsData.data) ? contactsData.data.length : (contactsData.data?.contacts?.length || 0),
+        error: contactsData.error || null
+      },
+      diary: { 
+        success: diaryData.success, 
+        count: Array.isArray(diaryData.data) ? diaryData.data.length : (diaryData.data?.entries?.length || 0),
+        error: diaryData.error || null
+      },
+      facebook: { 
+        success: facebookData.success,
+        error: facebookData.error || null
+      },
+      youtube: { 
+        success: youtubeData.success,
+        error: youtubeData.error || null
+      }
     });
 
     // Process data with proper error handling
@@ -185,62 +248,31 @@ export async function GET(request: NextRequest) {
         facebookReach: processedData.facebook ? 
           (processedData.facebook.followers_count || processedData.facebook.likes || 0) > 1000 ? 
             `${((processedData.facebook.followers_count || processedData.facebook.likes || 0)/1000).toFixed(1)}K` : 
-            (processedData.facebook.followers_count || processedData.facebook.likes || 0).toString() : '1.2K',
+            (processedData.facebook.followers_count || processedData.facebook.likes || 0).toString() : '0',
         
         youtubeViews: processedData.youtube ? 
           (processedData.youtube.viewCount || 0) > 1000 ? 
             `${((processedData.youtube.viewCount || 0)/1000).toFixed(1)}K` : 
-            (processedData.youtube.viewCount || 0).toString() : '856'
+            (processedData.youtube.viewCount || 0).toString() : '0'
       }
     };
 
-    // Check if we have real data or should use sample data
+    // Check if we have real data
     const hasRealData = 
       processedData.events.length > 0 || 
       processedData.emails.length > 0 || 
       processedData.expenses.length > 0 || 
       processedData.contacts.length > 0;
 
-    if (!hasRealData) {
-      console.log('📊 No real data found, providing sample data for demonstration');
-      
-      // Override with sample data - realistic numbers based on typical usage
-      analytics.overview = {
-        totalEvents: Math.floor(Math.random() * 8) + 2, // 2-9 events
-        totalEmails: Math.floor(Math.random() * 25) + 15, // 15-39 emails  
-        totalExpenses: Math.round((Math.random() * 200 + 50) * 100) / 100, // 50-250 OMR
-        totalContacts: Math.floor(Math.random() * 15) + 10 // 10-24 contacts
-      };
-      
-      analytics.trends = {
-        eventsThisMonth: analytics.overview.totalEvents,
-        emailsThisMonth: Math.floor(analytics.overview.totalEmails * 0.6), // 60% of total emails
-        expensesThisMonth: analytics.overview.totalExpenses,
-        lastMonthEvents: Math.max(analytics.overview.totalEvents - 1, 0),
-        lastMonthEmails: Math.floor(analytics.overview.totalEmails * 0.4), // 40% of total emails
-        lastMonthExpenses: Math.round((analytics.overview.totalExpenses * 0.8) * 100) / 100 // 80% of current
-      };
-      
-      analytics.categories = {
-        expensesByCategory: {
-          'Food': 34.0,
-          'Transportation': 15.0,
-          'Shopping': 120.75
-        },
-        eventsByType: {
-          'Meeting': 1,
-          'Health': 1,
-          'Work': 1
-        }
-      };
-      
-      analytics.productivity = {
-        averageEventsPerDay: 0.1,
-        averageEmailsPerDay: 1.6,
-        busyDaysThisMonth: Math.ceil(now.getDate() * 0.6),
-        completionRate: 85.0
-      };
-    }
+    console.log(`📊 Analytics computed. Has real data: ${hasRealData}. Data counts:`, {
+      events: processedData.events.length,
+      emails: processedData.emails.length,
+      expenses: processedData.expenses.length,
+      contacts: processedData.contacts.length
+    });
+
+    // NO MORE HARDCODED FALLBACK - Always use actual data, even if it's zero
+    // If APIs fail or return no data, the user will see zero values which is correct
 
     console.log('✅ Analytics calculated successfully:', {
       rawCounts: {
