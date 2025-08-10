@@ -5,9 +5,9 @@ import { universalStorage } from '@/lib/storage/universalStorage';
 // GET /api/universal/[type] - Get all items of a specific type
 export async function GET(
   request: NextRequest,
-  context: { params: { type: string } }
-) {
-  const { params } = context;
+  context: { params: Promise<{ type: string }> }
+): Promise<NextResponse> {
+  const { type } = await context.params;
   try {
     // Get the Authorization header
     const authHeader = request.headers.get('authorization');
@@ -30,7 +30,6 @@ export async function GET(
     }
     
     const validToken = validation.token!;
-    const { type } = params;
     
     // Check if token has required permissions for this type
     const readPermission = `read:${type}`;
@@ -61,7 +60,7 @@ export async function GET(
     });
 
   } catch (error) {
-    console.error(`Error in universal API for ${params.type}:`, error);
+    console.error(`Error in universal API for ${type}:`, error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -72,9 +71,9 @@ export async function GET(
 // POST /api/universal/[type] - Create a new item of the specified type
 export async function POST(
   request: NextRequest,
-  context: { params: { type: string } }
-) {
-  const { params } = context;
+  context: { params: Promise<{ type: string }> }
+): Promise<NextResponse> {
+  const { type } = await context.params;
   try {
     // Get the Authorization header
     const authHeader = request.headers.get('authorization');
@@ -97,7 +96,6 @@ export async function POST(
     }
     
     const validToken = validation.token!;
-    const { type } = params;
     
     // Check if token has write permissions for this type
     const writePermission = `write:${type}`;
@@ -134,7 +132,7 @@ export async function POST(
     });
 
   } catch (error) {
-    console.error(`Error creating ${params.type} item:`, error);
+    console.error(`Error creating ${type} item:`, error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -145,9 +143,9 @@ export async function POST(
 // PUT /api/universal/[type] - Update an existing item
 export async function PUT(
   request: NextRequest,
-  context: { params: { type: string } }
-) {
-  const { params } = context;
+  context: { params: Promise<{ type: string }> }
+): Promise<NextResponse> {
+  const { type } = await context.params;
   try {
     // Get the Authorization header
     const authHeader = request.headers.get('authorization');
@@ -170,7 +168,6 @@ export async function PUT(
     }
     
     const validToken = validation.token!;
-    const { type } = params;
     
     // Check if token has write permissions for this type
     const writePermission = `write:${type}`;
@@ -215,7 +212,7 @@ export async function PUT(
     });
 
   } catch (error) {
-    console.error(`Error updating ${params.type} item:`, error);
+    console.error(`Error updating ${type} item:`, error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -226,9 +223,9 @@ export async function PUT(
 // DELETE /api/universal/[type] - Delete an item
 export async function DELETE(
   request: NextRequest,
-  context: { params: { type: string } }
-) {
-  const { params } = context;
+  context: { params: Promise<{ type: string }> }
+): Promise<NextResponse> {
+  const { type } = await context.params;
   try {
     // Get the Authorization header
     const authHeader = request.headers.get('authorization');
@@ -251,7 +248,6 @@ export async function DELETE(
     }
     
     const validToken = validation.token!;
-    const { type } = params;
     
     // Check if token has write permissions for this type
     const writePermission = `write:${type}`;
@@ -301,7 +297,7 @@ export async function DELETE(
     });
 
   } catch (error) {
-    console.error(`Error deleting ${params.type} item:`, error);
+    console.error(`Error deleting ${type} item:`, error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
