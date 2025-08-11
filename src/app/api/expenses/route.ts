@@ -48,15 +48,18 @@ export async function GET(request: NextRequest) {
       console.log('Attempting to fetch expenses from Google Sheets API...');
       
       // Make internal API call to get real expense data from Google Sheets
+      // Note: This requires Google OAuth cookies which API tokens don't have
       const sheetsResponse = await fetch(`${baseUrl}/api/sheets/expenses`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
           'User-Agent': 'Internal-API-Expenses-Integration',
-          // Copy cookies for authentication if available
+          // Copy cookies for authentication if available (likely empty for API calls)
           'Cookie': request.headers.get('cookie') || ''
         }
       });
+      
+      console.log('Google Sheets API response status:', sheetsResponse.status);
 
       if (sheetsResponse.ok) {
         const sheetsData = await sheetsResponse.json();
@@ -75,6 +78,13 @@ export async function GET(request: NextRequest) {
     } catch (error) {
       console.error('Error fetching from Google Sheets, falling back to local storage:', error);
       expenses = await expenseStorage.loadExpenses();
+    }
+    
+    // If still no real data, check if we should create sample data in persistent storage
+    if (expenses.length === 0 || (expenses.length > 0 && expenses[0].id?.includes('sample'))) {
+      console.log('No real expense data found. Add expenses via POST to this endpoint or through the website.');
+      console.log('For testing purposes, API will return sample data. To add real data:');
+      console.log('POST /api/expenses with: {"amount": 50, "category": "food", "description": "Real expense"}');
     }
 
     return NextResponse.json({
