@@ -297,7 +297,7 @@ export class SecureJsonTokenStorage {
         }
       }
       
-      // On Vercel, try GitHub Gist storage for persistence
+      // On Vercel, try GitHub Gist storage for persistence (if available)
       if (this.isVercelEnvironment()) {
         console.log('SecureJsonTokenStorage: Vercel environment detected, trying GitHub Gist...');
         const gistData = await this.loadFromGitHubGist();
@@ -308,6 +308,8 @@ export class SecureJsonTokenStorage {
           const validTokens = this.validateTokens(gistData.tokens || []);
           console.log(`SecureJsonTokenStorage: Loaded ${validTokens.length} tokens from GitHub Gist`);
           return validTokens;
+        } else {
+          console.log('SecureJsonTokenStorage: GitHub Gist not available, will use environment variable persistence');
         }
       }
       
@@ -373,14 +375,15 @@ export class SecureJsonTokenStorage {
       this.cache = dataToStore;
       this.cacheTimestamp = Date.now();
       
-      // On Vercel, save to GitHub Gist for persistence
+      // On Vercel, try to save to GitHub Gist for persistence (if available)
       if (this.isVercelEnvironment()) {
-        console.log('SecureJsonTokenStorage: Vercel environment detected, saving to GitHub Gist...');
+        console.log('SecureJsonTokenStorage: Vercel environment detected, trying GitHub Gist save...');
         const gistSuccess = await this.saveToGitHubGist(dataToStore);
         if (gistSuccess) {
           console.log(`SecureJsonTokenStorage: Successfully saved ${validTokens.length} tokens to GitHub Gist`);
         } else {
-          console.warn('SecureJsonTokenStorage: GitHub Gist save failed, tokens only in environment variable');
+          console.warn('SecureJsonTokenStorage: GitHub Gist save failed, using environment variable only');
+          // Still works, just won't persist across deployments
         }
       } else {
         // Try to save to file as backup (for local development)
