@@ -17,13 +17,17 @@ async function validateTokenFromRequest(request: NextRequest): Promise<{
   valid: boolean;
   tokenData?: any;
   error?: string;
+  debugInfo?: any;
 }> {
   let token: string | undefined;
+
+  console.log('VALIDATE: Starting token validation process');
 
   // Try to get token from Authorization header
   const authHeader = request.headers.get('authorization');
   if (authHeader && authHeader.startsWith('Bearer ')) {
     token = authHeader.substring(7);
+    console.log('VALIDATE: Token found in Authorization header');
   }
 
   // Try to get token from request body (for POST requests)
@@ -31,8 +35,11 @@ async function validateTokenFromRequest(request: NextRequest): Promise<{
     try {
       const body = await request.json();
       token = body.token;
+      if (token) {
+        console.log('VALIDATE: Token found in request body');
+      }
     } catch (error) {
-      console.log('No valid JSON body found');
+      console.log('VALIDATE: No valid JSON body found');
     }
   }
 
@@ -40,25 +47,47 @@ async function validateTokenFromRequest(request: NextRequest): Promise<{
   if (!token) {
     const url = new URL(request.url);
     token = url.searchParams.get('token') || undefined;
+    if (token) {
+      console.log('VALIDATE: Token found in query parameter');
+    }
   }
 
   if (!token) {
+    console.log('VALIDATE: No token provided in any format');
     return { 
       valid: false, 
       error: 'No token provided. Use Authorization header, request body, or query parameter.' 
     };
   }
 
+  console.log('VALIDATE: Token prefix:', token.substring(0, 10));
+
   try {
+    // Get storage info for debugging
+    const storageInfo = secureTokenStorage.getStorageInfo();
+    console.log('VALIDATE: Storage info:', storageInfo);
+
+    // Attempt validation
     const tokenData = await secureTokenStorage.validateToken(token);
+    console.log('VALIDATE: Validation result:', !!tokenData);
     
     if (!tokenData) {
+      // Get debug info for troubleshooting
+      const debugInfo = await secureTokenStorage.debugGetAllTokens();
+      
       return { 
         token: token.substring(0, 10) + '...',
         valid: false, 
-        error: 'Invalid or expired token' 
+        error: 'Invalid or expired token',
+        debugInfo: {
+          storageInfo,
+          tokenCount: debugInfo.tokens.length,
+          encryptionKeyHash: storageInfo.encryptionKeyHash
+        }
       };
     }
+
+    console.log('VALIDATE: Token validation successful for:', tokenData.name);
 
     return { 
       token: token.substring(0, 10) + '...',
@@ -73,11 +102,15 @@ async function validateTokenFromRequest(request: NextRequest): Promise<{
       }
     };
   } catch (error) {
-    console.error('Token validation error:', error);
+    console.error('VALIDATE: Token validation error:', error);
     return { 
       token: token.substring(0, 10) + '...',
       valid: false, 
-      error: 'Token validation failed' 
+      error: 'Token validation failed: ' + (error instanceof Error ? error.message : String(error)),
+      debugInfo: {
+        errorType: error instanceof Error ? error.constructor.name : 'Unknown',
+        errorStack: error instanceof Error ? error.stack : undefined
+      }
     };
   }
 }

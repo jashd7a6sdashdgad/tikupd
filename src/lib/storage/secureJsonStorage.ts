@@ -21,31 +21,47 @@ export interface StoredTokenData {
 export class SecureJsonTokenStorage {
   private readonly filePath: string;
   private readonly encryptionKey: string;
+  private cache: StoredTokenData | null = null;
+  private cacheTimestamp: number = 0;
+  private readonly CACHE_TTL = 5000; // 5 seconds
 
   constructor() {
     // Use process.cwd() which works on both local dev and Vercel
     this.filePath = path.join(process.cwd(), 'data', 'secure-tokens.json');
     
     // Use environment variable for encryption key or generate one
-    this.encryptionKey = process.env.TOKEN_ENCRYPTION_KEY || this.generateDefaultKey();
+    this.encryptionKey = this.getEncryptionKey();
     
     console.log('SecureJsonTokenStorage: Initialized with file path:', this.filePath);
+    console.log('SecureJsonTokenStorage: Using encryption key hash:', crypto.createHash('md5').update(this.encryptionKey).digest('hex').substring(0, 8));
   }
 
-  private generateDefaultKey(): string {
-    // Generate a consistent key based on environment for development
-    const seed = process.env.NEXTAUTH_SECRET || 'default-dev-key';
-    return crypto.createHash('sha256').update(seed).digest('hex').substring(0, 32);
+  private getEncryptionKey(): string {
+    // Priority order for encryption key
+    if (process.env.TOKEN_ENCRYPTION_KEY) {
+      console.log('SecureJsonTokenStorage: Using TOKEN_ENCRYPTION_KEY from env');
+      return process.env.TOKEN_ENCRYPTION_KEY;
+    }
+    
+    if (process.env.NEXTAUTH_SECRET) {
+      console.log('SecureJsonTokenStorage: Generating key from NEXTAUTH_SECRET');
+      return crypto.createHash('sha256').update(process.env.NEXTAUTH_SECRET).digest('hex').substring(0, 32);
+    }
+    
+    // Fallback - this should be consistent across environments
+    const fallbackKey = 'mahboob-personal-assistant-token-key-v1';
+    console.log('SecureJsonTokenStorage: Using fallback encryption key');
+    return crypto.createHash('sha256').update(fallbackKey).digest('hex').substring(0, 32);
   }
 
   private async ensureDataDir(): Promise<void> {
     try {
       const dataDir = path.dirname(this.filePath);
       await fs.mkdir(dataDir, { recursive: true });
+      console.log('SecureJsonTokenStorage: Data directory ensured:', dataDir);
     } catch (error) {
       // In Vercel, we might not be able to create directories
-      // That's okay, we'll fall back to in-memory storage
-      console.warn('Could not create data directory, will use in-memory fallback:', error);
+      console.warn('SecureJsonTokenStorage: Could not create data directory, will use environment fallback:', error);
     }
   }
 
@@ -53,7 +69,11 @@ export class SecureJsonTokenStorage {
    * Hash a token securely for storage
    */
   private hashToken(token: string): string {
-    return crypto.createHash('sha256').update(token + this.encryptionKey).digest('hex');
+    // Use a consistent salt based on the encryption key
+    const salt = crypto.createHash('sha256').update(this.encryptionKey + 'token-salt').digest('hex');
+    const hash = crypto.createHash('sha256').update(token + salt).digest('hex');
+    console.log('SecureJsonTokenStorage: Token hash generated for token prefix:', token.substring(0, 10));
+    return hash;
   }
 
   /**
@@ -62,7 +82,7 @@ export class SecureJsonTokenStorage {
   private encrypt(text: string): string {
     try {
       const algorithm = 'aes-256-cbc';
-      const key = Buffer.from(this.encryptionKey, 'hex');
+      const key = Buffer.from(this.encryptionKey.padEnd(32, '0').substring(0, 32), 'utf8');
       const iv = crypto.randomBytes(16);
       
       const cipher = crypto.createCipher(algorithm, key);
@@ -71,8 +91,8 @@ export class SecureJsonTokenStorage {
       
       return iv.toString('hex') + ':' + encrypted;
     } catch (error) {
-      console.warn('Encryption failed, storing as plain text:', error);
-      return text;
+      console.warn('SecureJsonTokenStorage: Encryption failed, storing as base64:', error);
+      return Buffer.from(text).toString('base64');
     }
   }
 
@@ -81,8 +101,14 @@ export class SecureJsonTokenStorage {
    */
   private decrypt(encryptedText: string): string {
     try {
+      // Check if it's base64 encoded (fallback format)
+      if (!encryptedText.includes(':')) {
+        console.log('SecureJsonTokenStorage: Decrypting base64 fallback format');
+        return Buffer.from(encryptedText, 'base64').toString('utf8');
+      }
+
       const algorithm = 'aes-256-cbc';
-      const key = Buffer.from(this.encryptionKey, 'hex');
+      const key = Buffer.from(this.encryptionKey.padEnd(32, '0').substring(0, 32), 'utf8');
       
       const textParts = encryptedText.split(':');
       const iv = Buffer.from(textParts.shift()!, 'hex');
@@ -94,9 +120,13 @@ export class SecureJsonTokenStorage {
       
       return decrypted;
     } catch (error) {
-      console.warn('Decryption failed, returning as is:', error);
+      console.warn('SecureJsonTokenStorage: Decryption failed, trying as plain text:', error);
       return encryptedText;
     }
+  }
+
+  private isCacheValid(): boolean {
+    return this.cache !== null && (Date.now() - this.cacheTimestamp) < this.CACHE_TTL;
   }
 
   /**
@@ -104,30 +134,58 @@ export class SecureJsonTokenStorage {
    */
   async loadTokens(): Promise<ApiToken[]> {
     try {
+      // Return cached version if valid
+      if (this.isCacheValid() && this.cache) {
+        console.log('SecureJsonTokenStorage: Returning cached tokens:', this.cache.tokens.length);
+        return this.validateTokens(this.cache.tokens);
+      }
+
+      console.log('SecureJsonTokenStorage: Loading tokens from storage...');
       await this.ensureDataDir();
       
       // Try to read from file first
       try {
         const data = await fs.readFile(this.filePath, 'utf-8');
-        const parsed: StoredTokenData = JSON.parse(this.decrypt(data));
+        const decryptedData = this.decrypt(data);
+        const parsed: StoredTokenData = JSON.parse(decryptedData);
         
-        // Validate and filter tokens
+        // Update cache
+        this.cache = parsed;
+        this.cacheTimestamp = Date.now();
+        
         const validTokens = this.validateTokens(parsed.tokens || []);
         console.log(`SecureJsonTokenStorage: Loaded ${validTokens.length} tokens from file`);
         return validTokens;
       } catch (fileError) {
-        console.log('File not found or invalid, checking environment variable...');
+        console.log('SecureJsonTokenStorage: File read failed, checking environment variable...');
         
         // Fallback to environment variable for Vercel
         const envData = process.env.SECURE_TOKENS_DATA;
         if (envData) {
-          const parsed: StoredTokenData = JSON.parse(this.decrypt(envData));
-          const validTokens = this.validateTokens(parsed.tokens || []);
-          console.log(`SecureJsonTokenStorage: Loaded ${validTokens.length} tokens from environment`);
-          return validTokens;
+          try {
+            const decryptedData = this.decrypt(envData);
+            const parsed: StoredTokenData = JSON.parse(decryptedData);
+            
+            // Update cache
+            this.cache = parsed;
+            this.cacheTimestamp = Date.now();
+            
+            const validTokens = this.validateTokens(parsed.tokens || []);
+            console.log(`SecureJsonTokenStorage: Loaded ${validTokens.length} tokens from environment`);
+            return validTokens;
+          } catch (envError) {
+            console.error('SecureJsonTokenStorage: Environment data parsing failed:', envError);
+          }
         }
         
-        console.log('No tokens found, returning empty array');
+        console.log('SecureJsonTokenStorage: No tokens found, returning empty array');
+        // Initialize empty cache
+        this.cache = {
+          tokens: [],
+          version: '1.0.0',
+          lastUpdated: new Date().toISOString()
+        };
+        this.cacheTimestamp = Date.now();
         return [];
       }
     } catch (error) {
@@ -148,6 +206,12 @@ export class SecureJsonTokenStorage {
         lastUpdated: new Date().toISOString()
       };
       
+      console.log(`SecureJsonTokenStorage: Saving ${validTokens.length} tokens...`);
+      
+      // Update cache first
+      this.cache = dataToStore;
+      this.cacheTimestamp = Date.now();
+      
       const encryptedData = this.encrypt(JSON.stringify(dataToStore, null, 2));
       
       // Try to save to file first
@@ -156,13 +220,11 @@ export class SecureJsonTokenStorage {
         await fs.writeFile(this.filePath, encryptedData);
         console.log(`SecureJsonTokenStorage: Saved ${validTokens.length} tokens to file`);
       } catch (fileError) {
-        console.warn('Could not save to file, this is expected on Vercel. Tokens are stored in memory for this session.');
-        
-        // On Vercel, we can't persist to file system, but we can log guidance
-        console.log('For Vercel deployment, consider setting SECURE_TOKENS_DATA environment variable with encrypted token data');
+        console.warn('SecureJsonTokenStorage: Could not save to file, using environment fallback');
         
         // Store in process environment for current session
         process.env.SECURE_TOKENS_DATA = encryptedData;
+        console.log(`SecureJsonTokenStorage: Saved ${validTokens.length} tokens to environment`);
       }
     } catch (error) {
       console.error('SecureJsonTokenStorage: Failed to save tokens:', error);
@@ -174,16 +236,33 @@ export class SecureJsonTokenStorage {
    * Create a new token with secure hashing
    */
   async createToken(plainToken: string, tokenData: Omit<ApiToken, 'tokenHash'>): Promise<ApiToken> {
+    console.log('SecureJsonTokenStorage: Creating token with data:', {
+      id: tokenData.id,
+      name: tokenData.name,
+      status: tokenData.status,
+      permissions: tokenData.permissions,
+      expiresAt: tokenData.expiresAt
+    });
+
     const tokenHash = this.hashToken(plainToken);
     const newToken: ApiToken = {
       ...tokenData,
-      tokenHash
+      tokenHash,
+      status: 'active' as const // Ensure status is always active for new tokens
     };
     
     const existingTokens = await this.loadTokens();
+    
+    // Check for duplicate IDs
+    const existingToken = existingTokens.find(t => t.id === newToken.id);
+    if (existingToken) {
+      throw new Error(`Token with ID ${newToken.id} already exists`);
+    }
+    
     const updatedTokens = [...existingTokens, newToken];
     await this.saveTokens(updatedTokens);
     
+    console.log('SecureJsonTokenStorage: Token created successfully with ID:', newToken.id);
     return newToken;
   }
 
@@ -191,16 +270,42 @@ export class SecureJsonTokenStorage {
    * Validate a token against stored hash
    */
   async validateToken(plainToken: string): Promise<ApiToken | null> {
-    const tokens = await this.loadTokens();
-    const tokenHash = this.hashToken(plainToken);
+    console.log('SecureJsonTokenStorage: Validating token with prefix:', plainToken.substring(0, 10));
     
-    const foundToken = tokens.find(token => 
-      token.tokenHash === tokenHash && 
-      token.status === 'active' &&
-      (!token.expiresAt || new Date(token.expiresAt) > new Date())
-    );
-    
-    return foundToken || null;
+    try {
+      const tokens = await this.loadTokens();
+      console.log(`SecureJsonTokenStorage: Loaded ${tokens.length} tokens for validation`);
+      
+      const tokenHash = this.hashToken(plainToken);
+      console.log('SecureJsonTokenStorage: Generated hash for validation');
+      
+      const foundToken = tokens.find(token => {
+        const hashMatch = token.tokenHash === tokenHash;
+        const statusActive = token.status === 'active';
+        const notExpired = !token.expiresAt || new Date(token.expiresAt) > new Date();
+        
+        console.log(`SecureJsonTokenStorage: Checking token ${token.id}:`, {
+          hashMatch,
+          statusActive,
+          notExpired,
+          tokenStatus: token.status,
+          expiresAt: token.expiresAt
+        });
+        
+        return hashMatch && statusActive && notExpired;
+      });
+      
+      if (foundToken) {
+        console.log('SecureJsonTokenStorage: Token validation successful for ID:', foundToken.id);
+      } else {
+        console.log('SecureJsonTokenStorage: Token validation failed - no matching token found');
+      }
+      
+      return foundToken || null;
+    } catch (error) {
+      console.error('SecureJsonTokenStorage: Token validation error:', error);
+      return null;
+    }
   }
 
   /**
@@ -209,7 +314,13 @@ export class SecureJsonTokenStorage {
   async deleteToken(id: string): Promise<void> {
     const tokens = await this.loadTokens();
     const filteredTokens = tokens.filter(token => token.id !== id);
+    
+    if (filteredTokens.length === tokens.length) {
+      throw new Error(`Token with ID ${id} not found`);
+    }
+    
     await this.saveTokens(filteredTokens);
+    console.log('SecureJsonTokenStorage: Token deleted:', id);
   }
 
   /**
@@ -219,10 +330,13 @@ export class SecureJsonTokenStorage {
     const tokens = await this.loadTokens();
     const tokenIndex = tokens.findIndex(token => token.id === id);
     
-    if (tokenIndex !== -1) {
-      tokens[tokenIndex] = { ...tokens[tokenIndex], ...updates };
-      await this.saveTokens(tokens);
+    if (tokenIndex === -1) {
+      throw new Error(`Token with ID ${id} not found`);
     }
+    
+    tokens[tokenIndex] = { ...tokens[tokenIndex], ...updates };
+    await this.saveTokens(tokens);
+    console.log('SecureJsonTokenStorage: Token updated:', id);
   }
 
   /**
@@ -236,7 +350,8 @@ export class SecureJsonTokenStorage {
     );
     
     if (validTokens.length !== tokens.length) {
-      console.log(`Cleaned up ${tokens.length - validTokens.length} expired tokens`);
+      const cleanedCount = tokens.length - validTokens.length;
+      console.log(`SecureJsonTokenStorage: Cleaned up ${cleanedCount} expired tokens`);
       await this.saveTokens(validTokens);
     }
   }
@@ -249,25 +364,56 @@ export class SecureJsonTokenStorage {
     location: string;
     encrypted: boolean;
     canPersist: boolean;
+    encryptionKeyHash: string;
+    cacheStatus: string;
   } {
     return {
       type: 'SecureJsonStorage',
       location: this.filePath,
       encrypted: true,
-      canPersist: true // Can persist in environment variable on Vercel
+      canPersist: true,
+      encryptionKeyHash: crypto.createHash('md5').update(this.encryptionKey).digest('hex').substring(0, 8),
+      cacheStatus: this.isCacheValid() ? 'valid' : 'expired'
     };
   }
 
   private validateTokens(tokens: any[]): ApiToken[] {
+    if (!Array.isArray(tokens)) {
+      console.warn('SecureJsonTokenStorage: Invalid tokens array, returning empty');
+      return [];
+    }
+
     return tokens.filter((token: any) => {
-      return token && 
+      const isValid = token && 
              typeof token.id === 'string' && 
              typeof token.tokenHash === 'string' && 
              typeof token.name === 'string' && 
              Array.isArray(token.permissions) &&
              typeof token.createdAt === 'string' &&
              (token.status === 'active' || token.status === 'inactive');
+      
+      if (!isValid) {
+        console.warn('SecureJsonTokenStorage: Invalid token filtered out:', token);
+      }
+      
+      return isValid;
     });
+  }
+
+  /**
+   * Debug method to get all tokens (including hashes) for debugging
+   */
+  async debugGetAllTokens(): Promise<{tokens: ApiToken[], storageInfo: any}> {
+    const tokens = await this.loadTokens();
+    const storageInfo = this.getStorageInfo();
+    
+    return {
+      tokens: tokens.map(token => ({
+        ...token,
+        tokenHashPrefix: token.tokenHash.substring(0, 10) + '...'
+      })),
+      storageInfo
+    };
   }
 }
 
