@@ -131,6 +131,13 @@ export class SecureJsonTokenStorage {
       return false;
     }
     
+    // In serverless environments (Vercel), disable caching to ensure consistency
+    // Each function instance should load fresh data to handle cross-function persistence
+    if (process.env.VERCEL || process.env.VERCEL_URL) {
+      console.log('SecureJsonTokenStorage: Serverless environment detected, skipping cache');
+      return false;
+    }
+    
     // Check for global cache invalidation
     const globalInvalidateTime = process.env.TOKENS_CACHE_INVALIDATE;
     if (globalInvalidateTime && parseInt(globalInvalidateTime) > this.cacheTimestamp) {
@@ -162,6 +169,12 @@ export class SecureJsonTokenStorage {
       }
 
       console.log('SecureJsonTokenStorage: Loading tokens from storage...');
+      console.log('SecureJsonTokenStorage: Environment check:', {
+        hasSecureTokensData: !!process.env.SECURE_TOKENS_DATA,
+        isVercel: !!(process.env.VERCEL || process.env.VERCEL_URL),
+        cacheTimestamp: this.cacheTimestamp,
+        cacheExpired: !this.isCacheValid()
+      });
       
       // Try environment variable first for serverless consistency
       const envData = process.env.SECURE_TOKENS_DATA;
