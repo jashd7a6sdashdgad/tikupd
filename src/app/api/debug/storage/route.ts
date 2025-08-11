@@ -1,17 +1,17 @@
 import { NextResponse } from 'next/server';
-import { tokenStorage } from '@/lib/storage/tokenStorage';
+import { secureTokenStorage } from '@/lib/storage/secureJsonStorage';
 
 export async function GET() {
   try {
     // Get storage information
-    const storageInfo = tokenStorage.getStorageInfo();
+    const storageInfo = secureTokenStorage.getStorageInfo();
     
     // Try to load tokens to test storage
     let tokenCount = 0;
     let loadError: string | null = null;
     
     try {
-      const tokens = await tokenStorage.loadTokens();
+      const tokens = await secureTokenStorage.loadTokens();
       tokenCount = tokens.length;
     } catch (error) {
       loadError = error instanceof Error ? error.message : String(error);
@@ -53,20 +53,8 @@ export async function GET() {
 function getRecommendations(storageInfo: any, envInfo: any): string[] {
   const recommendations: string[] = [];
 
-  if (storageInfo.vercelDetected && storageInfo.type.includes('InMemory')) {
-    recommendations.push('Vercel detected but using in-memory storage. Consider setting up GitHub Gist or Vercel Blob for persistence.');
-  }
-
-  if (storageInfo.type.includes('fallback')) {
-    recommendations.push('Storage is using fallback mode. Check file system permissions on Vercel.');
-  }
-
-  if (envInfo.NODE_ENV === 'production' && !envInfo.VERCEL_URL) {
-    recommendations.push('Production environment detected but Vercel not detected. Check environment variables.');
-  }
-
-  if (storageInfo.tokenCount === 0 && !storageInfo.loadError) {
-    recommendations.push('No tokens found. This might be expected for a fresh deployment.');
+  if (storageInfo.type === 'SecureJsonStorage' && envInfo.VERCEL_URL && !process.env.SECURE_TOKENS_DATA) {
+    recommendations.push('Running on Vercel, but SECURE_TOKENS_DATA environment variable is not set. Persistence might rely on file system which is not reliable on Vercel.');
   }
 
   if (storageInfo.loadError) {
@@ -74,4 +62,4 @@ function getRecommendations(storageInfo: any, envInfo: any): string[] {
   }
 
   return recommendations;
-} 
+}

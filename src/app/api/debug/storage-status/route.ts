@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { tokenStorage } from '@/lib/storage/tokenStorage';
+import { secureTokenStorage, ApiToken } from '@/lib/storage/secureJsonStorage';
+import crypto from 'crypto';
 
 // Debug endpoint to check storage status
 export async function GET(request: NextRequest) {
   try {
-    console.log('=== STORAGE STATUS DEBUG ===');
+    console.log('=== SECURE STORAGE STATUS DEBUG ===');
     
     // Environment check
     const envInfo = {
@@ -20,16 +21,14 @@ export async function GET(request: NextRequest) {
     console.log('Environment info:', envInfo);
     
     // Storage info
-    const storageType = tokenStorage.getStorageType();
-    const storageInfo = tokenStorage.getStorageInfo();
+    const storageInfo = secureTokenStorage.getStorageInfo();
     
-    console.log('Storage type:', storageType);
     console.log('Storage info:', storageInfo);
     
     // Try to load tokens
     let loadResult;
     try {
-      const tokens = await tokenStorage.loadTokens();
+      const tokens = await secureTokenStorage.loadTokens();
       loadResult = {
         success: true,
         count: tokens.length,
@@ -51,38 +50,35 @@ export async function GET(request: NextRequest) {
     
     // Try to save test (create and immediately delete a test token)
     let saveResult;
+    const testTokenId = 'diagnostic_' + Date.now();
+    const plainTestToken = `diagnostic_token_${crypto.randomBytes(16).toString('hex')}`;
     try {
-      const currentTokens = await tokenStorage.loadTokens();
-      const testToken = {
-        id: 'diagnostic_' + Date.now(),
-        token: 'test_token_value',
+      const tokenData: Omit<ApiToken, 'tokenHash'> = {
+        id: testTokenId,
         name: 'Diagnostic Test Token',
         permissions: ['read'],
-        status: 'active' as const,
-        createdAt: new Date().toISOString()
+        status: 'active',
+        createdAt: new Date().toISOString(),
       };
+      await secureTokenStorage.createToken(plainTestToken, tokenData);
       
-      const tokensToSave = [...currentTokens, testToken];
-      await tokenStorage.saveTokens(tokensToSave);
+      // Verify save by validating
+      const validatedToken = await secureTokenStorage.validateToken(plainTestToken);
       
-      // Verify save
-      const reloadedTokens = await tokenStorage.loadTokens();
-      const foundTest = reloadedTokens.find(t => t.id === testToken.id);
-      
-      if (foundTest) {
+      if (validatedToken && validatedToken.id === testTokenId) {
         // Clean up test token
-        await tokenStorage.deleteToken(testToken.id);
+        await secureTokenStorage.deleteToken(testTokenId);
         saveResult = {
           success: true,
-          message: 'Save and delete test successful'
+          message: 'Save, validate, and delete test successful'
         };
         console.log('Save test successful');
       } else {
         saveResult = {
           success: false,
-          error: 'Test token not found after save'
+          error: 'Test token not found after save/validate'
         };
-        console.error('Save test failed: token not persisted');
+        console.error('Save test failed: token not persisted or validated');
       }
     } catch (saveError) {
       saveResult = {
@@ -96,7 +92,7 @@ export async function GET(request: NextRequest) {
       success: true,
       environment: envInfo,
       storage: {
-        type: storageType,
+        type: storageInfo.type,
         info: storageInfo
       },
       tests: {
@@ -106,13 +102,13 @@ export async function GET(request: NextRequest) {
       timestamp: new Date().toISOString()
     };
     
-    console.log('=== STORAGE STATUS DEBUG COMPLETE ===');
+    console.log('=== SECURE STORAGE STATUS DEBUG COMPLETE ===');
     console.log('Final result:', JSON.stringify(result, null, 2));
     
     return NextResponse.json(result);
     
   } catch (error) {
-    console.error('=== STORAGE STATUS DEBUG FAILED ===');
+    console.error('=== SECURE STORAGE STATUS DEBUG FAILED ===');
     console.error('Error:', error);
     
     return NextResponse.json({

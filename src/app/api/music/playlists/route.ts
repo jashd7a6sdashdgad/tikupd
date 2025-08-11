@@ -1,42 +1,40 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyToken, COOKIE_OPTIONS } from '@/lib/auth';
-import { tokenStorage } from '@/lib/storage/tokenStorage';
+import { secureTokenStorage, ApiToken } from '@/lib/storage/secureJsonStorage';
+import crypto from 'crypto';
 
 // Wrapper to use existing persistent storage for music data
 class MusicDataStorage {
-  async getToken(key: string): Promise<string | null> {
+  async getData(key: string): Promise<string | null> {
     try {
-      // Use the existing token storage system for music data
-      const tokens = await tokenStorage.loadTokens();
-      const musicToken = tokens.find(t => t.name === key && t.status === 'active');
-      return musicToken ? musicToken.token : null;
+      const tokens = await secureTokenStorage.loadTokens();
+      const musicToken = tokens.find(t => t.name === key && t.permissions?.includes('music_data') && t.status === 'active');
+      return musicToken ? musicToken.data || null : null;
     } catch (error) {
       console.error('Error loading music data:', error);
       return null;
     }
   }
   
-  async storeToken(key: string, value: string): Promise<void> {
+  async storeData(key: string, value: string): Promise<void> {
     try {
-      // Load existing tokens
-      const tokens = await tokenStorage.loadTokens();
-      
-      // Remove existing music data token with this key
-      const filteredTokens = tokens.filter(t => !(t.name === key && t.permissions?.includes('music_data')));
-      
-      // Add new music data token
-      const musicToken = {
-        id: `music_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        name: key,
-        token: value,
-        permissions: ['music_data'],
-        status: 'active' as const,
-        createdAt: new Date().toISOString(),
-        expiresAt: undefined
-      };
-      
-      filteredTokens.push(musicToken);
-      await tokenStorage.saveTokens(filteredTokens);
+      const tokens = await secureTokenStorage.loadTokens();
+      const existingToken = tokens.find(t => t.name === key && t.permissions?.includes('music_data'));
+
+      if (existingToken) {
+        await secureTokenStorage.updateToken(existingToken.id, { data: value });
+      } else {
+        const dummyPlainToken = `music_data_${crypto.randomBytes(16).toString('hex')}`;
+        const newTokenData: Omit<ApiToken, 'tokenHash'> = {
+          id: `music_${crypto.randomUUID()}`,
+          name: key,
+          permissions: ['music_data'],
+          status: 'active',
+          createdAt: new Date().toISOString(),
+          data: value,
+        };
+        await secureTokenStorage.createToken(dummyPlainToken, newTokenData);
+      }
     } catch (error) {
       console.error('Error saving music data:', error);
     }
@@ -101,34 +99,23 @@ interface PlaylistRequest {
 
 export async function POST(request: NextRequest) {
   try {
-    // Verify user authentication
     const token = request.cookies.get(COOKIE_OPTIONS.name)?.value;
     if (!token) {
-      return NextResponse.json(
-        { success: false, message: 'Authentication required' },
-        { status: 401 }
-      );
+      return NextResponse.json({ success: false, message: 'Authentication required' }, { status: 401 });
     }
     
     const user = verifyToken(token);
     const body: PlaylistRequest = await request.json();
     
-    console.log('Playlist API request:', body);
-
     if (!body.action) {
-      return NextResponse.json(
-        { success: false, message: 'Action is required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ success: false, message: 'Action is required' }, { status: 400 });
     }
 
-    const storage = musicStorage;
     const playlistsKey = `playlists_${user.id}`;
 
-    // Get existing playlists
     let playlists: Playlist[] = [];
     try {
-      const existingData = await storage.getToken(playlistsKey);
+      const existingData = await musicStorage.getData(playlistsKey);
       if (existingData) {
         playlists = JSON.parse(existingData);
       }
@@ -141,10 +128,7 @@ export async function POST(request: NextRequest) {
     switch (body.action) {
       case 'create':
         if (!body.name) {
-          return NextResponse.json(
-            { success: false, message: 'Playlist name is required' },
-            { status: 400 }
-          );
+          return NextResponse.json({ success: false, message: 'Playlist name is required' }, { status: 400 });
         }
 
         const newPlaylist: Playlist = {
@@ -162,14 +146,12 @@ export async function POST(request: NextRequest) {
         };
 
         playlists.push(newPlaylist);
-        await storage.storeToken(playlistsKey, JSON.stringify(playlists));
+        await musicStorage.storeData(playlistsKey, JSON.stringify(playlists));
 
-        result = {
-          playlist: newPlaylist,
-          message: 'Playlist created successfully'
-        };
+        result = { playlist: newPlaylist, message: 'Playlist created successfully' };
         break;
 
+      // ... (other cases remain the same, they just use the `playlists` array)
       case 'update':
         if (!body.playlistId) {
           return NextResponse.json(
@@ -197,7 +179,7 @@ export async function POST(request: NextRequest) {
         };
 
         playlists[playlistIndex] = updatedPlaylist;
-        await storage.storeToken(playlistsKey, JSON.stringify(playlists));
+        await musicStorage.storeData(playlistsKey, JSON.stringify(playlists));
 
         result = {
           playlist: updatedPlaylist,
@@ -223,7 +205,7 @@ export async function POST(request: NextRequest) {
 
         const deletedPlaylist = playlists[deleteIndex];
         playlists.splice(deleteIndex, 1);
-        await storage.storeToken(playlistsKey, JSON.stringify(playlists));
+        await musicStorage.storeData(playlistsKey, JSON.stringify(playlists));
 
         result = {
           playlist: deletedPlaylist,
@@ -247,7 +229,6 @@ export async function POST(request: NextRequest) {
           );
         }
 
-        // Check if song already exists in playlist
         const songExists = playlists[addToIndex].songs.some(s => 
           s.id === body.song!.id && s.platform === body.song!.platform
         );
@@ -269,7 +250,7 @@ export async function POST(request: NextRequest) {
         playlists[addToIndex].totalDuration += body.song.duration || 0;
         playlists[addToIndex].updatedAt = new Date();
 
-        await storage.storeToken(playlistsKey, JSON.stringify(playlists));
+        await musicStorage.storeData(playlistsKey, JSON.stringify(playlists));
 
         result = {
           playlist: playlists[addToIndex],
@@ -310,7 +291,7 @@ export async function POST(request: NextRequest) {
         playlists[removeFromIndex].totalDuration -= removedSong.duration || 0;
         playlists[removeFromIndex].updatedAt = new Date();
 
-        await storage.storeToken(playlistsKey, JSON.stringify(playlists));
+        await musicStorage.storeData(playlistsKey, JSON.stringify(playlists));
 
         result = {
           playlist: playlists[removeFromIndex],
@@ -352,7 +333,7 @@ export async function POST(request: NextRequest) {
         };
 
         playlists.push(duplicatedPlaylist);
-        await storage.storeToken(playlistsKey, JSON.stringify(playlists));
+        await musicStorage.storeData(playlistsKey, JSON.stringify(playlists));
 
         result = {
           playlist: duplicatedPlaylist,
@@ -362,41 +343,22 @@ export async function POST(request: NextRequest) {
         break;
 
       default:
-        return NextResponse.json(
-          { success: false, message: 'Invalid action' },
-          { status: 400 }
-        );
+        return NextResponse.json({ success: false, message: 'Invalid action' }, { status: 400 });
     }
 
-    return NextResponse.json({
-      success: true,
-      data: result,
-      userId: user.id,
-      timestamp: new Date().toISOString()
-    });
+    return NextResponse.json({ success: true, data: result, userId: user.id, timestamp: new Date().toISOString() });
 
   } catch (error: any) {
     console.error('Playlist API error:', error);
-    
-    return NextResponse.json(
-      {
-        success: false,
-        message: error.message || 'Failed to process playlist request'
-      },
-      { status: 500 }
-    );
+    return NextResponse.json({ success: false, message: error.message || 'Failed to process playlist request' }, { status: 500 });
   }
 }
 
 export async function GET(request: NextRequest) {
   try {
-    // Verify user authentication
     const token = request.cookies.get(COOKIE_OPTIONS.name)?.value;
     if (!token) {
-      return NextResponse.json(
-        { success: false, message: 'Authentication required' },
-        { status: 401 }
-      );
+      return NextResponse.json({ success: false, message: 'Authentication required' }, { status: 401 });
     }
     
     const user = verifyToken(token);
@@ -404,13 +366,11 @@ export async function GET(request: NextRequest) {
     const playlistId = searchParams.get('id');
     const includePublic = searchParams.get('include_public') === 'true';
 
-    const storage = musicStorage;
     const playlistsKey = `playlists_${user.id}`;
 
-    // Get user's playlists
     let userPlaylists: Playlist[] = [];
     try {
-      const existingData = await storage.getToken(playlistsKey);
+      const existingData = await musicStorage.getData(playlistsKey);
       if (existingData) {
         userPlaylists = JSON.parse(existingData);
       }
@@ -421,55 +381,24 @@ export async function GET(request: NextRequest) {
     let result: any = null;
 
     if (playlistId) {
-      // Get specific playlist
       const playlist = userPlaylists.find(p => p.id === playlistId);
       if (!playlist) {
-        return NextResponse.json(
-          { success: false, message: 'Playlist not found' },
-          { status: 404 }
-        );
+        return NextResponse.json({ success: false, message: 'Playlist not found' }, { status: 404 });
       }
-
-      result = {
-        playlist,
-        songCount: playlist.songs.length,
-        totalDuration: playlist.totalDuration
-      };
+      result = { playlist, songCount: playlist.songs.length, totalDuration: playlist.totalDuration };
     } else {
-      // Get all playlists
       const allPlaylists = userPlaylists;
-
       if (includePublic) {
         // In a real app, you'd fetch public playlists from a shared storage
-        // For now, we'll just return the user's playlists
       }
-
-      // Sort by most recently updated
       allPlaylists.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
-
-      result = {
-        playlists: allPlaylists,
-        total: allPlaylists.length,
-        userPlaylists: userPlaylists.length,
-        publicPlaylists: 0
-      };
+      result = { playlists: allPlaylists, total: allPlaylists.length, userPlaylists: userPlaylists.length, publicPlaylists: 0 };
     }
 
-    return NextResponse.json({
-      success: true,
-      data: result,
-      userId: user.id,
-      timestamp: new Date().toISOString()
-    });
+    return NextResponse.json({ success: true, data: result, userId: user.id, timestamp: new Date().toISOString() });
 
   } catch (error: any) {
     console.error('Playlist GET API error:', error);
-    return NextResponse.json(
-      {
-        success: false,
-        message: error.message || 'Failed to fetch playlists'
-      },
-      { status: 500 }
-    );
+    return NextResponse.json({ success: false, message: error.message || 'Failed to fetch playlists' }, { status: 500 });
   }
 }

@@ -1,19 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { tokenStorage } from '@/lib/storage/tokenStorage';
+import { secureTokenStorage, ApiToken } from '@/lib/storage/secureJsonStorage';
+import crypto from 'crypto';
 
 export async function GET(request: NextRequest) {
   try {
-    console.log('Debug: Token storage diagnostics starting...');
+    console.log('Debug: Secure token storage diagnostics starting...');
     
     // Get storage information
-    const storageType = tokenStorage.getStorageType();
-    const storageInfo = tokenStorage.getStorageInfo();
+    const storageInfo = secureTokenStorage.getStorageInfo();
     
-    console.log('Storage type:', storageType);
     console.log('Storage info:', storageInfo);
     
     // Try to load tokens
-    const tokens = await tokenStorage.loadTokens();
+    const tokens = await secureTokenStorage.loadTokens();
     console.log('Loaded tokens count:', tokens.length);
     
     // Environment variables check
@@ -22,58 +21,67 @@ export async function GET(request: NextRequest) {
       VERCEL: process.env.VERCEL,
       VERCEL_URL: process.env.VERCEL_URL,
       VERCEL_ENV: process.env.VERCEL_ENV,
-      hasKV_URL: !!process.env.KV_URL,
-      hasBLOB_READ_WRITE_TOKEN: !!process.env.BLOB_READ_WRITE_TOKEN,
-      hasGITHUB_TOKEN: !!process.env.GITHUB_TOKEN,
-      hasGITHUB_GIST_ID: !!process.env.GITHUB_GIST_ID,
+      hasSECURE_TOKENS_DATA: !!process.env.SECURE_TOKENS_DATA,
+      hasTOKEN_ENCRYPTION_KEY: !!process.env.TOKEN_ENCRYPTION_KEY,
       cwd: process.cwd(),
       platform: process.platform
     };
     
     console.log('Environment check:', envCheck);
     
-    // Test token creation
+    // Test token creation and validation
     let testResult: string | null = null;
+    const testTokenId = `test_${Date.now()}`;
+    const plainTestToken = `test_token_${crypto.randomBytes(16).toString('hex')}`;
+
     try {
-      // Test load
-      const testTokens = await tokenStorage.loadTokens();
-      console.log('Test load successful, token count:', testTokens.length);
-      
-      // Test save with a temporary token
-      const tempToken = {
-        id: `test_${Date.now()}`,
+      // Test create
+      const tokenData: Omit<ApiToken, 'tokenHash'> = {
+        id: testTokenId,
         name: 'Test Token',
-        token: 'test_token_value',
         permissions: ['read'],
-        status: 'active' as const,
-        createdAt: new Date().toISOString()
+        status: 'active',
+        createdAt: new Date().toISOString(),
       };
-      
-      const currentTokens = await tokenStorage.loadTokens();
-      const updatedTokens = [...currentTokens, tempToken];
-      await tokenStorage.saveTokens(updatedTokens);
-      
-      // Verify the token was saved
-      const verifyTokens = await tokenStorage.loadTokens();
-      const saved = verifyTokens.find(t => t.id === tempToken.id);
-      
-      if (saved) {
-        // Clean up - remove the test token
-        const cleanTokens = verifyTokens.filter(t => t.id !== tempToken.id);
-        await tokenStorage.saveTokens(cleanTokens);
-        testResult = 'All storage operations passed: load, save, and cleanup successful';
+      await secureTokenStorage.createToken(plainTestToken, tokenData);
+      console.log('Test token created');
+
+      // Test validate
+      const validatedToken = await secureTokenStorage.validateToken(plainTestToken);
+      if (validatedToken && validatedToken.id === testTokenId) {
+        console.log('Test token validated successfully');
+        
+        // Test delete
+        await secureTokenStorage.deleteToken(testTokenId);
+        console.log('Test token deleted');
+
+        // Verify deletion
+        const finalTokens = await secureTokenStorage.loadTokens();
+        if (!finalTokens.find(t => t.id === testTokenId)) {
+          testResult = 'All secure storage operations passed: create, validate, and delete successful';
+        } else {
+          testResult = 'Storage test failed: token not properly deleted';
+        }
       } else {
-        testResult = 'Storage test failed: token not persisted';
+        testResult = 'Storage test failed: token not validated';
+        // Cleanup just in case
+        await secureTokenStorage.deleteToken(testTokenId);
       }
     } catch (error) {
       console.error('Test failed:', error);
       testResult = `Test failed: ${error instanceof Error ? error.message : String(error)}`;
+      // Cleanup just in case
+      try {
+        await secureTokenStorage.deleteToken(testTokenId);
+      } catch (cleanupError) {
+        console.error('Cleanup failed:', cleanupError);
+      }
     }
     
     return NextResponse.json({
       success: true,
       debug: {
-        storageType,
+        storageType: storageInfo.type,
         storageInfo,
         tokensCount: tokens.length,
         environment: envCheck,

@@ -1,42 +1,41 @@
 import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
-import { tokenStorage } from '@/lib/storage/tokenStorage';
+import { secureTokenStorage, ApiToken } from '@/lib/storage/secureJsonStorage';
 
 // Create a permanent token that will be saved to the local file system
 export async function POST(request: NextRequest) {
   try {
     console.log('Creating permanent token for N8N...');
     
-    // Generate a permanent token
-    const permanentToken = {
+    const plainToken = 'mpa_permanent_n8n_' + crypto.randomBytes(32).toString('hex');
+    
+    const permanentTokenData: Omit<ApiToken, 'tokenHash'> = {
       id: 'n8n-permanent',
-      token: 'mpa_permanent_n8n_' + crypto.randomBytes(32).toString('hex'),
       name: 'N8N Permanent Token',
       permissions: ['*', 'read:expenses', 'write:expenses', 'read:emails', 'write:emails'],
-      status: 'active' as const,
+      status: 'active',
       createdAt: new Date().toISOString(),
       expiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString() // 1 year expiry
     };
     
-    // Load existing tokens
-    const tokens = await tokenStorage.loadTokens();
+    // Delete any existing permanent token first
+    try {
+      await secureTokenStorage.deleteToken('n8n-permanent');
+      console.log('Existing permanent token deleted.');
+    } catch (error) {
+      // Ignore if it doesn't exist
+    }
     
-    // Remove any existing permanent token
-    const filteredTokens = tokens.filter(t => t.id !== 'n8n-permanent');
-    
-    // Add new permanent token
-    filteredTokens.push(permanentToken);
-    
-    // Save tokens
-    await tokenStorage.saveTokens(filteredTokens);
+    // Create the new permanent token
+    await secureTokenStorage.createToken(plainToken, permanentTokenData);
     console.log('Permanent token saved successfully');
     
     return NextResponse.json({
       success: true,
       message: 'Permanent token created for N8N',
-      token: permanentToken.token,
-      expiresAt: permanentToken.expiresAt,
-      usage: `Authorization: Bearer ${permanentToken.token}`
+      token: plainToken, // Return the plain text token ONCE upon creation
+      expiresAt: permanentTokenData.expiresAt,
+      usage: `Authorization: Bearer ${plainToken}`
     });
     
   } catch (error) {
@@ -51,7 +50,7 @@ export async function POST(request: NextRequest) {
 
 export async function GET() {
   try {
-    const tokens = await tokenStorage.loadTokens();
+    const tokens = await secureTokenStorage.loadTokens();
     const permanentToken = tokens.find(t => t.id === 'n8n-permanent');
     
     if (!permanentToken) {
@@ -64,10 +63,9 @@ export async function GET() {
     return NextResponse.json({
       success: true,
       message: 'Permanent token found',
-      token: permanentToken.token,
       status: permanentToken.status,
       expiresAt: permanentToken.expiresAt,
-      usage: `Authorization: Bearer ${permanentToken.token}`
+      // Note: The token value is not returned for security reasons.
     });
     
   } catch (error) {

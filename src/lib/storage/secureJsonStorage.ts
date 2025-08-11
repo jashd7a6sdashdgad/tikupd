@@ -10,6 +10,7 @@ export interface ApiToken {
   status: 'active' | 'inactive';
   createdAt: string;
   expiresAt?: string;
+  data?: string; // For storing arbitrary data, e.g., for music playlists
 }
 
 export interface StoredTokenData {
@@ -419,7 +420,8 @@ export class SecureJsonTokenStorage {
              typeof token.name === 'string' && 
              Array.isArray(token.permissions) &&
              typeof token.createdAt === 'string' &&
-             (token.status === 'active' || token.status === 'inactive');
+             (token.status === 'active' || token.status === 'inactive') &&
+             (token.data === undefined || typeof token.data === 'string');
       
       if (!isValid) {
         console.warn('SecureJsonTokenStorage: Invalid token filtered out:', token);

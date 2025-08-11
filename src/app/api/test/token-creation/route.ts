@@ -1,14 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { tokenStorage, ApiToken } from '@/lib/storage/tokenStorage';
+import { secureTokenStorage, ApiToken } from '@/lib/storage/secureJsonStorage';
 import crypto from 'crypto';
 
 // Test endpoint to simulate token creation exactly like the real API
 export async function POST(request: NextRequest) {
   try {
-    console.log('=== TOKEN CREATION TEST ===');
-    console.log('Environment:', process.env.NODE_ENV);
-    console.log('Is Vercel:', !!process.env.VERCEL);
-    console.log('Storage type:', tokenStorage.getStorageType());
+    console.log('=== SECURE TOKEN CREATION TEST ===');
+    const storageInfo = secureTokenStorage.getStorageInfo();
+    console.log('Storage info:', storageInfo);
     
     // Parse request body
     const body = await request.json();
@@ -17,72 +16,57 @@ export async function POST(request: NextRequest) {
     console.log('Creating test token with name:', name);
     
     // Generate token exactly like the real API
-    const token = 'mpa_' + crypto.randomBytes(32).toString('hex');
+    const plainToken = 'mpa_' + crypto.randomBytes(32).toString('hex');
     const id = crypto.randomUUID();
     
-    const newToken = {
+    const tokenData: Omit<ApiToken, 'tokenHash'> = {
       id,
-      token,
       name: name.trim(),
       permissions: ['read', 'write'],
       createdAt: new Date().toISOString(),
-      status: 'active' as const
+      status: 'active',
     };
     
-    console.log('Generated token:', { id: newToken.id, name: newToken.name });
+    console.log('Generated token data:', { id: tokenData.id, name: tokenData.name });
     
     // Test storage operations step by step
-    console.log('Step 1: Loading existing tokens...');
-    let tokens: ApiToken[] = [];
+    console.log('Step 1: Creating token...');
+    let savedToken: ApiToken;
     try {
-      tokens = await tokenStorage.loadTokens();
-      console.log('✅ Loaded', tokens.length, 'existing tokens');
+      savedToken = await secureTokenStorage.createToken(plainToken, tokenData);
+      console.log('✅ Token created successfully');
     } catch (error) {
-      console.error('❌ Load failed:', error);
-      throw new Error(`Load failed: ${error instanceof Error ? error.message : String(error)}`);
+      console.error('❌ Create failed:', error);
+      throw new Error(`Create failed: ${error instanceof Error ? error.message : String(error)}`);
     }
     
-    console.log('Step 2: Adding new token...');
-    tokens.push(newToken);
-    console.log('✅ Token added to array, total count:', tokens.length);
-    
-    console.log('Step 3: Saving tokens...');
+    console.log('Step 2: Verifying creation by validating...');
     try {
-      await tokenStorage.saveTokens(tokens);
-      console.log('✅ Tokens saved successfully');
-    } catch (error) {
-      console.error('❌ Save failed:', error);
-      throw new Error(`Save failed: ${error instanceof Error ? error.message : String(error)}`);
-    }
-    
-    console.log('Step 4: Verifying save by reloading...');
-    try {
-      const reloaded = await tokenStorage.loadTokens();
-      const found = reloaded.find(t => t.id === newToken.id);
-      if (found) {
-        console.log('✅ Token found after reload, verification successful');
+      const validatedToken = await secureTokenStorage.validateToken(plainToken);
+      if (validatedToken && validatedToken.id === id) {
+        console.log('✅ Token validated successfully after creation');
       } else {
-        console.log('⚠️  Token not found after reload, but creation may still have worked');
+        console.log('⚠️  Token not validated after creation');
       }
     } catch (error) {
-      console.error('❌ Verification failed:', error);
+      console.error('❌ Validation failed:', error);
     }
     
-    console.log('=== TOKEN CREATION TEST COMPLETE ===');
+    console.log('=== SECURE TOKEN CREATION TEST COMPLETE ===');
     
     return NextResponse.json({
       success: true,
       message: 'Token creation test completed successfully',
       token: {
-        id: newToken.id,
-        token: newToken.token,
-        name: newToken.name,
-        permissions: newToken.permissions,
-        createdAt: newToken.createdAt,
-        status: newToken.status
+        id: savedToken.id,
+        token: plainToken, // Return plain token for testing
+        name: savedToken.name,
+        permissions: savedToken.permissions,
+        createdAt: savedToken.createdAt,
+        status: savedToken.status
       },
       debug: {
-        storageType: tokenStorage.getStorageType(),
+        storageType: storageInfo.type,
         environment: process.env.NODE_ENV,
         isVercel: !!process.env.VERCEL,
         timestamp: new Date().toISOString()
@@ -90,7 +74,7 @@ export async function POST(request: NextRequest) {
     });
     
   } catch (error) {
-    console.error('=== TOKEN CREATION TEST FAILED ===');
+    console.error('=== SECURE TOKEN CREATION TEST FAILED ===');
     console.error('Error details:', error);
     
     return NextResponse.json({
@@ -99,7 +83,7 @@ export async function POST(request: NextRequest) {
       details: error instanceof Error ? error.message : String(error),
       stack: error instanceof Error ? error.stack : 'No stack trace',
       debug: {
-        storageType: tokenStorage.getStorageType(),
+        storageType: secureTokenStorage.getStorageInfo().type,
         environment: process.env.NODE_ENV,
         isVercel: !!process.env.VERCEL,
         timestamp: new Date().toISOString()
