@@ -23,7 +23,7 @@ export class SecureJsonTokenStorage {
   private readonly encryptionKey: string;
   private cache: StoredTokenData | null = null;
   private cacheTimestamp: number = 0;
-  private readonly CACHE_TTL = 5000; // 5 seconds
+  private readonly CACHE_TTL = 1000; // 1 second - shorter for serverless
 
   constructor() {
     // Use process.cwd() which works on both local dev and Vercel
@@ -126,7 +126,27 @@ export class SecureJsonTokenStorage {
   }
 
   private isCacheValid(): boolean {
-    return this.cache !== null && (Date.now() - this.cacheTimestamp) < this.CACHE_TTL;
+    if (this.cache === null) {
+      return false;
+    }
+    
+    // Check for global cache invalidation
+    const globalInvalidateTime = process.env.TOKENS_CACHE_INVALIDATE;
+    if (globalInvalidateTime && parseInt(globalInvalidateTime) > this.cacheTimestamp) {
+      console.log('SecureJsonTokenStorage: Cache invalidated by global flag');
+      return false;
+    }
+    
+    return (Date.now() - this.cacheTimestamp) < this.CACHE_TTL;
+  }
+
+  /**
+   * Force cache invalidation globally by setting a global flag
+   */
+  private invalidateGlobalCache(): void {
+    // Use environment variable to signal cache invalidation across serverless instances
+    process.env.TOKENS_CACHE_INVALIDATE = Date.now().toString();
+    console.log('SecureJsonTokenStorage: Global cache invalidation triggered');
   }
 
   /**
@@ -141,44 +161,49 @@ export class SecureJsonTokenStorage {
       }
 
       console.log('SecureJsonTokenStorage: Loading tokens from storage...');
+      
+      // Try environment variable first for serverless consistency
+      const envData = process.env.SECURE_TOKENS_DATA;
+      if (envData) {
+        try {
+          const decryptedData = this.decrypt(envData);
+          const parsed: StoredTokenData = JSON.parse(decryptedData);
+          
+          // Update cache
+          this.cache = parsed;
+          this.cacheTimestamp = Date.now();
+          
+          const validTokens = this.validateTokens(parsed.tokens || []);
+          console.log(`SecureJsonTokenStorage: Loaded ${validTokens.length} tokens from environment`);
+          return validTokens;
+        } catch (envError) {
+          console.error('SecureJsonTokenStorage: Environment data parsing failed:', envError);
+        }
+      }
+      
+      console.log('SecureJsonTokenStorage: Environment variable empty, trying file...');
       await this.ensureDataDir();
       
-      // Try to read from file first
+      // Fallback to file storage
       try {
         const data = await fs.readFile(this.filePath, 'utf-8');
         const decryptedData = this.decrypt(data);
         const parsed: StoredTokenData = JSON.parse(decryptedData);
         
-        // Update cache
+        // Update cache and sync to environment for future consistency
         this.cache = parsed;
         this.cacheTimestamp = Date.now();
         
+        // Sync file data to environment for serverless consistency
+        const encryptedData = this.encrypt(JSON.stringify(parsed, null, 2));
+        process.env.SECURE_TOKENS_DATA = encryptedData;
+        
         const validTokens = this.validateTokens(parsed.tokens || []);
-        console.log(`SecureJsonTokenStorage: Loaded ${validTokens.length} tokens from file`);
+        console.log(`SecureJsonTokenStorage: Loaded ${validTokens.length} tokens from file and synced to environment`);
         return validTokens;
       } catch (fileError) {
-        console.log('SecureJsonTokenStorage: File read failed, checking environment variable...');
+        console.log('SecureJsonTokenStorage: File read failed, no data found');
         
-        // Fallback to environment variable for Vercel
-        const envData = process.env.SECURE_TOKENS_DATA;
-        if (envData) {
-          try {
-            const decryptedData = this.decrypt(envData);
-            const parsed: StoredTokenData = JSON.parse(decryptedData);
-            
-            // Update cache
-            this.cache = parsed;
-            this.cacheTimestamp = Date.now();
-            
-            const validTokens = this.validateTokens(parsed.tokens || []);
-            console.log(`SecureJsonTokenStorage: Loaded ${validTokens.length} tokens from environment`);
-            return validTokens;
-          } catch (envError) {
-            console.error('SecureJsonTokenStorage: Environment data parsing failed:', envError);
-          }
-        }
-        
-        console.log('SecureJsonTokenStorage: No tokens found, returning empty array');
         // Initialize empty cache
         this.cache = {
           tokens: [],
@@ -208,24 +233,28 @@ export class SecureJsonTokenStorage {
       
       console.log(`SecureJsonTokenStorage: Saving ${validTokens.length} tokens...`);
       
-      // Update cache first
+      const encryptedData = this.encrypt(JSON.stringify(dataToStore, null, 2));
+      
+      // Always try to save to environment variable first for serverless consistency
+      process.env.SECURE_TOKENS_DATA = encryptedData;
+      console.log(`SecureJsonTokenStorage: Saved ${validTokens.length} tokens to environment`);
+      
+      // Update cache after successful environment save
       this.cache = dataToStore;
       this.cacheTimestamp = Date.now();
       
-      const encryptedData = this.encrypt(JSON.stringify(dataToStore, null, 2));
-      
-      // Try to save to file first
+      // Try to save to file as backup (may fail on Vercel)
       try {
         await this.ensureDataDir();
         await fs.writeFile(this.filePath, encryptedData);
-        console.log(`SecureJsonTokenStorage: Saved ${validTokens.length} tokens to file`);
+        console.log(`SecureJsonTokenStorage: Also saved ${validTokens.length} tokens to file`);
       } catch (fileError) {
-        console.warn('SecureJsonTokenStorage: Could not save to file, using environment fallback');
-        
-        // Store in process environment for current session
-        process.env.SECURE_TOKENS_DATA = encryptedData;
-        console.log(`SecureJsonTokenStorage: Saved ${validTokens.length} tokens to environment`);
+        console.log('SecureJsonTokenStorage: File save failed (expected on Vercel), environment save succeeded');
       }
+      
+      // Force cache invalidation globally by updating timestamp
+      this.invalidateGlobalCache();
+      
     } catch (error) {
       console.error('SecureJsonTokenStorage: Failed to save tokens:', error);
       throw new Error(`Failed to save tokens: ${error instanceof Error ? error.message : String(error)}`);
@@ -417,5 +446,20 @@ export class SecureJsonTokenStorage {
   }
 }
 
+// Global instance management for serverless environments
+let globalTokenStorage: SecureJsonTokenStorage | null = null;
+
+/**
+ * Get or create the singleton storage instance
+ * This ensures all API routes use the same instance
+ */
+function getTokenStorage(): SecureJsonTokenStorage {
+  if (!globalTokenStorage) {
+    console.log('SecureJsonTokenStorage: Creating new global instance');
+    globalTokenStorage = new SecureJsonTokenStorage();
+  }
+  return globalTokenStorage;
+}
+
 // Export singleton instance
-export const secureTokenStorage = new SecureJsonTokenStorage();
+export const secureTokenStorage = getTokenStorage();
