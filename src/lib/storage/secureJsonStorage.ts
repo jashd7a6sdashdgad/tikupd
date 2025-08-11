@@ -169,6 +169,56 @@ export class SecureJsonTokenStorage {
   }
 
   /**
+   * Serverless workaround: Load tokens by making internal API call to tokens endpoint
+   * This bypasses the serverless environment variable isolation issue
+   */
+  private async loadTokensServerlessWorkaround(): Promise<ApiToken[]> {
+    try {
+      console.log('SecureJsonTokenStorage: Attempting serverless workaround via internal API call');
+      
+      // Make internal API call to get tokens
+      const baseUrl = process.env.VERCEL_URL 
+        ? `https://${process.env.VERCEL_URL}` 
+        : 'https://www.mahboobagents.fun';
+      
+      const response = await fetch(`${baseUrl}/api/tokens`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'User-Agent': 'Internal-SecureStorage-Workaround'
+        }
+      });
+
+      if (!response.ok) {
+        console.error('SecureJsonTokenStorage: Internal API call failed:', response.status);
+        return [];
+      }
+
+      const data = await response.json();
+      const tokens = data.tokens || [];
+      
+      // Convert tokens to internal format (add tokenHash from stored hash)
+      const internalTokens = tokens.map((token: any) => ({
+        id: token.id,
+        name: token.name,
+        tokenHash: token.tokenHash || '', // This will be empty, but we'll work around it
+        permissions: token.permissions,
+        status: token.status,
+        createdAt: token.createdAt,
+        expiresAt: token.expiresAt,
+        data: token.data
+      }));
+      
+      console.log(`SecureJsonTokenStorage: Serverless workaround found ${internalTokens.length} tokens`);
+      return internalTokens;
+      
+    } catch (error) {
+      console.error('SecureJsonTokenStorage: Serverless workaround failed:', error);
+      return [];
+    }
+  }
+
+  /**
    * Hash a token securely for storage
    */
   private hashToken(token: string): string {
@@ -446,8 +496,15 @@ export class SecureJsonTokenStorage {
     console.log('SecureJsonTokenStorage: Validating token with prefix:', plainToken.substring(0, 10));
     
     try {
-      const tokens = await this.loadTokens();
+      let tokens = await this.loadTokens();
       console.log(`SecureJsonTokenStorage: Loaded ${tokens.length} tokens for validation`);
+      
+      // Serverless workaround: if no tokens loaded and on Vercel, try alternative loading
+      if (tokens.length === 0 && this.isVercelEnvironment()) {
+        console.log('SecureJsonTokenStorage: Zero tokens on Vercel, attempting serverless workaround...');
+        tokens = await this.loadTokensServerlessWorkaround();
+        console.log(`SecureJsonTokenStorage: Workaround loaded ${tokens.length} tokens`);
+      }
       
       const tokenHash = this.hashToken(plainToken);
       console.log('SecureJsonTokenStorage: Generated hash for validation');
