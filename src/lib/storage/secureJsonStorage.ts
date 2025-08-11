@@ -67,6 +67,108 @@ export class SecureJsonTokenStorage {
   }
 
   /**
+   * GitHub Gist storage methods for Vercel persistence
+   */
+  private async loadFromGitHubGist(): Promise<StoredTokenData | null> {
+    const githubToken = process.env.GITHUB_TOKEN;
+    const gistId = process.env.GITHUB_GIST_ID || process.env.TOKEN_GIST_ID;
+    
+    if (!githubToken || !gistId) {
+      console.log('SecureJsonTokenStorage: GitHub Gist credentials missing');
+      return null;
+    }
+
+    try {
+      console.log('SecureJsonTokenStorage: Loading tokens from GitHub Gist:', gistId);
+      
+      const response = await fetch(`https://api.github.com/gists/${gistId}`, {
+        headers: {
+          'Authorization': `token ${githubToken}`,
+          'Accept': 'application/vnd.github.v3+json',
+          'User-Agent': 'Mahboob-Personal-Assistant'
+        }
+      });
+
+      if (!response.ok) {
+        console.error('SecureJsonTokenStorage: GitHub Gist fetch failed:', response.status, response.statusText);
+        return null;
+      }
+
+      const gist = await response.json();
+      const filename = 'secure-tokens.enc'; // encrypted filename
+      
+      if (!gist.files || !gist.files[filename]) {
+        console.log('SecureJsonTokenStorage: No token file found in gist, initializing empty');
+        return {
+          tokens: [],
+          version: '1.0.0',
+          lastUpdated: new Date().toISOString()
+        };
+      }
+
+      const encryptedContent = gist.files[filename].content;
+      const decryptedContent = this.decrypt(encryptedContent);
+      const data: StoredTokenData = JSON.parse(decryptedContent);
+      
+      console.log(`SecureJsonTokenStorage: Loaded ${data.tokens?.length || 0} tokens from GitHub Gist`);
+      return data;
+      
+    } catch (error) {
+      console.error('SecureJsonTokenStorage: Failed to load from GitHub Gist:', error);
+      return null;
+    }
+  }
+
+  private async saveToGitHubGist(data: StoredTokenData): Promise<boolean> {
+    const githubToken = process.env.GITHUB_TOKEN;
+    const gistId = process.env.GITHUB_GIST_ID || process.env.TOKEN_GIST_ID;
+    
+    if (!githubToken || !gistId) {
+      console.log('SecureJsonTokenStorage: GitHub Gist credentials missing, skipping save');
+      return false;
+    }
+
+    try {
+      console.log(`SecureJsonTokenStorage: Saving ${data.tokens?.length || 0} tokens to GitHub Gist`);
+      
+      const encryptedContent = this.encrypt(JSON.stringify(data, null, 2));
+      
+      const response = await fetch(`https://api.github.com/gists/${gistId}`, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `token ${githubToken}`,
+          'Accept': 'application/vnd.github.v3+json',
+          'User-Agent': 'Mahboob-Personal-Assistant',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          files: {
+            'secure-tokens.enc': {
+              content: encryptedContent
+            }
+          }
+        })
+      });
+
+      if (!response.ok) {
+        console.error('SecureJsonTokenStorage: GitHub Gist save failed:', response.status, response.statusText);
+        return false;
+      }
+
+      console.log('SecureJsonTokenStorage: Successfully saved tokens to GitHub Gist');
+      return true;
+      
+    } catch (error) {
+      console.error('SecureJsonTokenStorage: Failed to save to GitHub Gist:', error);
+      return false;
+    }
+  }
+
+  private isVercelEnvironment(): boolean {
+    return !!(process.env.VERCEL || process.env.VERCEL_URL);
+  }
+
+  /**
    * Hash a token securely for storage
    */
   private hashToken(token: string): string {
@@ -195,7 +297,21 @@ export class SecureJsonTokenStorage {
         }
       }
       
-      console.log('SecureJsonTokenStorage: Environment variable empty, trying file...');
+      // On Vercel, try GitHub Gist storage for persistence
+      if (this.isVercelEnvironment()) {
+        console.log('SecureJsonTokenStorage: Vercel environment detected, trying GitHub Gist...');
+        const gistData = await this.loadFromGitHubGist();
+        if (gistData) {
+          this.cache = gistData;
+          this.cacheTimestamp = Date.now();
+          
+          const validTokens = this.validateTokens(gistData.tokens || []);
+          console.log(`SecureJsonTokenStorage: Loaded ${validTokens.length} tokens from GitHub Gist`);
+          return validTokens;
+        }
+      }
+      
+      console.log('SecureJsonTokenStorage: Trying local file storage...');
       await this.ensureDataDir();
       
       // Fallback to file storage
@@ -257,13 +373,24 @@ export class SecureJsonTokenStorage {
       this.cache = dataToStore;
       this.cacheTimestamp = Date.now();
       
-      // Try to save to file as backup (may fail on Vercel)
-      try {
-        await this.ensureDataDir();
-        await fs.writeFile(this.filePath, encryptedData);
-        console.log(`SecureJsonTokenStorage: Also saved ${validTokens.length} tokens to file`);
-      } catch (fileError) {
-        console.log('SecureJsonTokenStorage: File save failed (expected on Vercel), environment save succeeded');
+      // On Vercel, save to GitHub Gist for persistence
+      if (this.isVercelEnvironment()) {
+        console.log('SecureJsonTokenStorage: Vercel environment detected, saving to GitHub Gist...');
+        const gistSuccess = await this.saveToGitHubGist(dataToStore);
+        if (gistSuccess) {
+          console.log(`SecureJsonTokenStorage: Successfully saved ${validTokens.length} tokens to GitHub Gist`);
+        } else {
+          console.warn('SecureJsonTokenStorage: GitHub Gist save failed, tokens only in environment variable');
+        }
+      } else {
+        // Try to save to file as backup (for local development)
+        try {
+          await this.ensureDataDir();
+          await fs.writeFile(this.filePath, encryptedData);
+          console.log(`SecureJsonTokenStorage: Also saved ${validTokens.length} tokens to file`);
+        } catch (fileError) {
+          console.log('SecureJsonTokenStorage: File save failed, environment save succeeded');
+        }
       }
       
       // Force cache invalidation globally by updating timestamp
