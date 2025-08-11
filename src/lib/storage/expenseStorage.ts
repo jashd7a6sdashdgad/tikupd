@@ -264,10 +264,11 @@ export class HybridExpenseStorage implements ExpenseStorage {
   constructor() {
     console.log('HybridExpenseStorage: Initializing...');
     
-    // Use local file storage for development, in-memory for production
+    // Use persistent storage for both development and production
+    // In production, we want to access the real expense data, not in-memory sample data
     if (typeof process !== 'undefined' && process.env && process.env.NODE_ENV === 'production') {
-      console.log('Using in-memory expense storage (production)');
-      this.storage = new InMemoryExpenseStorage();
+      console.log('Using local file expense storage (production) - accessing real website data');
+      this.storage = new LocalExpenseStorage();
     } else {
       console.log('Using local file expense storage (development)');
       this.storage = new LocalExpenseStorage();
