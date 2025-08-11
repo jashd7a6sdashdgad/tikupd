@@ -1,47 +1,45 @@
-import { tokenStorage, ApiToken } from '@/lib/storage/tokenStorage';
+import { secureTokenStorage, ApiToken } from '@/lib/storage/secureJsonStorage';
 
-export type { ApiToken } from '@/lib/storage/tokenStorage';
+export type { ApiToken } from '@/lib/storage/secureJsonStorage';
 
 /**
- * Validates the Bearer token from Authorization header:
+ * Validates the Bearer token from Authorization header using secure token hashing:
  * - Checks format
- * - Loads tokens from storage
- * - Finds active token matching the string
- * - Checks expiration
+ * - Uses secure token storage with proper hashing
+ * - Validates active status and expiration
+ * - Provides detailed error information
  */
 export async function validateApiToken(authHeader: string | null): Promise<{ isValid: boolean; token?: ApiToken; error?: string }> {
-  console.log('Validating API token, authHeader:', authHeader ? authHeader.substring(0, 20) + '...' : 'null');
+  console.log('TokenValidation: Validating API token, authHeader:', authHeader ? authHeader.substring(0, 20) + '...' : 'null');
 
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    console.log('Invalid auth header format');
-    return { isValid: false, error: 'Missing or invalid authorization header' };
+    console.log('TokenValidation: Invalid auth header format');
+    return { isValid: false, error: 'Authorization failed - please check your credentials' };
   }
 
   const tokenStr = authHeader.substring(7); // Remove 'Bearer ' prefix
-  console.log('Extracted token:', tokenStr.substring(0, 20) + '...');
+  console.log('TokenValidation: Extracted token:', tokenStr.substring(0, 20) + '...');
 
   try {
-    const tokens = await tokenStorage.loadTokens();
-    console.log('Loaded tokens count:', tokens.length);
-
-    const foundToken = tokens.find(t => t.token === tokenStr && t.status === 'active');
-    console.log('Found token:', foundToken ? { id: foundToken.id, name: foundToken.name } : 'null');
-
+    // Use secure token storage with proper hash validation
+    const foundToken = await secureTokenStorage.validateToken(tokenStr);
+    
     if (!foundToken) {
-      console.log('Token validation failed - token not found or inactive');
-      return { isValid: false, error: 'Invalid or inactive token' };
+      console.log('TokenValidation: Token validation failed - invalid or inactive token');
+      return { 
+        isValid: false, 
+        error: 'Authorization failed - please check your credentials\nInvalid or inactive token' 
+      };
     }
 
-    if (foundToken.expiresAt && new Date(foundToken.expiresAt) < new Date()) {
-      console.log('Token has expired');
-      return { isValid: false, error: 'Token has expired' };
-    }
-
-    console.log('Token validation successful');
+    console.log('TokenValidation: Token validation successful for:', foundToken.name);
     return { isValid: true, token: foundToken };
   } catch (error) {
-    console.error('Error validating API token:', error);
-    return { isValid: false, error: 'Error validating token' };
+    console.error('TokenValidation: Error validating API token:', error);
+    return { 
+      isValid: false, 
+      error: 'Authorization failed - please check your credentials\nToken validation error' 
+    };
   }
 }
 

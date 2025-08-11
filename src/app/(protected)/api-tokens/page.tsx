@@ -32,7 +32,7 @@ interface ApiToken {
   createdAt: string;
   expiresAt?: string;
   lastUsed?: string;
-  isActive: boolean;
+  status: 'active' | 'inactive';
   token?: string; // Only present when first created
 }
 
@@ -166,7 +166,7 @@ export default function ApiTokensPage() {
   };
 
   const getTokenStatus = (token: ApiToken) => {
-    if (!token.isActive) return { status: 'inactive', color: 'bg-gray-100 text-gray-800' };
+    if (token.status !== 'active') return { status: 'inactive', color: 'bg-gray-100 text-gray-800' };
     if (token.expiresAt && new Date(token.expiresAt) < new Date()) {
       return { status: 'expired', color: 'bg-red-100 text-red-800' };
     }
