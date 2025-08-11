@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
-import { secureTokenStorage } from '@/lib/storage/secureJsonStorage';
+import { db } from '@/lib/db';
 
 // Generate a secure random token
 function generateSecureToken(): string {
@@ -11,9 +11,9 @@ function generateSecureToken(): string {
 export async function GET() {
   try {
     // Clean up expired tokens first
-    await secureTokenStorage.cleanupExpiredTokens();
+    await db.cleanupExpiredTokens();
     
-    const tokens = await secureTokenStorage.loadTokens();
+    const tokens = await db.getTokens();
     
     // Return tokens without the token hash for security
     const safeTokens = tokens.map(token => ({
@@ -36,9 +36,9 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   let body: any;
   try {
-    console.log('POST /api/tokens: Starting token creation...');
-    const storageInfo = secureTokenStorage.getStorageInfo();
-    console.log('Storage info:', storageInfo);
+    console.log('POST /api/tokens: Starting token creation with database...');
+    const connectionInfo = db.getConnectionInfo();
+    console.log('Database connection info:', connectionInfo);
     
     body = await request.json();
     const { name, permissions = [], expiresInDays } = body;
@@ -52,8 +52,8 @@ export async function POST(request: NextRequest) {
     console.log('Starting cleanup of expired tokens...');
     // Clean up expired tokens first
     try {
-      await secureTokenStorage.cleanupExpiredTokens();
-      console.log('Expired tokens cleanup completed');
+      const cleanedCount = await db.cleanupExpiredTokens();
+      console.log(`Expired tokens cleanup completed, removed ${cleanedCount} tokens`);
     } catch (cleanupError) {
       console.warn('Expired tokens cleanup failed, continuing:', cleanupError);
     }
@@ -72,48 +72,52 @@ export async function POST(request: NextRequest) {
       expiresAt = expDate.toISOString();
     }
 
-    // Create token object (without plain token, will be hashed in storage)
-    const tokenData = {
+    // Hash the token for secure storage
+    const tokenHash = db.hashToken(plainToken);
+
+    // Create token record for database
+    const tokenRecord = {
       id,
       name: name.trim(),
+      tokenHash,
       permissions: Array.isArray(permissions) ? permissions : [],
       createdAt: new Date().toISOString(),
       expiresAt,
       status: 'active' as const
     };
-    console.log('Created token data:', { id: tokenData.id, name: tokenData.name, permissions: tokenData.permissions });
+    console.log('Created token record:', { id: tokenRecord.id, name: tokenRecord.name, permissions: tokenRecord.permissions });
 
-    // Save token with secure hashing
-    console.log('Saving token with secure hashing...');
+    // Save token to database
+    console.log('Saving token to database...');
     try {
-      const savedToken = await secureTokenStorage.createToken(plainToken, tokenData);
-      console.log('Token saved successfully with hash');
+      await db.addToken(tokenRecord);
+      console.log('Token saved successfully to database');
       
-      // Verify the save worked by trying to validate the token
-      const validationResult = await secureTokenStorage.validateToken(plainToken);
+      // Verify the save worked by trying to find the token
+      const validationResult = await db.findTokenByHash(tokenHash);
       if (!validationResult) {
-        console.warn('Token validation failed after save - storage may have issues');
+        console.warn('Token not found after save - database may have issues');
       } else {
         console.log('Token verified after save');
       }
     } catch (saveError) {
-      console.error('Failed to save token:', saveError);
+      console.error('Failed to save token to database:', saveError);
       throw new Error(`Token creation failed: ${saveError instanceof Error ? saveError.message : String(saveError)}`);
     }
 
     // Return the token (only time it will be shown in full)
     // NOTE: The plain token is returned here for the user to copy
-    // but is stored securely hashed in the storage system
+    // but is stored securely hashed in the database
     return NextResponse.json({
       message: 'Token created successfully',
       token: {
-        id: tokenData.id,
+        id: tokenRecord.id,
         token: plainToken, // Full token returned only on creation
-        name: tokenData.name,
-        permissions: tokenData.permissions,
-        createdAt: tokenData.createdAt,
-        expiresAt: tokenData.expiresAt,
-        status: tokenData.status
+        name: tokenRecord.name,
+        permissions: tokenRecord.permissions,
+        createdAt: tokenRecord.createdAt,
+        expiresAt: tokenRecord.expiresAt,
+        status: tokenRecord.status
       }
     });
 
@@ -132,7 +136,7 @@ export async function POST(request: NextRequest) {
       error: 'Failed to create token',
       details: error instanceof Error ? error.message : String(error),
       timestamp: new Date().toISOString(),
-      storageType: 'SecureJsonStorage'
+      storageType: 'Database'
     }, { status: 500 });
   }
 }
@@ -148,11 +152,14 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Token ID is required' }, { status: 400 });
     }
 
-    await secureTokenStorage.deleteToken(tokenId);
+    await db.deleteToken(tokenId);
     return NextResponse.json({ message: 'Token deleted successfully' });
 
   } catch (error) {
     console.error('Error deleting token:', error);
+    if (error instanceof Error && error.message.includes('not found')) {
+      return NextResponse.json({ error: 'Token not found' }, { status: 404 });
+    }
     return NextResponse.json({ error: 'Failed to delete token' }, { status: 500 });
   }
 }
@@ -169,14 +176,7 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'Token ID is required' }, { status: 400 });
     }
 
-    const tokens = await secureTokenStorage.loadTokens();
-    const existingToken = tokens.find(token => token.id === tokenId);
-    
-    if (!existingToken) {
-      return NextResponse.json({ error: 'Token not found' }, { status: 404 });
-    }
-
-    // Update token (excluding sensitive fields)
+    // Update token (excluding sensitive fields like tokenHash)
     const allowedUpdates = {
       name: body.name,
       permissions: body.permissions,
@@ -189,44 +189,59 @@ export async function PUT(request: NextRequest) {
       Object.entries(allowedUpdates).filter(([_, value]) => value !== undefined)
     );
 
-    await secureTokenStorage.updateToken(tokenId, filteredUpdates);
+    await db.updateToken(tokenId, filteredUpdates);
 
-    // Return updated token info (without hash)
-    const updatedTokens = await secureTokenStorage.loadTokens();
-    const updatedToken = updatedTokens.find(token => token.id === tokenId);
+    // Get updated token info
+    const tokens = await db.getTokens();
+    const updatedToken = tokens.find(token => token.id === tokenId);
+
+    if (!updatedToken) {
+      return NextResponse.json({ error: 'Token not found after update' }, { status: 404 });
+    }
 
     return NextResponse.json({ 
       message: 'Token updated successfully',
       token: {
-        id: updatedToken!.id,
-        name: updatedToken!.name,
-        permissions: updatedToken!.permissions,
-        createdAt: updatedToken!.createdAt,
-        expiresAt: updatedToken!.expiresAt,
-        status: updatedToken!.status
+        id: updatedToken.id,
+        name: updatedToken.name,
+        permissions: updatedToken.permissions,
+        createdAt: updatedToken.createdAt,
+        expiresAt: updatedToken.expiresAt,
+        status: updatedToken.status
       }
     });
 
   } catch (error) {
     console.error('Error updating token:', error);
+    if (error instanceof Error && error.message.includes('not found')) {
+      return NextResponse.json({ error: 'Token not found' }, { status: 404 });
+    }
     return NextResponse.json({ error: 'Failed to update token' }, { status: 500 });
   }
 }
 
-// PATCH /api/tokens - Test endpoint to check storage system
+// PATCH /api/tokens - Test endpoint to check database system
 export async function PATCH(request: NextRequest) {
   try {
-    console.log('PATCH /api/tokens: Testing storage system...');
-    const storageInfo = secureTokenStorage.getStorageInfo();
-    console.log('Storage info:', storageInfo);
-    const tokens = await secureTokenStorage.loadTokens();
-    console.log('Current tokens count:', tokens.length);
-    await secureTokenStorage.cleanupExpiredTokens();
-    console.log('Storage test completed successfully');
+    console.log('PATCH /api/tokens: Testing database system...');
+    
+    // Test database connection
+    const connectionInfo = db.getConnectionInfo();
+    console.log('Database connection info:', connectionInfo);
+    
+    // Get database statistics
+    const stats = await db.getStats();
+    console.log('Database stats:', stats);
+    
+    // Test cleanup
+    const cleanedCount = await db.cleanupExpiredTokens();
+    console.log('Database test completed successfully');
+    
     return NextResponse.json({ 
-      message: 'Storage test completed',
-      storageInfo,
-      tokensCount: tokens.length,
+      message: 'Database test completed',
+      connectionInfo,
+      stats,
+      cleanedTokens: cleanedCount,
       timestamp: new Date().toISOString(),
       environment: {
         nodeEnv: process.env.NODE_ENV,
@@ -236,9 +251,9 @@ export async function PATCH(request: NextRequest) {
       }
     });
   } catch (error) {
-    console.error('PATCH /api/tokens: Storage test failed:', error);
+    console.error('PATCH /api/tokens: Database test failed:', error);
     return NextResponse.json({ 
-      error: 'Storage test failed',
+      error: 'Database test failed',
       details: error instanceof Error ? error.message : String(error),
       stack: error instanceof Error ? error.stack : 'No stack trace'
     }, { status: 500 });
@@ -248,9 +263,8 @@ export async function PATCH(request: NextRequest) {
 /**
  * Validate API token for authentication
  * This function can be used by other API routes to validate incoming tokens
- * Note: This is a utility function, not an API route export
  */
-async function validateApiToken(token: string): Promise<{
+export async function validateApiToken(token: string): Promise<{
   valid: boolean;
   tokenData?: any;
   error?: string;
@@ -260,19 +274,21 @@ async function validateApiToken(token: string): Promise<{
       return { valid: false, error: 'Invalid token format' };
     }
 
-    const tokenData = await secureTokenStorage.validateToken(token);
+    // Hash the provided token and look it up in database
+    const tokenHash = db.hashToken(token);
+    const tokenRecord = await db.findTokenByHash(tokenHash);
     
-    if (!tokenData) {
+    if (!tokenRecord) {
       return { valid: false, error: 'Token not found or expired' };
     }
 
     return { 
       valid: true, 
       tokenData: {
-        id: tokenData.id,
-        name: tokenData.name,
-        permissions: tokenData.permissions,
-        status: tokenData.status
+        id: tokenRecord.id,
+        name: tokenRecord.name,
+        permissions: tokenRecord.permissions,
+        status: tokenRecord.status
       }
     };
   } catch (error) {

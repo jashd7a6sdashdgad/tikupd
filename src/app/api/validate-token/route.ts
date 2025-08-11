@@ -1,90 +1,141 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { validateApiToken } from '@/lib/api/auth/tokenValidation';
+import { secureTokenStorage } from '@/lib/storage/secureJsonStorage';
 
-export async function POST(request: NextRequest) {
-  try {
-    console.log('=== TOKEN VALIDATION TEST ===');
-    
-    const authHeader = request.headers.get('Authorization');
-    console.log('Authorization header:', authHeader ? authHeader.substring(0, 20) + '...' : 'null');
-    
-    const validation = await validateApiToken(authHeader);
-    console.log('Validation result:', validation);
-    
-    if (!validation.isValid) {
-      return NextResponse.json(
-        { 
-          success: false, 
-          error: validation.error || 'Token validation failed',
-          debug: {
-            hasAuthHeader: !!authHeader,
-            authHeaderFormat: authHeader?.startsWith('Bearer ') || false,
-            timestamp: new Date().toISOString()
-          }
-        }, 
-        { status: 401 }
-      );
+/**
+ * Token validation endpoint for n8n and other external services
+ * GET/POST /api/validate-token
+ * 
+ * Headers: Authorization: Bearer <token>
+ * OR
+ * Body: { "token": "<token>" }
+ * OR
+ * Query: ?token=<token>
+ */
+
+async function validateTokenFromRequest(request: NextRequest): Promise<{
+  token?: string;
+  valid: boolean;
+  tokenData?: any;
+  error?: string;
+}> {
+  let token: string | undefined;
+
+  // Try to get token from Authorization header
+  const authHeader = request.headers.get('authorization');
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    token = authHeader.substring(7);
+  }
+
+  // Try to get token from request body (for POST requests)
+  if (!token && request.method === 'POST') {
+    try {
+      const body = await request.json();
+      token = body.token;
+    } catch (error) {
+      console.log('No valid JSON body found');
     }
+  }
+
+  // Try to get token from query parameters
+  if (!token) {
+    const url = new URL(request.url);
+    token = url.searchParams.get('token') || undefined;
+  }
+
+  if (!token) {
+    return { 
+      valid: false, 
+      error: 'No token provided. Use Authorization header, request body, or query parameter.' 
+    };
+  }
+
+  try {
+    const tokenData = await secureTokenStorage.validateToken(token);
     
-    return NextResponse.json({
-      success: true,
-      message: 'Token is valid',
-      tokenInfo: {
-        id: validation.token?.id,
-        name: validation.token?.name,
-        permissions: validation.token?.permissions,
-        status: validation.token?.status,
-        createdAt: validation.token?.createdAt,
-        expiresAt: validation.token?.expiresAt
-      },
-      timestamp: new Date().toISOString()
-    });
-    
+    if (!tokenData) {
+      return { 
+        token: token.substring(0, 10) + '...',
+        valid: false, 
+        error: 'Invalid or expired token' 
+      };
+    }
+
+    return { 
+      token: token.substring(0, 10) + '...',
+      valid: true, 
+      tokenData: {
+        id: tokenData.id,
+        name: tokenData.name,
+        permissions: tokenData.permissions,
+        status: tokenData.status,
+        createdAt: tokenData.createdAt,
+        expiresAt: tokenData.expiresAt
+      }
+    };
   } catch (error) {
-    console.error('Token validation endpoint error:', error);
-    return NextResponse.json(
-      { 
-        success: false, 
-        error: 'Internal server error',
-        details: error instanceof Error ? error.message : String(error)
-      }, 
-      { status: 500 }
-    );
+    console.error('Token validation error:', error);
+    return { 
+      token: token.substring(0, 10) + '...',
+      valid: false, 
+      error: 'Token validation failed' 
+    };
   }
 }
 
-// GET endpoint to test without token (for debugging)
+// GET /api/validate-token
 export async function GET(request: NextRequest) {
   try {
-    console.log('=== TOKEN VALIDATION DEBUG (GET) ===');
+    const result = await validateTokenFromRequest(request);
     
-    const authHeader = request.headers.get('Authorization');
-    console.log('Authorization header:', authHeader ? authHeader.substring(0, 20) + '...' : 'null');
-    
-    // Test the validation function
-    const validation = await validateApiToken(authHeader);
-    console.log('Validation result:', validation);
-    
+    if (!result.valid) {
+      return NextResponse.json(result, { status: 401 });
+    }
+
     return NextResponse.json({
-      debug: true,
-      authHeader: authHeader ? authHeader.substring(0, 20) + '...' : 'null',
-      validation: {
-        isValid: validation.isValid,
-        error: validation.error,
-        hasToken: !!validation.token
-      },
-      timestamp: new Date().toISOString()
+      message: 'Token is valid',
+      ...result
     });
-    
   } catch (error) {
-    console.error('Token validation debug error:', error);
-    return NextResponse.json(
-      { 
-        success: false, 
-        error: 'Internal server error',
-        details: error instanceof Error ? error.message : String(error)
-      }, 
-      { status: 500 }
-    );
+    console.error('GET /api/validate-token error:', error);
+    return NextResponse.json({ 
+      valid: false,
+      error: 'Validation service error',
+      details: error instanceof Error ? error.message : String(error)
+    }, { status: 500 });
   }
+}
+
+// POST /api/validate-token
+export async function POST(request: NextRequest) {
+  try {
+    const result = await validateTokenFromRequest(request);
+    
+    if (!result.valid) {
+      return NextResponse.json(result, { status: 401 });
+    }
+
+    return NextResponse.json({
+      message: 'Token is valid',
+      ...result
+    });
+  } catch (error) {
+    console.error('POST /api/validate-token error:', error);
+    return NextResponse.json({ 
+      valid: false,
+      error: 'Validation service error',
+      details: error instanceof Error ? error.message : String(error)
+    }, { status: 500 });
+  }
+}
+
+// OPTIONS for CORS preflight
+export async function OPTIONS(request: NextRequest) {
+  return NextResponse.json({}, { 
+    status: 200,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    }
+  });
 }
