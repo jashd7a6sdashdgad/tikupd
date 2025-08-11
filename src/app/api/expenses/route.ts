@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Load expenses from the same source as the website (Google Sheets)
-    let expenses = [];
+    let expenses: any[] = [];
     let storageType = 'Local Storage (Fallback)';
     
     try {
