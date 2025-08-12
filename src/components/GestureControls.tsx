@@ -106,21 +106,27 @@ export const GestureControls: React.FC<GestureControlsProps> = ({
       description: 'Context-aware navigation up',
       gesture: 'swipe-up',
       action: () => {
-        const currentPage = getCurrentPage();
-        console.log('🔥 SWIPE UP EXECUTED from:', currentPage);
-        
-        // Context-aware navigation based on current page
-        if (currentPage.includes('/dashboard')) {
-          console.log('📱 Navigating from dashboard to search');
-          router.push('/search');
-        } else if (currentPage.includes('/search')) {
-          console.log('📱 Navigating from search to voice-chat');
-          router.push('/voice-chat');
-        } else if (currentPage.includes('/expenses')) {
-          console.log('📱 Navigating from expenses to budget');
-          router.push('/budget');
-        } else {
-          console.log('📱 Default navigation to dashboard');
+        try {
+          const currentPage = getCurrentPage();
+          console.log('🔥 SWIPE UP EXECUTED from:', currentPage);
+          
+          // Context-aware navigation based on current page
+          if (currentPage.includes('/dashboard')) {
+            console.log('📱 Navigating from dashboard to search');
+            router.push('/search');
+          } else if (currentPage.includes('/search')) {
+            console.log('📱 Navigating from search to voice-chat');
+            router.push('/voice-chat');
+          } else if (currentPage.includes('/expenses')) {
+            console.log('📱 Navigating from expenses to budget');
+            router.push('/budget');
+          } else {
+            console.log('📱 Default navigation to dashboard');
+            router.push('/dashboard');
+          }
+        } catch (error) {
+          console.error('❌ Swipe up navigation failed:', error);
+          // Fallback navigation
           router.push('/dashboard');
         }
       },
@@ -133,18 +139,24 @@ export const GestureControls: React.FC<GestureControlsProps> = ({
       description: 'Context-aware navigation down',
       gesture: 'swipe-down',
       action: () => {
-        const currentPage = getCurrentPage();
-        console.log('🔥 SWIPE DOWN EXECUTED from:', currentPage);
-        
-        // Context-aware navigation based on current page
-        if (currentPage.includes('/dashboard')) {
-          console.log('📱 Navigating from dashboard to expenses');
-          router.push('/expenses');
-        } else if (currentPage.includes('/search')) {
-          console.log('📱 Navigating from search to dashboard');
-          router.push('/dashboard');
-        } else {
-          console.log('📱 Default navigation to search');
+        try {
+          const currentPage = getCurrentPage();
+          console.log('🔥 SWIPE DOWN EXECUTED from:', currentPage);
+          
+          // Context-aware navigation based on current page
+          if (currentPage.includes('/dashboard')) {
+            console.log('📱 Navigating from dashboard to expenses');
+            router.push('/expenses');
+          } else if (currentPage.includes('/search')) {
+            console.log('📱 Navigating from search to dashboard');
+            router.push('/dashboard');
+          } else {
+            console.log('📱 Default navigation to search');
+            router.push('/search');
+          }
+        } catch (error) {
+          console.error('❌ Swipe down navigation failed:', error);
+          // Fallback navigation
           router.push('/search');
         }
       },
