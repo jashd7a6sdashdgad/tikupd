@@ -129,6 +129,10 @@ export default function ContactsPage() {
         })
       });
 
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
       const data = await response.json();
       
       if (data.success) {
@@ -136,7 +140,7 @@ export default function ContactsPage() {
         setShowAddForm(false);
         clearForm();
       } else {
-        alert(t('settingsError') + ': ' + data.message);
+        alert(t('settingsError') + ': ' + (data?.message || 'Unknown error'));
       }
     } catch (error) {
       console.error('Error adding contact:', error);
@@ -167,6 +171,10 @@ export default function ContactsPage() {
         })
       });
 
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
       const data = await response.json();
       
       if (data.success) {
@@ -175,7 +183,7 @@ export default function ContactsPage() {
         setShowAddForm(false);
         clearForm();
       } else {
-        alert(t('settingsError') + ': ' + data.message);
+        alert(t('settingsError') + ': ' + (data?.message || 'Unknown error'));
       }
     } catch (error) {
       console.error('Error updating contact:', error);

@@ -166,6 +166,10 @@ export default function EmailPage() {
         })
       });
 
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
       const data = await response.json();
       
       if (data.success) {
@@ -176,7 +180,7 @@ export default function EmailPage() {
         setEmailBody('');
         fetchMessages();
       } else {
-        alert(t('settingsError') + ': ' + data.message);
+        alert(t('settingsError') + ': ' + (data?.message || 'Unknown error'));
       }
     } catch (error) {
       console.error('Error sending email:', error);
@@ -199,13 +203,17 @@ export default function EmailPage() {
         body: JSON.stringify({ id: messageId })
       });
 
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
       const data = await response.json();
       
       if (data.success) {
         await fetchMessages();
         await fetchUnreadCount();
       } else {
-        alert(t('settingsError') + ': ' + data.message);
+        alert(t('settingsError') + ': ' + (data?.message || 'Unknown error'));
       }
     } catch (error) {
       console.error('Error deleting message:', error);

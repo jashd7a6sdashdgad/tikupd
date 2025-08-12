@@ -298,6 +298,17 @@ export async function POST(request: NextRequest) {
     
     console.log('Facebook API response:', facebookResult);
     
+    // For test_token action, provide more detailed response
+    if (body.action === 'test_token') {
+      return NextResponse.json({
+        success: true,
+        data: facebookResult,
+        message: `Token validation successful. User: ${facebookResult?.name || 'Unknown'}`,
+        userId: user.id,
+        timestamp: new Date().toISOString()
+      });
+    }
+    
     return NextResponse.json({
       success: true,
       data: facebookResult,

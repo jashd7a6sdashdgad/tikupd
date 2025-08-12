@@ -75,7 +75,11 @@ export default function YouTubePage() {
               id: video.videoId,
               title: video.title,
               description: video.description,
-              thumbnail: video.thumbnails?.default?.url || '',
+              thumbnail: video.thumbnails?.maxres?.url || 
+                        video.thumbnails?.standard?.url || 
+                        video.thumbnails?.high?.url || 
+                        video.thumbnails?.medium?.url || 
+                        video.thumbnails?.default?.url || '',
               published_at: video.publishedAt,
               view_count: 0, // Would need additional API call for stats
               like_count: 0,

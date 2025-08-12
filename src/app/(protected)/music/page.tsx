@@ -381,11 +381,33 @@ export default function MusicPage() {
       
       // Generate Spotify authorization URL
       const clientId = 'a3b9645329a2412ea6ce17794952958e';
-      // Use environment variable for redirect URI or fallback to current origin
-      const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || window.location.origin;
+      
+      // Determine the correct base URL
+      let baseUrl;
+      if (typeof window !== 'undefined') {
+        // Client-side: use current origin, but prefer production URL if available
+        if (window.location.hostname === 'localhost') {
+          baseUrl = 'http://localhost:3000';
+        } else if (window.location.hostname.includes('mahboobagents.fun')) {
+          baseUrl = 'https://www.mahboobagents.fun';
+        } else {
+          baseUrl = window.location.origin;
+        }
+      } else {
+        // Server-side fallback
+        baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://www.mahboobagents.fun';
+      }
+      
       const redirectUri = encodeURIComponent(`${baseUrl}/api/music/spotify/callback`);
-      const scopes = encodeURIComponent('user-read-private user-read-email user-library-read user-top-read playlist-read-private');
+      const scopes = encodeURIComponent('user-read-private user-read-email user-library-read user-top-read playlist-read-private streaming user-read-playback-state user-modify-playback-state');
       const state = Math.random().toString(36).substring(2, 15);
+      
+      console.log('Spotify OAuth Config:', {
+        clientId,
+        redirectUri: `${baseUrl}/api/music/spotify/callback`,
+        baseUrl,
+        hostname: typeof window !== 'undefined' ? window.location.hostname : 'server'
+      });
       
       // Store state in sessionStorage for validation
       sessionStorage.setItem('spotify_auth_state', state);
@@ -395,7 +417,10 @@ export default function MusicPage() {
         `client_id=${clientId}&` +
         `scope=${scopes}&` +
         `redirect_uri=${redirectUri}&` +
-        `state=${state}`;
+        `state=${state}&` +
+        `show_dialog=true`;
+      
+      console.log('Redirecting to Spotify:', authUrl);
       
       // Redirect to Spotify authorization
       window.location.href = authUrl;

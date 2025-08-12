@@ -31,6 +31,15 @@ export default function FacebookPage() {
   const [connectionStatus, setConnectionStatus] = useState<'unknown' | 'connected' | 'error' | 'config_missing'>('unknown');
 
   useEffect(() => {
+    // Reset connection status on mount
+    setConnectionStatus('unknown');
+    setIsConnected(false);
+    setError(null);
+    
+    // Debug environment variable
+    console.log('🔍 Checking Facebook environment variable...');
+    console.log('🔍 NODE_ENV:', process.env.NODE_ENV);
+    
     fetchFacebookData();
   }, []);
 
@@ -38,39 +47,56 @@ export default function FacebookPage() {
     setIsLoading(true);
     setError(null);
     
+    console.log('🔍 Fetching Facebook data...');
+    
     try {
-      const response = await fetch('/api/facebook?action=posts');
+      // For user accounts, we need to use different endpoints
+      const response = await fetch('/api/facebook?action=test_token');
+      
+      console.log('🔍 Facebook API response status:', response.status);
+      console.log('🔍 Facebook API response ok:', response.ok);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      
       const data = await response.json();
+      
+      console.log('🔍 Facebook API response data:', data);
       
       if (data.success) {
         setIsConnected(true);
         setConnectionStatus('connected');
         setError(null);
         
-        if (data.data.data && Array.isArray(data.data.data)) {
-          const formattedPosts = data.data.data.map((post: any) => ({
-            id: post.id,
-            message: post.message || 'No message',
-            created_time: post.created_time,
-            likes: post.likes?.summary?.total_count || 0,
-            comments: post.comments?.summary?.total_count || 0
-          }));
-          setPosts(formattedPosts);
-        }
-        
-        // Fetch insights separately
-        const insightsResponse = await fetch('/api/facebook?action=insights');
-        const insightsData = await insightsResponse.json();
-        
-        if (insightsData.success && insightsData.data.data) {
-          const insightsValues = insightsData.data.data.reduce((acc: any, insight: any) => {
-            if (insight.name === 'page_likes') acc.followers = insight.values[0]?.value || 0;
-            if (insight.name === 'page_reach') acc.reach = insight.values[0]?.value || 0;
-            return acc;
-          }, { followers: 0, engagement: 5.2, reach: 0 });
+        // For user accounts, we'll show basic user info instead of posts
+        if (data.data) {
+          setPosts([
+            {
+              id: 'user-info',
+              message: `Connected as: ${data.data.name || 'Unknown User'}`,
+              created_time: new Date().toISOString(),
+              likes: 0,
+              comments: 0
+            }
+          ]);
           
-          setInsights(insightsValues);
+          // Set some basic user info
+          setInsights({
+            followers: 0, // User accounts don't have followers like pages
+            engagement: 0,
+            reach: 0
+          });
+        } else {
+          console.log('🔍 No data in Facebook response:', data);
         }
+        
+                // For user accounts, set basic insights
+        setInsights({
+          followers: 0, // User accounts don't have followers like pages
+          engagement: 0,
+          reach: 0
+        });
       } else {
         setIsConnected(false);
         setError(data.message);
@@ -83,27 +109,20 @@ export default function FacebookPage() {
           setConnectionStatus('error');
         }
         
-        // Use mock data as fallback
+        // Show placeholder data while troubleshooting
         setInsights({
-          followers: 1250,
-          engagement: 8.5,
-          reach: 15600
+          followers: 0,
+          engagement: 0,
+          reach: 0
         });
         
         setPosts([
           {
-            id: '1',
-            message: 'Welcome to our personal assistant! (Demo Data)',
-            created_time: new Date(Date.now() - 86400000).toISOString(),
-            likes: 45,
-            comments: 12
-          },
-          {
-            id: '2', 
-            message: 'Check out our latest features... (Demo Data)',
-            created_time: new Date(Date.now() - 172800000).toISOString(),
-            likes: 32,
-            comments: 8
+            id: 'placeholder',
+            message: 'Facebook connection required to view posts',
+            created_time: new Date().toISOString(),
+            likes: 0,
+            comments: 0
           }
         ]);
       }
@@ -113,20 +132,20 @@ export default function FacebookPage() {
       setError(error.message || 'Failed to connect to Facebook');
       setConnectionStatus('error');
       
-      // Use mock data as fallback
+      // Show placeholder data while troubleshooting
       setInsights({
-        followers: 1250,
-        engagement: 8.5,
-        reach: 15600
+        followers: 0,
+        engagement: 0,
+        reach: 0
       });
       
       setPosts([
         {
-          id: '1',
-          message: 'Demo: Welcome to our personal assistant!',
-          created_time: new Date(Date.now() - 86400000).toISOString(),
-          likes: 45,
-          comments: 12
+          id: 'placeholder',
+          message: 'Facebook connection required to view posts',
+          created_time: new Date().toISOString(),
+          likes: 0,
+          comments: 0
         }
       ]);
     } finally {
@@ -201,6 +220,11 @@ export default function FacebookPage() {
     try {
       // First test the connection
       const response = await fetch('/api/facebook?action=connect');
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      
       const data = await response.json();
       
       console.log('Facebook connect response:', data);
@@ -237,16 +261,23 @@ export default function FacebookPage() {
     setIsLoading(true);
     setError(null);
     try {
-      const response = await fetch('/api/facebook?action=page_info');
+      const response = await fetch('/api/facebook?action=test_token');
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      
       const data = await response.json();
       
       console.log('Token validation response:', data);
       
-      if (data.success) {
-        setError(`✅ Token is valid! Page: ${data.data.name || 'Unknown'}`);
+      if (data.success && data.data) {
+        setError(`✅ Token is valid! User: ${data.data?.name || 'Unknown'}`);
         setConnectionStatus('connected');
       } else {
-        setError(`❌ Token validation failed: ${data.message}`);
+        const errorMessage = data.message || data.error || 'Unknown error';
+        const helpText = data.help ? `\n\nHelp: ${data.help}` : '';
+        setError(`❌ Token validation failed: ${errorMessage}${helpText}`);
         setConnectionStatus('error');
       }
     } catch (error: any) {
@@ -350,7 +381,24 @@ export default function FacebookPage() {
               </div>
               <div className="ml-3">
                 <p className="text-sm text-green-800">
-                  <strong>{t('connected')}:</strong> {t('facebookTitle')}
+                  <strong>Connected:</strong> Facebook
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {connectionStatus === 'unknown' && !isLoading && (
+          <div className="mb-6 p-4 bg-gray-50 border border-gray-200 rounded-lg">
+            <div className="flex items-center">
+              <div className="flex-shrink-0">
+                <svg className="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div className="ml-3">
+                <p className="text-sm text-gray-800">
+                  <strong>Status:</strong> Not Connected
                 </p>
               </div>
             </div>
