@@ -1,11 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyToken, COOKIE_OPTIONS } from '@/lib/auth';
-import { ENV_VARS } from '@/lib/env-validation';
-import { getApiConfig, getSocialConfig } from '@/lib/config';
+import { getApiConfig } from '@/lib/config';
 
-// Use validated environment variables
-const socialConfig = getSocialConfig();
-const { messengerApiUrl: MESSENGER_API_URL } = getApiConfig();
 // Use single user token from .env.local for main account
 const MESSENGER_USER_ACCESS_TOKEN = process.env.FACEBOOK_USER_TOKEN;
 // Note: Messenger Business API requires a Facebook Page, not a personal account
@@ -177,7 +173,7 @@ async function getConversations(limit: string) {
     console.log(`📱 Using known page ID: ${KNOWN_PAGE_ID}`);
     
     // First, get the Page Access Token from the User token
-    const pagesResponse = await fetch(`${FACEBOOK_API_URL}/me/accounts?access_token=${pageAccessToken}`);
+    const pagesResponse = await fetch(`${FACEBOOK_API_URL}/me/accounts?access_token=${MESSENGER_USER_ACCESS_TOKEN}`);
     
     if (!pagesResponse.ok) {
       throw new Error('Failed to get page access tokens');
@@ -197,7 +193,7 @@ async function getConversations(limit: string) {
     console.log(`🔑 Using Page Access Token for ${mahboobPage.name}`);
     
     // Get page conversations using the Page Access Token
-    const conversationsUrl = `${FACEBOOK_API_URL}/${KNOWN_PAGE_ID}/conversations?limit=${limit}&access_token=${pageAccessToken}`;
+    let conversationsUrl = `${FACEBOOK_API_URL}/${KNOWN_PAGE_ID}/conversations?limit=${limit}&access_token=${pageAccessToken}`;
     console.log(`🌐 Fetching from: ${conversationsUrl.replace(pageAccessToken, '[PAGE_TOKEN]')}`);
     
     const conversationsResponse = await fetch(conversationsUrl);
@@ -295,9 +291,9 @@ async function getConversations(limit: string) {
     }
     
     // Fallback: try user conversations (will likely fail but worth trying)
-    let conversationsUrl = `${FACEBOOK_API_URL}/me/conversations?limit=${limit}&access_token=${pageAccessToken}`;
+    conversationsUrl = `${FACEBOOK_API_URL}/me/conversations?limit=${limit}&access_token=${pageAccessToken}`;
     
-    let response = await fetch(conversationsUrl);
+    const response = await fetch(conversationsUrl);
     
     if (response.ok) {
       const conversationsData = await response.json();
@@ -422,7 +418,7 @@ async function getConversations(limit: string) {
   }
 }
 
-async function getMessages(conversationId: string, limit: string) {
+async function getMessages(_conversationId: string, _limit: string) {
   // Messenger Business API requires a Facebook Page, not a personal account
   return {
     data: [],
@@ -439,7 +435,7 @@ async function getPageInfo() {
     
     // Get user profile with friends count
     const userResponse = await fetch(
-      `${FACEBOOK_API_URL}/me?fields=id,name,email,friends.limit(0).summary(true)&access_token=${pageAccessToken}`
+      `${FACEBOOK_API_URL}/me?fields=id,name,email,friends.limit(0).summary(true)&access_token=${MESSENGER_USER_ACCESS_TOKEN}`
     );
     
     if (userResponse.ok) {
@@ -483,12 +479,12 @@ async function getPageInfo() {
   }
 }
 
-async function sendMessage(recipientId: string, message: string) {
+async function sendMessage(_recipientId: string, _message: string) {
   // Messenger Business API requires a Facebook Page, not a personal account
   throw new Error('Messenger Business API requires a Facebook Page, not a personal account. To send messages, you need to connect your account to a Facebook Page.');
 }
 
-async function markAsRead(conversationId: string) {
+async function markAsRead(_conversationId: string) {
   // Messenger Business API requires a Facebook Page, not a personal account
   throw new Error('Messenger Business API requires a Facebook Page, not a personal account. To mark messages as read, you need to connect your account to a Facebook Page.');
 }
