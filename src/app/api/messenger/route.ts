@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyToken, COOKIE_OPTIONS } from '@/lib/auth';
 import { getApiConfig } from '@/lib/config';
+import jwt from 'jsonwebtoken';
 
 // Use single user token from .env.local for main account
 const MESSENGER_USER_ACCESS_TOKEN = process.env.FACEBOOK_USER_TOKEN;
@@ -8,12 +9,48 @@ const MESSENGER_USER_ACCESS_TOKEN = process.env.FACEBOOK_USER_TOKEN;
 
 export async function GET(request: NextRequest) {
   try {
-    const token = request.cookies.get(COOKIE_OPTIONS.name)?.value;
-    if (!token) {
-      return NextResponse.json({ success: false, message: 'Authentication required' }, { status: 401 });
-    }
+    let user: any = null;
+    let authType = 'cookie';
+
+    // Try cookie-based auth first
+    const cookieToken = request.cookies.get(COOKIE_OPTIONS.name)?.value;
     
-    const user = verifyToken(token);
+    if (cookieToken) {
+      try {
+        user = verifyToken(cookieToken);
+        authType = 'cookie';
+      } catch (cookieError) {
+        console.log('Cookie auth failed, trying Bearer token...');
+      }
+    }
+
+    // If no cookie auth, try Bearer token (your JWT)
+    if (!user) {
+      const authHeader = request.headers.get('authorization');
+      
+      if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return NextResponse.json({ success: false, message: 'Authentication required' }, { status: 401 });
+      }
+
+      const bearerToken = authHeader.replace('Bearer ', '');
+      
+      try {
+        const decoded = jwt.verify(bearerToken, process.env.JWT_SECRET || 'punz') as any;
+        user = {
+          id: decoded.userId || '1',
+          username: decoded.username || 'website-user',
+          email: decoded.email
+        };
+        authType = 'jwt';
+        console.log('✅ JWT auth successful for Messenger API');
+      } catch (jwtError) {
+        return NextResponse.json({ 
+          success: false, 
+          message: 'Invalid authentication token',
+          error: 'JWT_INVALID'
+        }, { status: 401 });
+      }
+    }
     
     if (!MESSENGER_USER_ACCESS_TOKEN) {
       return NextResponse.json({ 

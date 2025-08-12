@@ -1,15 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { validateApiToken, hasPermission } from '@/lib/api/auth/tokenValidation';
+import { verifyToken } from '@/lib/auth';
 import { expenseStorage } from '@/lib/storage/expenseStorage';
 import { fetchExpensesFromSheets } from '@/lib/google/serviceAccount';
+import jwt from 'jsonwebtoken';
 
-// GET /api/expenses - Get all expenses (requires valid API token)
+// GET /api/expenses - Get all expenses (supports both API tokens and website JWT)
 export async function GET(request: NextRequest) {
   // Declare variables at function level so they're accessible throughout
   let expenses: any[] = [];
   let storageType = 'Google Sheets (Real Data)';
   let analyticsData: any = null;
   let validToken: any = null;
+  let authType = 'unknown';
   
   try {
     // Get the Authorization header
@@ -22,24 +25,60 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Validate the token
-    const validation = await validateApiToken(authHeader);
-    
-    if (!validation.isValid) {
-      return NextResponse.json(
-        { error: validation.error },
-        { status: 401 }
-      );
-    }
-    
-    validToken = validation.token!;
-    
-    // Check if token has required permissions
-    if (!hasPermission(validToken, 'read:expenses')) {
-      return NextResponse.json(
-        { error: 'Insufficient permissions. Token requires read:expenses permission' },
-        { status: 403 }
-      );
+    const token = authHeader.replace('Bearer ', '');
+
+    // Try to validate as website JWT first (your specific token)
+    try {
+      console.log('🔍 Trying to validate as website JWT...');
+      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'punz') as any;
+      console.log('✅ Website JWT validated successfully:', decoded);
+      
+      validToken = {
+        id: decoded.userId || '1',
+        name: decoded.username || 'website-user',
+        permissions: ['*'], // Website JWT has full permissions
+        email: decoded.email,
+        type: 'website-jwt'
+      };
+      authType = 'website-jwt';
+      
+    } catch (jwtError) {
+      console.log('⚠️ Website JWT validation failed:', jwtError.message);
+      console.log('🔍 Trying API token validation...');
+      
+      // Try to validate as API token
+      const validation = await validateApiToken(authHeader);
+      
+      if (!validation.isValid) {
+        console.log('❌ Both JWT and API token validation failed');
+        return NextResponse.json(
+          { 
+            success: false,
+            error: 'Authentication failed',
+            message: 'Invalid token. Please use either a valid website JWT or API token.',
+            details: {
+              jwtError: jwtError.message,
+              apiTokenError: validation.error,
+              tokenPreview: token.substring(0, 20) + '...'
+            }
+          },
+          { status: 401 }
+        );
+      }
+      
+      validToken = validation.token!;
+      authType = 'api-token';
+      
+      // Check if API token has required permissions
+      if (!hasPermission(validToken, 'read:expenses')) {
+        return NextResponse.json(
+          { 
+            success: false,
+            error: 'Insufficient permissions. Token requires read:expenses permission' 
+          },
+          { status: 403 }
+        );
+      }
     }
 
     // INTEGRATION FIX: Fetch real data from Google Sheets using multiple methods
@@ -217,6 +256,7 @@ export async function GET(request: NextRequest) {
       token: {
         name: validToken ? validToken.name : 'Unknown',
         permissions: validToken ? validToken.permissions : [],
+        type: authType,
         createdAt: validToken ? validToken.createdAt : new Date().toISOString()
       }
     }
