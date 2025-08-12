@@ -241,7 +241,6 @@ export async function GET(request: NextRequest) {
               analytics
             },
             message: 'Expenses retrieved via web scraping (Google Sheets unavailable)',
-            userId: user.id,
             timestamp: new Date().toISOString(),
             source: 'website_scraping'
           });
@@ -303,7 +302,6 @@ export async function GET(request: NextRequest) {
         analytics
       },
       message: `Google Sheets API error: ${error.message}. Showing sample data.`,
-      userId: user.id,
       timestamp: new Date().toISOString(),
       source: 'fallback_sample'
     }, { status: 200 }); // Return 200 with data instead of 500 error
