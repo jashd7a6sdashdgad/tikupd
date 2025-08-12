@@ -58,6 +58,37 @@ export async function GET(request: NextRequest) {
     }
 
     console.log('🍪 Tokens stored in cookies');
+    
+    // ALSO save tokens to file for API access
+    try {
+      const { promises: fs } = await import('fs');
+      const path = await import('path');
+      
+      // Create tokens directory if it doesn't exist
+      const tokensDir = path.join(process.cwd(), 'data', 'tokens');
+      await fs.mkdir(tokensDir, { recursive: true });
+      
+      // Save Google OAuth tokens to file for API access
+      const tokenData = {
+        access_token: accessToken,
+        refresh_token: refreshToken,
+        expires_in: expiresIn,
+        token_type: 'Bearer',
+        scope: 'https://www.googleapis.com/auth/spreadsheets',
+        created_at: new Date().toISOString(),
+        expires_at: new Date(Date.now() + (expiresIn * 1000)).toISOString()
+      };
+      
+      const tokensFile = path.join(tokensDir, 'google-oauth-tokens.json');
+      await fs.writeFile(tokensFile, JSON.stringify(tokenData, null, 2));
+      
+      console.log('💾 Google OAuth tokens also saved to file for API access');
+      
+    } catch (fileError) {
+      console.log('⚠️ Could not save tokens to file:', fileError);
+      // Don't fail the OAuth flow, just log the error
+    }
+    
     return response;
 
   } catch (error) {
