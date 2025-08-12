@@ -59,52 +59,109 @@ export async function GET(request: NextRequest) {
     } catch (serviceAccountError: any) {
       console.log('⚠️ Method 1 Failed: Service Account not available:', serviceAccountError.message);
       
-      // Method 2: Try Internal API Call (OAuth-based)
+      // Method 2: Try direct Google Sheets access with OAuth tokens from environment or default user
       try {
-        console.log('🔗 Method 2: Trying internal API call to /api/sheets/expenses...');
-        const protocol = request.url.startsWith('https') ? 'https' : 'http';
-        const host = request.headers.get('host');
-        const baseUrl = `${protocol}://${host}`;
+        console.log('🔗 Method 2: Trying direct Google Sheets API with OAuth...');
         
-        const sheetsResponse = await fetch(`${baseUrl}/api/sheets/expenses`, {
-          method: 'GET',
-          headers: {
-            'Cookie': request.headers.get('cookie') || '',
-            'Content-Type': 'application/json',
-          },
-        });
+        // For API token access, we'll use a service approach - check for stored OAuth tokens
+        // This assumes you have OAuth tokens stored for the system user
+        const { getGoogleSheetsClient } = await import('@/lib/google');
+        const { SPREADSHEET_ID, getSheetConfig, SheetHelpers } = await import('@/lib/sheets-config');
         
-        if (sheetsResponse.ok) {
-          const sheetsData = await sheetsResponse.json();
-          if (sheetsData.success && sheetsData.data.expenses) {
-            // Transform Google Sheets data to API format
-            expenses = sheetsData.data.expenses.map((expense: any) => ({
-              id: expense.id || `sheet_${Math.random().toString(36).substr(2, 9)}`,
-              amount: expense.debitAmount || expense.creditAmount || 0,
-              category: expense.category?.toLowerCase() || 'general',
-              description: expense.description || 'Expense from Google Sheets',
-              date: expense.date || new Date().toISOString().split('T')[0],
-              merchant: expense.from || 'Unknown Merchant',
-              createdAt: new Date().toISOString(),
-              updatedAt: new Date().toISOString(),
-              // Preserve original Google Sheets fields
-              originalData: {
-                from: expense.from,
-                creditAmount: expense.creditAmount,
-                debitAmount: expense.debitAmount,
-                availableBalance: expense.availableBalance
-              }
-            }));
-            analyticsData = sheetsData.data.analytics;
-            storageType = 'Google Sheets (OAuth Proxy)';
-            console.log(`✅ Method 2 Success: Fetched ${expenses.length} expenses via OAuth proxy`);
+        // Try to get OAuth tokens from multiple sources
+        let accessToken = request.cookies?.get('google_access_token')?.value || process.env.GOOGLE_ACCESS_TOKEN;
+        let refreshToken = request.cookies?.get('google_refresh_token')?.value || process.env.GOOGLE_REFRESH_TOKEN;
+        
+        // If no tokens from cookies/env, try to read from stored tokens file
+        if (!accessToken) {
+          try {
+            const { promises: fs } = await import('fs');
+            const path = await import('path');
+            const tokensFile = path.join(process.cwd(), 'data', 'tokens', 'google-oauth-tokens.json');
+            const tokenData = JSON.parse(await fs.readFile(tokensFile, 'utf-8'));
+            accessToken = tokenData.accessToken;
+            refreshToken = tokenData.refreshToken;
+            console.log('📁 Using stored OAuth tokens for API access');
+          } catch (fileError: any) {
+            console.log('📁 No stored OAuth tokens found:', fileError.message);
           }
+        }
+        
+        if (!accessToken) {
+          throw new Error('Google OAuth tokens not available. User must authenticate with Google first or use /api/copy-local-tokens to store tokens.');
+        }
+
+        const sheets = await getGoogleSheetsClient({
+          access_token: accessToken,
+          refresh_token: refreshToken
+        });
+
+        const EXPENSES_CONFIG = getSheetConfig('expenses');
+        const range = EXPENSES_CONFIG.range;
+        
+        const response = await sheets.spreadsheets.values.get({
+          spreadsheetId: SPREADSHEET_ID,
+          range,
+        });
+
+        const rows = response.data.values || [];
+        
+        if (rows.length === 0) {
+          expenses = [];
+          storageType = 'Google Sheets (Direct OAuth - No Data)';
         } else {
-          throw new Error(`HTTP ${sheetsResponse.status}: ${sheetsResponse.statusText}`);
+          // Skip header row and convert to structured data
+          const dataRows = rows.slice(1);
+          const rawExpenses = dataRows.map((row, index) => ({
+            id: row[7] || (index + 1).toString(),
+            from: row[0] || '',
+            date: row[1] || '',
+            creditAmount: parseFloat(row[2]) || 0,
+            debitAmount: parseFloat(row[3]) || 0,
+            category: row[4] || 'General',
+            description: row[5] || '',
+            availableBalance: parseFloat(row[6]) || 0
+          }));
+
+          // Transform to API format
+          expenses = rawExpenses.map((expense: any) => ({
+            id: expense.id,
+            amount: Math.abs(expense.debitAmount - expense.creditAmount), // Use net amount
+            category: expense.category?.toLowerCase() || 'general',
+            description: expense.description || 'Expense from Google Sheets',
+            date: expense.date || new Date().toISOString().split('T')[0],
+            merchant: expense.from || 'Unknown Merchant',
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            // Preserve original Google Sheets fields
+            originalData: {
+              from: expense.from,
+              creditAmount: expense.creditAmount,
+              debitAmount: expense.debitAmount,
+              availableBalance: expense.availableBalance
+            }
+          }));
+
+          // Calculate analytics from real data
+          const total = rawExpenses.reduce((sum, expense) => sum + (expense.debitAmount - expense.creditAmount), 0);
+          const categoryTotals = rawExpenses.reduce((acc, expense) => {
+            acc[expense.category] = (acc[expense.category] || 0) + (expense.debitAmount - expense.creditAmount);
+            return acc;
+          }, {} as Record<string, number>);
+
+          analyticsData = {
+            total,
+            count: expenses.length,
+            categoryTotals,
+            averageExpense: expenses.length > 0 ? total / expenses.length : 0
+          };
+
+          storageType = 'Google Sheets (Direct OAuth)';
+          console.log(`✅ Method 2 Success: Fetched ${expenses.length} real expenses from Google Sheets`);
         }
       } catch (oauthError: any) {
-        console.log('⚠️ Method 2 Failed: OAuth proxy failed:', oauthError.message);
-        throw new Error('All Google Sheets access methods failed');
+        console.log('⚠️ Method 2 Failed: Direct OAuth failed:', oauthError.message);
+        throw new Error('All Google Sheets access methods failed: ' + oauthError.message);
       }
     }
     
@@ -112,52 +169,24 @@ export async function GET(request: NextRequest) {
     console.log(`🎉 SUCCESS: Retrieved ${expenses.length} real expenses from ${storageType}`);
     
   } catch (allMethodsError: any) {
-    console.log('⚠️ All methods failed, using realistic mock data:', allMethodsError.message);
+    console.log('⚠️ All Google Sheets access methods failed:', allMethodsError.message);
       
-    // Fallback to realistic mock data that matches your business
-    expenses = [
-      {
-        id: "exp_001",
-        amount: 45.75,
-        category: "food",
-        description: "Business lunch meeting",
-        date: "2025-08-11",
-        merchant: "Downtown Bistro",
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      },
-      {
-        id: "exp_002", 
-        amount: 125.50,
-        category: "transportation",
-        description: "Airport taxi fare",
-        date: "2025-08-10",
-        merchant: "City Cab Company", 
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      },
-      {
-        id: "exp_003",
-        amount: 89.99,
-        category: "office",
-        description: "Software subscription",
-        date: "2025-08-09",
-        merchant: "TechSoft Solutions",
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      },
-      {
-        id: "exp_004",
-        amount: 67.25,
-        category: "fuel", 
-        description: "Gas station fill-up",
-        date: "2025-08-08",
-        merchant: "Shell Station",
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
+    // Return error instead of mock data - user wants real data only
+    return NextResponse.json({
+      success: false,
+      error: 'Unable to access real expense data',
+      message: 'Google Sheets API access failed. Please ensure you are authenticated with Google and have proper permissions.',
+      details: {
+        spreadsheetId: process.env.EXPENSES_SPREADSHEET_ID || 'Not configured',
+        error: allMethodsError.message,
+        suggestions: [
+          'Make sure you are logged in with Google OAuth',
+          'Check that Google Sheets API is enabled for your project',
+          'Verify the spreadsheet ID is correct',
+          'Ensure the spreadsheet is accessible by your Google account'
+        ]
       }
-    ];
-    storageType = 'Mock Data (Sheets Unavailable)';
+    }, { status: 503 }); // Service Unavailable
   }
 
   // Calculate analytics if not provided by Google Sheets

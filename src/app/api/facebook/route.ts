@@ -25,7 +25,7 @@ function isFacebookTokenInvalid(errorMessage: string): boolean {
 }
 
 interface FacebookPostRequest {
-  action: 'connect' | 'post' | 'get_posts' | 'get_insights' | 'get_page_info' | 'test_token';
+  action: 'connect' | 'post' | 'get_posts' | 'get_insights' | 'get_page_info' | 'get_user_info' | 'get_user_stats' | 'test_token';
   message?: string;
   link?: string;
   scheduled_publish_time?: number;
@@ -177,6 +177,19 @@ export async function POST(request: NextRequest) {
         );
         break;
         
+      case 'get_user_info':
+        facebookResponse = await fetch(
+          `${FACEBOOK_API_URL}/me?fields=id,name,email,about,website,phone,friends&access_token=${FACEBOOK_USER_ACCESS_TOKEN}`
+        );
+        break;
+        
+      case 'get_user_stats':
+        // For USER accounts, we can get friends count and basic profile info
+        facebookResponse = await fetch(
+          `${FACEBOOK_API_URL}/me?fields=id,name,friends.limit(0).summary(true)&access_token=${FACEBOOK_USER_ACCESS_TOKEN}`
+        );
+        break;
+        
       case 'test_token':
         // Test the access token validity by getting basic user account info
         console.log('🔍 Testing Facebook token validity...');
@@ -201,7 +214,7 @@ export async function POST(request: NextRequest) {
         
       default:
         return NextResponse.json(
-          { success: false, message: 'Invalid action. Use connect, post, get_posts, get_insights, get_page_info, or test_token' },
+          { success: false, message: 'Invalid action. Use connect, post, get_posts, get_insights, get_page_info, get_user_info, get_user_stats, or test_token' },
           { status: 400 }
         );
     }
@@ -290,6 +303,27 @@ export async function POST(request: NextRequest) {
       } catch (e) {
         // If parsing fails, create a basic response
         facebookResult = { status: 'connected', message: 'Facebook API response received' };
+      }
+    } else if (body.action === 'get_user_stats') {
+      // Parse user stats and format for social media dashboard
+      try {
+        const rawData = await facebookResponse.json();
+        facebookResult = {
+          id: rawData.id,
+          name: rawData.name,
+          friends_count: rawData.friends?.summary?.total_count || 0,
+          followers_count: rawData.friends?.summary?.total_count || 0, // For USER accounts, friends = followers
+          connected: true,
+          account_type: 'user',
+          message: `Successfully retrieved stats for user: ${rawData.name}`
+        };
+      } catch (e) {
+        facebookResult = { 
+          friends_count: 0, 
+          followers_count: 0, 
+          connected: false, 
+          error: 'Failed to parse user stats' 
+        };
       }
     } else {
       // For other actions, parse normally

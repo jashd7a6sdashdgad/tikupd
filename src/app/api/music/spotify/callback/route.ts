@@ -21,7 +21,13 @@ export async function GET(request: NextRequest) {
     }
 
     if (!SPOTIFY_CLIENT_ID || !SPOTIFY_CLIENT_SECRET) {
-      console.error('Spotify credentials not configured');
+      console.error('Spotify credentials not configured:', {
+        hasClientId: !!SPOTIFY_CLIENT_ID,
+        hasClientSecret: !!SPOTIFY_CLIENT_SECRET,
+        clientIdValue: SPOTIFY_CLIENT_ID ? 'SET' : 'NOT_SET',
+        clientSecretValue: SPOTIFY_CLIENT_SECRET ? 'SET' : 'NOT_SET',
+        allEnvVars: Object.keys(process.env).filter(key => key.includes('SPOTIFY'))
+      });
       return NextResponse.redirect(new URL('/music?error=config_missing', request.url));
     }
 

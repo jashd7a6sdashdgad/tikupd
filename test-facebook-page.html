@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Facebook Page Integration</title>
+</head>
+<body>
+    <h1>Test Facebook USER Token Integration</h1>
+    <div id="results"></div>
+    
+    <script>
+        async function testFacebookAPI() {
+            const results = document.getElementById('results');
+            results.innerHTML = '<p>🧪 Testing Facebook USER token API...</p>';
+            
+            try {
+                // Test the test_token action
+                const response = await fetch('/api/facebook', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'test_token' })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    results.innerHTML += `<p style="color: green;">✅ SUCCESS: ${data.message}</p>`;
+                    results.innerHTML += `<p>📊 User Data: ${JSON.stringify(data.data, null, 2)}</p>`;
+                    
+                    // Now test user stats
+                    const statsResponse = await fetch('/api/facebook', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ action: 'get_user_stats' })
+                    });
+                    
+                    const statsData = await statsResponse.json();
+                    
+                    if (statsData.success) {
+                        results.innerHTML += `<p style="color: blue;">📈 User Stats: ${JSON.stringify(statsData.data, null, 2)}</p>`;
+                    } else {
+                        results.innerHTML += `<p style="color: orange;">⚠️ Stats failed: ${statsData.message}</p>`;
+                    }
+                    
+                } else {
+                    results.innerHTML += `<p style="color: red;">❌ FAILED: ${data.message}</p>`;
+                    results.innerHTML += `<p>Error details: ${JSON.stringify(data, null, 2)}</p>`;
+                }
+                
+            } catch (error) {
+                results.innerHTML += `<p style="color: red;">❌ ERROR: ${error.message}</p>`;
+            }
+        }
+        
+        // Run test when page loads
+        window.onload = testFacebookAPI;
+    </script>
+</body>
+</html>
