@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Slider } from '@/components/ui/slider';
 import { Badge } from '@/components/ui/badge';
+import { useThemeContext, defaultPresets, type ThemePreset } from '@/contexts/ThemeContext';
 import { 
   Palette,
   Eye,
@@ -29,172 +30,49 @@ import {
   Smartphone
 } from 'lucide-react';
 
-interface ThemePreset {
-  id: string;
-  name: string;
-  description: string;
-  colors: {
-    primary: string;
-    secondary: string;
-    accent: string;
-    background: string;
-    surface: string;
-    text: string;
-    muted: string;
-  };
-  gradients: {
-    primary: string[];
-    secondary: string[];
-    hero: string[];
-  };
-  effects: {
-    glassmorphism: boolean;
-    shadows: 'minimal' | 'medium' | 'heavy';
-    animations: boolean;
-    blur: number;
-    roundness: number;
-  };
-  darkMode: boolean;
-  custom: boolean;
-}
-
-const defaultPresets: ThemePreset[] = [
-  {
-    id: 'modern-blue',
-    name: 'Modern Blue',
-    description: 'Clean and professional blue theme',
-    colors: {
-      primary: '#3b82f6',
-      secondary: '#1e40af',
-      accent: '#06b6d4',
-      background: '#f8fafc',
-      surface: '#ffffff',
-      text: '#1e293b',
-      muted: '#64748b'
-    },
-    gradients: {
-      primary: ['#3b82f6', '#1d4ed8'],
-      secondary: ['#06b6d4', '#0891b2'],
-      hero: ['#f8fafc', '#e2e8f0', '#cbd5e1']
-    },
-    effects: {
-      glassmorphism: true,
-      shadows: 'medium',
-      animations: true,
-      blur: 12,
-      roundness: 16
-    },
-    darkMode: false,
-    custom: false
-  },
-  {
-    id: 'purple-gradient',
-    name: 'Purple Gradient',
-    description: 'Vibrant purple with gradients',
-    colors: {
-      primary: '#8b5cf6',
-      secondary: '#7c3aed',
-      accent: '#ec4899',
-      background: '#faf5ff',
-      surface: '#ffffff',
-      text: '#1f2937',
-      muted: '#6b7280'
-    },
-    gradients: {
-      primary: ['#8b5cf6', '#7c3aed'],
-      secondary: ['#ec4899', '#db2777'],
-      hero: ['#faf5ff', '#f3e8ff', '#e9d5ff']
-    },
-    effects: {
-      glassmorphism: true,
-      shadows: 'heavy',
-      animations: true,
-      blur: 16,
-      roundness: 24
-    },
-    darkMode: false,
-    custom: false
-  },
-  {
-    id: 'emerald-nature',
-    name: 'Emerald Nature',
-    description: 'Fresh green nature-inspired theme',
-    colors: {
-      primary: '#10b981',
-      secondary: '#059669',
-      accent: '#f59e0b',
-      background: '#f0fdf4',
-      surface: '#ffffff',
-      text: '#111827',
-      muted: '#6b7280'
-    },
-    gradients: {
-      primary: ['#10b981', '#059669'],
-      secondary: ['#f59e0b', '#d97706'],
-      hero: ['#f0fdf4', '#dcfce7', '#bbf7d0']
-    },
-    effects: {
-      glassmorphism: false,
-      shadows: 'minimal',
-      animations: true,
-      blur: 8,
-      roundness: 12
-    },
-    darkMode: false,
-    custom: false
-  }
-];
 
 interface ThemeBuilderProps {
   onUnsavedChanges: (hasChanges: boolean) => void;
 }
 
 export function ThemeBuilder({ onUnsavedChanges }: ThemeBuilderProps) {
-  const [currentTheme, setCurrentTheme] = useState<ThemePreset>(defaultPresets[0]);
+  const { currentTheme, customPresets, applyTheme, saveCustomPreset, updateCurrentTheme } = useThemeContext();
   const [previewMode, setPreviewMode] = useState<'desktop' | 'tablet' | 'mobile'>('desktop');
   const [showAdvanced, setShowAdvanced] = useState(false);
-  const [customPresets, setCustomPresets] = useState<ThemePreset[]>([]);
   
   useEffect(() => {
     onUnsavedChanges(currentTheme.custom);
   }, [currentTheme, onUnsavedChanges]);
 
   const updateThemeColors = (colorKey: keyof ThemePreset['colors'], value: string) => {
-    setCurrentTheme(prev => ({
-      ...prev,
+    updateCurrentTheme({
       colors: {
-        ...prev.colors,
+        ...currentTheme.colors,
         [colorKey]: value
-      },
-      custom: true
-    }));
+      }
+    });
   };
 
   const updateThemeEffects = (effectKey: keyof ThemePreset['effects'], value: any) => {
-    setCurrentTheme(prev => ({
-      ...prev,
+    updateCurrentTheme({
       effects: {
-        ...prev.effects,
+        ...currentTheme.effects,
         [effectKey]: value
-      },
-      custom: true
-    }));
+      }
+    });
   };
 
   const saveThemePreset = () => {
-    const newPreset = {
+    const newPreset = saveCustomPreset({
       ...currentTheme,
-      id: `custom-${Date.now()}`,
       name: `Custom Theme ${customPresets.length + 1}`,
-      description: 'Custom created theme',
-      custom: true
-    };
-    setCustomPresets(prev => [...prev, newPreset]);
+      description: 'Custom created theme'
+    });
     onUnsavedChanges(false);
   };
 
   const applyThemePreset = (preset: ThemePreset) => {
-    setCurrentTheme(preset);
+    applyTheme(preset);
   };
 
   return (

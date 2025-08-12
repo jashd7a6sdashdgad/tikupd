@@ -282,6 +282,7 @@ export async function POST(request: NextRequest) {
     }
     
     const user = verifyToken(token);
+    const spotifyAccessToken = request.cookies.get('spotify_access_token')?.value;
     const body: MusicRequest = await request.json();
     
     console.log('Music API request:', body);
@@ -348,11 +349,47 @@ export async function POST(request: NextRequest) {
         break;
 
       case 'get_playlists':
-        // This would require user authentication with Spotify
-        result = {
-          playlists: [],
-          message: 'User playlist access requires Spotify user authentication'
-        };
+        if (!spotifyAccessToken) {
+          result = {
+            playlists: [],
+            message: 'Please connect to Spotify first to access your playlists'
+          };
+        } else {
+          try {
+            const playlistsResponse = await fetch('https://api.spotify.com/v1/me/playlists', {
+              headers: {
+                'Authorization': `Bearer ${spotifyAccessToken}`
+              }
+            });
+            
+            if (playlistsResponse.ok) {
+              const playlistsData = await playlistsResponse.json();
+              result = {
+                playlists: playlistsData.items?.map((playlist: any) => ({
+                  id: playlist.id,
+                  name: playlist.name,
+                  description: playlist.description,
+                  imageUrl: playlist.images?.[0]?.url || '',
+                  trackCount: playlist.tracks?.total || 0,
+                  isPublic: playlist.public,
+                  spotifyUrl: playlist.external_urls?.spotify
+                })) || [],
+                total: playlistsData.total || 0
+              };
+            } else {
+              result = {
+                playlists: [],
+                message: 'Failed to fetch Spotify playlists'
+              };
+            }
+          } catch (error) {
+            console.error('Error fetching Spotify playlists:', error);
+            result = {
+              playlists: [],
+              message: 'Error fetching Spotify playlists'
+            };
+          }
+        }
         break;
 
       default:
@@ -399,10 +436,12 @@ export async function GET(request: NextRequest) {
         break;
 
       case 'health':
+        const spotifyAccessToken = request.cookies.get('spotify_access_token')?.value;
         result = {
           spotify: {
             configured: !!(SPOTIFY_CLIENT_ID && SPOTIFY_CLIENT_SECRET),
-            status: 'ready'
+            connected: !!spotifyAccessToken,
+            status: spotifyAccessToken ? 'connected' : 'ready'
           },
           youtube: {
             configured: !!YOUTUBE_API_KEY,

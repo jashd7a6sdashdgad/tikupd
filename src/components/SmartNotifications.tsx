@@ -205,33 +205,160 @@ export default function SmartNotifications({ dashboardData, className = '' }: Sm
       }
     }
 
-    // Daily productivity reminders
+    // Daily productivity reminders and system notifications
     const currentHour = now.getHours();
+    
+    // Morning productivity (9 AM)
     if (currentHour === 9 && now.getMinutes() < 15) {
       newNotifications.push({
         id: 'morning-productivity',
         type: 'info',
-        title: 'Good Morning!',
-        message: 'Start your productive day - review your priorities',
+        title: '🌅 Good Morning!',
+        message: 'Start your productive day - review your priorities and agenda',
         timestamp: now,
         action: { text: 'View Dashboard', path: '/dashboard' },
         category: 'system',
-        autoHide: true
+        priority: 85
       });
     }
 
+    // Afternoon check-in (2 PM)
+    if (currentHour === 14 && now.getMinutes() < 15) {
+      newNotifications.push({
+        id: 'afternoon-checkin',
+        type: 'info',
+        title: '⏰ Afternoon Check-in',
+        message: 'Review your progress and adjust your schedule if needed',
+        timestamp: now,
+        action: { text: 'View Calendar', path: '/calendar' },
+        category: 'system',
+        priority: 75
+      });
+    }
+
+    // Evening review (5 PM)
     if (currentHour === 17 && now.getMinutes() < 15) {
       newNotifications.push({
         id: 'evening-review',
         type: 'info',
-        title: 'End of Day',
-        message: 'Review your accomplishments and plan tomorrow',
+        title: '🌅 End of Day Review',
+        message: 'Reflect on accomplishments and plan for tomorrow',
         timestamp: now,
         action: { text: 'Write Journal', path: '/diary' },
         category: 'system',
-        autoHide: true
+        priority: 80
       });
     }
+
+    // Weather update
+    newNotifications.push({
+      id: 'weather-update',
+      type: 'info',
+      title: '🌤️ Weather Update',
+      message: 'Check today\'s weather forecast for your outdoor plans',
+      timestamp: now,
+      action: { text: 'View Weather', path: '/weather' },
+      category: 'system',
+      priority: 60
+    });
+
+    // Voice assistant tip
+    newNotifications.push({
+      id: 'voice-tip',
+      type: 'info',
+      title: '🎙️ Voice Assistant Tip',
+      message: 'Try saying "Navigate to expenses" or "Show me my calendar" for quick access',
+      timestamp: now,
+      action: { text: 'Voice Chat', path: '/voice-chat' },
+      category: 'voice',
+      priority: 55
+    });
+
+    // Social media check
+    newNotifications.push({
+      id: 'social-reminder',
+      type: 'info',
+      title: '📱 Social Media Update',
+      message: 'Check your social media activity and recent messages',
+      timestamp: now,
+      action: { text: 'Social Media', path: '/social-media' },
+      category: 'social',
+      priority: 50
+    });
+
+    // Photo memories
+    newNotifications.push({
+      id: 'photo-memories',
+      type: 'info',
+      title: '📸 Photo Memories',
+      message: 'Discover photos from this day in previous years',
+      timestamp: now,
+      action: { text: 'Photo Album', path: '/photo-album' },
+      category: 'system',
+      priority: 45
+    });
+
+    // Analytics insight
+    newNotifications.push({
+      id: 'analytics-insight',
+      type: 'info',
+      title: '📊 Daily Analytics',
+      message: 'View your productivity and activity insights for today',
+      timestamp: now,
+      action: { text: 'Analytics', path: '/analytics' },
+      category: 'system',
+      priority: 40
+    });
+
+    // YouTube/Music recommendation
+    newNotifications.push({
+      id: 'music-recommendation',
+      type: 'info',
+      title: '🎵 Music & Entertainment',
+      message: 'Discover new music or catch up on your favorite YouTube channels',
+      timestamp: now,
+      action: { text: 'Music Player', path: '/music' },
+      category: 'system',
+      priority: 35
+    });
+
+    // Travel planning reminder
+    if (currentHour >= 10 && currentHour <= 18) {
+      newNotifications.push({
+        id: 'travel-planning',
+        type: 'info',
+        title: '✈️ Travel Planning',
+        message: 'Plan your next trip or track travel expenses',
+        timestamp: now,
+        action: { text: 'Travel Tools', path: '/travel' },
+        category: 'system',
+        priority: 30
+      });
+    }
+
+    // Business insights
+    newNotifications.push({
+      id: 'business-insights',
+      type: 'info',
+      title: '💼 Business Hub',
+      message: 'Manage your business operations and track performance',
+      timestamp: now,
+      action: { text: 'Business Tools', path: '/business' },
+      category: 'system',
+      priority: 25
+    });
+
+    // Shopping list reminder
+    newNotifications.push({
+      id: 'shopping-reminder',
+      type: 'info',
+      title: '🛒 Shopping Assistant',
+      message: 'Manage your shopping lists and track purchases',
+      timestamp: now,
+      action: { text: 'Shopping Lists', path: '/shopping' },
+      category: 'system',
+      priority: 20
+    });
 
     // Success notifications
     if (dashboardData.unreadEmails === 0) {
@@ -323,15 +450,16 @@ export default function SmartNotifications({ dashboardData, className = '' }: Sm
           </CardTitle>
         </CardHeader>
         <CardContent className="text-center py-8">
-          <BellRing className="h-12 w-12 mx-auto mb-4 text-black opacity-50" />
-          <p className="text-black">All caught up! No new notifications.</p>
+          <BellRing className="h-16 w-16 mx-auto mb-6 text-black opacity-50" />
+          <p className="text-black text-lg">All caught up! No new notifications.</p>
+          <p className="text-gray-600 text-sm mt-2">Your smart assistant is monitoring everything for you.</p>
         </CardContent>
       </Card>
     );
   }
 
   return (
-    <Card className={`${className} min-h-[400px]`}>
+    <Card className={`${className}`}>
       <CardHeader className="flex flex-row items-center justify-between pb-4">
         <CardTitle className="flex items-center gap-3 text-black text-lg">
           <Bell className="h-6 w-6" />
@@ -351,7 +479,7 @@ export default function SmartNotifications({ dashboardData, className = '' }: Sm
           </Button>
         )}
       </CardHeader>
-      <CardContent className="space-y-4 max-h-[500px] overflow-y-auto">
+      <CardContent className="space-y-4">
         {notifications.map((notification) => (
           <Card key={notification.id} className={`${getNotificationColor(notification.type)} border`}>
             <CardContent className="p-3">

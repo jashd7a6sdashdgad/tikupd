@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 const FACEBOOK_API_URL = 'https://graph.facebook.com/v18.0';
-const PAGE_ID = process.env.FACEBOOK_PAGE_ID;
-const ACCESS_TOKEN = process.env.FACEBOOK_PAGE_ACCESS_TOKEN;
+// Use single user token from .env.local for main account
+const ACCESS_TOKEN = process.env.FACEBOOK_USER_TOKEN;
 
 interface FacebookPost {
   id: string;
@@ -41,7 +41,7 @@ export async function GET(request: NextRequest) {
   const action = searchParams.get('action') || 'feed';
   const limit = searchParams.get('limit') || '10';
 
-  if (!PAGE_ID || !ACCESS_TOKEN) {
+  if (!ACCESS_TOKEN) {
     return NextResponse.json({
       success: false,
       error: 'Facebook credentials not configured'
@@ -89,7 +89,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   const { action, content } = await request.json();
 
-  if (!PAGE_ID || !ACCESS_TOKEN) {
+  if (!ACCESS_TOKEN) {
     return NextResponse.json({
       success: false,
       error: 'Facebook credentials not configured'
@@ -129,7 +129,7 @@ export async function POST(request: NextRequest) {
 
 async function getFacebookFeed(limit: number = 10) {
   const fields = 'id,message,story,created_time,likes.summary(true),comments.summary(true),shares,full_picture,permalink_url';
-  const url = `${FACEBOOK_API_URL}/${PAGE_ID}/posts?fields=${fields}&limit=${limit}&access_token=${ACCESS_TOKEN}`;
+  const url = `${FACEBOOK_API_URL}/me/posts?fields=${fields}&limit=${limit}&access_token=${ACCESS_TOKEN}`;
   
   const response = await fetch(url);
   if (!response.ok) {
@@ -155,8 +155,8 @@ async function getFacebookFeed(limit: number = 10) {
 }
 
 async function getPageInfo() {
-  const fields = 'id,name,followers_count,fan_count,posts{id,message,created_time,likes.summary(true)}';
-  const url = `${FACEBOOK_API_URL}/${PAGE_ID}?fields=${fields}&access_token=${ACCESS_TOKEN}`;
+  const fields = 'id,name,posts{id,message,created_time,likes.summary(true)}';
+  const url = `${FACEBOOK_API_URL}/me?fields=${fields}&access_token=${ACCESS_TOKEN}`;
   
   const response = await fetch(url);
   if (!response.ok) {
@@ -168,7 +168,6 @@ async function getPageInfo() {
   return {
     id: data.id,
     name: data.name,
-    followers: data.followers_count || data.fan_count || 0,
     posts_count: data.posts?.data?.length || 0,
     platform: 'facebook'
   };
@@ -188,7 +187,7 @@ async function getPageInsights() {
   const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]; // 7 days ago
   const until = new Date().toISOString().split('T')[0]; // today
   
-  const url = `${FACEBOOK_API_URL}/${PAGE_ID}/insights?metric=${metrics.join(',')}&period=${period}&since=${since}&until=${until}&access_token=${ACCESS_TOKEN}`;
+  const url = `${FACEBOOK_API_URL}/me/insights?metric=${metrics.join(',')}&period=${period}&since=${since}&until=${until}&access_token=${ACCESS_TOKEN}`;
   
   const response = await fetch(url);
   if (!response.ok) {
@@ -216,7 +215,7 @@ async function getPageInsights() {
 
 async function getRecentPosts(limit: number = 10) {
   const fields = 'id,message,story,created_time,likes.summary(true),comments.summary(true),shares,attachments{media,url},permalink_url';
-  const url = `${FACEBOOK_API_URL}/${PAGE_ID}/posts?fields=${fields}&limit=${limit}&access_token=${ACCESS_TOKEN}`;
+  const url = `${FACEBOOK_API_URL}/me/posts?fields=${fields}&limit=${limit}&access_token=${ACCESS_TOKEN}`;
   
   const response = await fetch(url);
   if (!response.ok) {
@@ -252,7 +251,7 @@ async function createFacebookPost(content: {
     ...(content.link && { link: content.link })
   };
 
-  const response = await fetch(`${FACEBOOK_API_URL}/${PAGE_ID}/feed`, {
+  const response = await fetch(`${FACEBOOK_API_URL}/me/feed`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -285,7 +284,7 @@ async function schedulePost(content: {
     ...(content.link && { link: content.link })
   };
 
-  const response = await fetch(`${FACEBOOK_API_URL}/${PAGE_ID}/feed`, {
+  const response = await fetch(`${FACEBOOK_API_URL}/me/feed`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

@@ -27,7 +27,7 @@ export default function MessengerWidget({
 }: MessengerWidgetProps) {
   const businessConfig = getBusinessConfig();
   const socialConfig = getSocialConfig();
-  const effectivePageId = pageId || socialConfig.facebook?.pageId || process.env.FACEBOOK_PAGE_ID || "196199373900228";
+  const effectivePageId = pageId || "196199373900228"; // Use hardcoded page ID
   const [isOpen, setIsOpen] = useState(!minimized);
   const [isMinimized, setIsMinimized] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);

@@ -167,6 +167,62 @@ export default function SmartInsights({ dashboardData, weeklyStats, className = 
         });
       }
 
+      // Test and demo insights to fill up space
+      newInsights.push({
+        id: 'music-discovery',
+        type: 'suggestion',
+        priority: 'low',
+        title: 'Music Discovery',
+        description: 'Try the new music search feature! Search for your favorite songs and artists.',
+        action: { text: 'Explore Music', path: '/music' },
+        icon: <MessageSquare className="h-4 w-4" />,
+        timestamp: new Date()
+      });
+
+      newInsights.push({
+        id: 'voice-navigation-test',
+        type: 'optimization',
+        priority: 'medium',
+        title: 'Voice Navigation Available',
+        description: 'Test the voice navigation feature! Say "calendar" or "expenses" to navigate hands-free.',
+        action: { text: 'Try Voice Chat', path: '/voice-chat' },
+        icon: <MessageSquare className="h-4 w-4" />,
+        timestamp: new Date()
+      });
+
+      newInsights.push({
+        id: 'theme-customization',
+        type: 'suggestion',
+        priority: 'low',
+        title: 'Personalize Your Experience',
+        description: 'Customize your dashboard theme and colors to match your style.',
+        action: { text: 'Customize Themes', path: '/customization' },
+        icon: <Target className="h-4 w-4" />,
+        timestamp: new Date()
+      });
+
+      newInsights.push({
+        id: 'search-everything',
+        type: 'optimization',
+        priority: 'medium',
+        title: 'Global Search Ready',
+        description: 'Use the powerful search feature to find anything across your data. Try "restaurant expenses" or "meetings this week".',
+        action: { text: 'Try Search', path: '/search' },
+        icon: <Brain className="h-4 w-4" />,
+        timestamp: new Date()
+      });
+
+      newInsights.push({
+        id: 'automation-workflows',
+        type: 'suggestion',
+        priority: 'medium',
+        title: 'Workflow Automation',
+        description: 'Set up automated workflows to streamline your daily tasks and boost productivity.',
+        action: { text: 'Create Workflow', path: '/workflows' },
+        icon: <Zap className="h-4 w-4" />,
+        timestamp: new Date()
+      });
+
       // Sort insights by priority and timestamp
       const sortedInsights = newInsights.sort((a, b) => {
         const priorityOrder = { high: 3, medium: 2, low: 1 };
@@ -176,7 +232,7 @@ export default function SmartInsights({ dashboardData, weeklyStats, className = 
         return b.timestamp.getTime() - a.timestamp.getTime();
       });
 
-      setInsights(sortedInsights.slice(0, 5)); // Show top 5 insights
+      setInsights(sortedInsights.slice(0, 8)); // Show top 8 insights
     } catch (error) {
       console.error('Error generating insights:', error);
     } finally {

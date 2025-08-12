@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { useSettings } from '@/contexts/SettingsContext';
 import { useTranslation } from '@/lib/translations';
-import { Youtube, Play, Eye, ThumbsUp, MessageSquare, Upload, BarChart3, ExternalLink } from 'lucide-react';
+import { Youtube, Play, Eye, ThumbsUp, MessageSquare, Upload, BarChart3, ExternalLink, Settings, TrendingUp } from 'lucide-react';
 
 interface YouTubeVideo {
   id: string;
@@ -281,109 +281,178 @@ export default function YouTubePage() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Recent Videos */}
-          <Card className="lg:col-span-2">
-            <CardHeader>
-              <CardTitle className="flex items-center text-black">
-                <Play className="h-5 w-5 mr-2" />
-                {t('events')}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
+          {/* Recent Videos - Modern Grid Layout */}
+          <div className="lg:col-span-2">
+            <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/20 p-6">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="p-3 bg-gradient-to-br from-red-500 to-red-600 rounded-2xl shadow-lg">
+                <Play className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold text-gray-800">Recent Videos</h2>
+                <p className="text-gray-600">Your latest YouTube content</p>
+              </div>
+            </div>
+
+            {videos.length === 0 ? (
+              <div className="text-center py-12">
+                <Youtube className="h-16 w-16 mx-auto mb-4 text-gray-400" />
+                <p className="text-gray-600 text-lg mb-2">No videos found</p>
+                <p className="text-gray-500">Connect your YouTube account to see your videos</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {videos.map((video) => (
-                  <div key={video.id} className="flex bg-muted rounded-lg overflow-hidden">
-                    <div className="w-40 h-24 bg-gray-200 flex items-center justify-center flex-shrink-0 relative">
+                  <div key={video.id} className="group bg-white/70 backdrop-blur-lg rounded-2xl shadow-lg border border-white/30 overflow-hidden hover:shadow-xl transition-all duration-300 hover:scale-[1.02]">
+                    {/* Video Thumbnail */}
+                    <div className="relative aspect-video bg-gray-200 overflow-hidden">
                       {video.thumbnail ? (
                         <img 
                           src={video.thumbnail} 
                           alt={video.title}
-                          className="w-full h-full object-cover"
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                         />
                       ) : (
-                        <Play className="h-8 w-8 text-gray-400" />
+                        <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-200 to-gray-300">
+                          <Play className="h-12 w-12 text-gray-400" />
+                        </div>
                       )}
-                      {/* Play button overlay */}
-                      <div className="absolute inset-0 bg-black bg-opacity-20 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity cursor-pointer"
-                           onClick={() => watchVideo(video.id)}>
-                        <Play className="h-8 w-8 text-black font-bold" />
+                      
+                      {/* Play Button Overlay */}
+                      <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center justify-center">
+                        <button
+                          onClick={() => watchVideo(video.id)}
+                          className="bg-red-600 hover:bg-red-700 text-white rounded-full p-4 transform scale-100 hover:scale-110 transition-all duration-200 shadow-2xl"
+                        >
+                          <Play className="h-6 w-6 ml-1" fill="white" />
+                        </button>
+                      </div>
+                      
+                      {/* Video Duration Badge */}
+                      <div className="absolute bottom-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded-lg">
+                        {video.duration || '0:00'}
                       </div>
                     </div>
-                    <div className="flex-1 p-4">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <h4 className="font-medium text-black mb-1">{video.title}</h4>
-                          <p className="text-sm text-black mb-2 line-clamp-2">{video.description}</p>
-                        </div>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => watchVideo(video.id)}
-                          className="ml-2 text-xs"
-                        >
-                          <ExternalLink className="h-3 w-3 mr-1" />
-                          {t('open')}
-                        </Button>
-                      </div>
-                      <div className="flex items-center justify-between text-xs text-black">
-                        <span>{(() => {
-                  const date = new Date(video.published_at);
-                  const day = date.getDate().toString().padStart(2, '0');
-                  const month = (date.getMonth() + 1).toString().padStart(2, '0');
-                  const year = date.getFullYear();
-                  return `${day}/${month}/${year}`;
-                })()}</span>
-                        <div className="flex space-x-4">
-                          <span className="flex items-center">
-                            <Eye className="h-3 w-3 mr-1" />
+
+                    {/* Video Info */}
+                    <div className="p-4">
+                      <h3 className="font-semibold text-gray-800 mb-2 line-clamp-2 group-hover:text-red-600 transition-colors">
+                        {video.title}
+                      </h3>
+                      
+                      <p className="text-sm text-gray-600 mb-3 line-clamp-2">
+                        {video.description}
+                      </p>
+
+                      {/* Video Stats */}
+                      <div className="flex items-center justify-between text-xs text-gray-500 mb-3">
+                        <span className="bg-gray-100 px-2 py-1 rounded-full">
+                          {(() => {
+                            const date = new Date(video.published_at);
+                            const day = date.getDate().toString().padStart(2, '0');
+                            const month = (date.getMonth() + 1).toString().padStart(2, '0');
+                            const year = date.getFullYear();
+                            return `${day}/${month}/${year}`;
+                          })()}
+                        </span>
+                        
+                        <div className="flex items-center space-x-3">
+                          <span className="flex items-center gap-1">
+                            <Eye className="h-3 w-3" />
                             {video.view_count.toLocaleString()}
                           </span>
-                          <span className="flex items-center">
-                            <ThumbsUp className="h-3 w-3 mr-1" />
+                          <span className="flex items-center gap-1">
+                            <ThumbsUp className="h-3 w-3" />
                             {video.like_count.toLocaleString()}
                           </span>
-                          <span className="flex items-center">
-                            <MessageSquare className="h-3 w-3 mr-1" />
+                          <span className="flex items-center gap-1">
+                            <MessageSquare className="h-3 w-3" />
                             {video.comment_count}
                           </span>
                         </div>
                       </div>
+
+                      {/* Action Button */}
+                      <button
+                        onClick={() => watchVideo(video.id)}
+                        className="w-full bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white py-2 px-4 rounded-xl font-medium transition-all duration-200 flex items-center justify-center gap-2 group-hover:shadow-lg"
+                      >
+                        <ExternalLink className="h-4 w-4" />
+                        Watch on YouTube
+                      </button>
                     </div>
                   </div>
                 ))}
               </div>
-            </CardContent>
-          </Card>
+            )}
+            </div>
+          </div>
 
-          {/* Quick Actions */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-black">{t('quickActions')}</CardTitle>
-              <CardDescription className="text-black">{t('profileDescription')}</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <Button className="w-full justify-start">
-                <Upload className="h-4 w-4 mr-2" />
-                {t('import')}
-              </Button>
-              <Button className="w-full justify-start" variant="outline">
-                <BarChart3 className="h-4 w-4 mr-2" />
-                {t('analyticsTitle')}
-              </Button>
-              <Button className="w-full justify-start" variant="outline">
-                <MessageSquare className="h-4 w-4 mr-2" />
-                {t('settings')}
-              </Button>
-              <Button className="w-full justify-start" variant="outline">
-                <Play className="h-4 w-4 mr-2" />
-                {t('create')}
-              </Button>
-              <Button className="w-full justify-start" variant="outline">
-                <Eye className="h-4 w-4 mr-2" />
-                {t('settings')}
-              </Button>
-            </CardContent>
-          </Card>
+          {/* Quick Actions - Modernized */}
+          <div className="space-y-6">
+            <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/20 p-6">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="p-2 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl shadow-lg">
+                  <Settings className="h-5 w-5 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-gray-800">Quick Actions</h3>
+                  <p className="text-gray-600 text-sm">YouTube management tools</p>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <button className="w-full bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white py-3 px-4 rounded-xl font-medium transition-all duration-200 flex items-center gap-3 shadow-lg hover:shadow-xl">
+                  <Upload className="h-4 w-4" />
+                  Upload Video
+                </button>
+                
+                <button className="w-full bg-white/70 hover:bg-white/90 text-gray-800 py-3 px-4 rounded-xl font-medium transition-all duration-200 flex items-center gap-3 border border-gray-200 hover:border-gray-300 shadow-sm hover:shadow-md">
+                  <BarChart3 className="h-4 w-4 text-purple-600" />
+                  View Analytics
+                </button>
+                
+                <button className="w-full bg-white/70 hover:bg-white/90 text-gray-800 py-3 px-4 rounded-xl font-medium transition-all duration-200 flex items-center gap-3 border border-gray-200 hover:border-gray-300 shadow-sm hover:shadow-md">
+                  <MessageSquare className="h-4 w-4 text-green-600" />
+                  Manage Comments
+                </button>
+                
+                <button className="w-full bg-white/70 hover:bg-white/90 text-gray-800 py-3 px-4 rounded-xl font-medium transition-all duration-200 flex items-center gap-3 border border-gray-200 hover:border-gray-300 shadow-sm hover:shadow-md">
+                  <Play className="h-4 w-4 text-red-600" />
+                  Create Content
+                </button>
+                
+                <button className="w-full bg-white/70 hover:bg-white/90 text-gray-800 py-3 px-4 rounded-xl font-medium transition-all duration-200 flex items-center gap-3 border border-gray-200 hover:border-gray-300 shadow-sm hover:shadow-md">
+                  <Eye className="h-4 w-4 text-orange-600" />
+                  Channel Settings
+                </button>
+              </div>
+            </div>
+
+            {/* Channel Stats Card */}
+            <div className="bg-gradient-to-br from-red-50 to-orange-50 border-2 border-red-200 rounded-3xl p-6 shadow-xl">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-2 bg-red-500 rounded-xl shadow-lg">
+                  <TrendingUp className="h-5 w-5 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-red-800">Channel Growth</h3>
+                  <p className="text-red-600 text-sm">This month's performance</p>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4 text-center">
+                <div className="bg-white/60 rounded-xl p-3">
+                  <p className="text-2xl font-bold text-red-700">{channelStats.subscribers.toLocaleString()}</p>
+                  <p className="text-xs text-red-600">Subscribers</p>
+                </div>
+                <div className="bg-white/60 rounded-xl p-3">
+                  <p className="text-2xl font-bold text-orange-700">{channelStats.totalVideos}</p>
+                  <p className="text-xs text-orange-600">Videos</p>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>

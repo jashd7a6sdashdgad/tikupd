@@ -19,8 +19,9 @@ import {
   Target
 } from 'lucide-react';
 
-export default function CustomizationPage() {
+export default function CustomizationWorkingPage() {
   const { currentTheme, customPresets, applyTheme, saveCustomPreset, updateCurrentTheme } = useThemeContext();
+  const [activeTab, setActiveTab] = useState('theme');
   const [previewMode, setPreviewMode] = useState<'desktop' | 'tablet' | 'mobile'>('desktop');
 
   const updateThemeColors = (colorKey: keyof ThemePreset['colors'], value: string) => {
@@ -39,7 +40,7 @@ export default function CustomizationPage() {
       name: themeName,
       description: 'Custom created theme'
     });
-    alert(`✅ Saved theme: ${themeName}`);
+    alert(`Saved theme: ${themeName}`);
   };
 
   return (
@@ -50,7 +51,7 @@ export default function CustomizationPage() {
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-6">
               <div className="p-4 bg-gradient-to-br from-purple-500 to-pink-600 rounded-3xl shadow-2xl">
-                <Palette className="h-10 w-10 text-white" />
+                <Palette className="h-10 w-10 text-black font-bold" />
               </div>
               <div>
                 <h1 className="text-5xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent mb-2">
@@ -125,9 +126,6 @@ export default function CustomizationPage() {
                   <Palette className="h-5 w-5 text-purple-600" />
                   Theme Presets
                 </CardTitle>
-                <CardDescription>
-                  Choose from built-in themes or create your own
-                </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
@@ -165,7 +163,7 @@ export default function CustomizationPage() {
                 {/* Custom Presets */}
                 {customPresets.length > 0 && (
                   <div className="mb-6">
-                    <h4 className="font-medium text-gray-800 mb-3">Your Custom Themes</h4>
+                    <h4 className="font-medium text-gray-800 mb-3">Custom Themes</h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                       {customPresets.map((preset) => (
                         <div
@@ -220,9 +218,6 @@ export default function CustomizationPage() {
                   <Settings className="h-5 w-5 text-blue-600" />
                   Color Customization
                 </CardTitle>
-                <CardDescription>
-                  Customize colors to create your perfect theme
-                </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -246,11 +241,6 @@ export default function CustomizationPage() {
                     </div>
                   ))}
                 </div>
-                <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                  <p className="text-sm text-blue-800">
-                    💡 <strong>Tip:</strong> Colors are automatically applied as you change them. Save your custom theme when you're happy with the results!
-                  </p>
-                </div>
               </CardContent>
             </Card>
           </div>
@@ -263,9 +253,6 @@ export default function CustomizationPage() {
                   <Eye className="h-5 w-5 text-yellow-600" />
                   Live Preview
                 </CardTitle>
-                <CardDescription>
-                  See how your theme looks in real-time
-                </CardDescription>
               </CardHeader>
               <CardContent>
                 <div 
@@ -330,44 +317,13 @@ export default function CustomizationPage() {
                   </div>
                 </div>
                 
-                <div className="mt-4 pt-4 border-t border-gray-200 space-y-2">
+                <div className="mt-4 pt-4 border-t border-gray-200">
                   <p className="text-sm text-gray-600">
                     <strong>Preview mode:</strong> {previewMode}
                   </p>
                   <p className="text-sm text-gray-600">
-                    <strong>Active theme:</strong> {currentTheme.name}
+                    <strong>Theme:</strong> {currentTheme.name}
                   </p>
-                  {currentTheme.custom && (
-                    <p className="text-sm text-emerald-600 font-medium">
-                      ✨ This is a custom theme you've created
-                    </p>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-            
-            <Card className="bg-white/70 backdrop-blur-xl border-2 border-white/30 rounded-3xl shadow-xl">
-              <CardHeader>
-                <CardTitle className="text-lg">Quick Actions</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  <Button 
-                    variant="outline" 
-                    className="w-full justify-start"
-                    onClick={() => applyTheme(defaultPresets[0])}
-                  >
-                    <Target className="h-4 w-4 mr-2" />
-                    Reset to Default
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    className="w-full justify-start"
-                    onClick={() => window.open('/dashboard', '_blank')}
-                  >
-                    <Eye className="h-4 w-4 mr-2" />
-                    Preview in Dashboard
-                  </Button>
                 </div>
               </CardContent>
             </Card>

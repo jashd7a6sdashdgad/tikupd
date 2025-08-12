@@ -85,6 +85,8 @@ export default function MusicPage() {
   const [userLibrary, setUserLibrary] = useState<Song[]>([]);
   const [currentPlaylist, setCurrentPlaylist] = useState<Song[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [spotifyConnected, setSpotifyConnected] = useState(false);
+  const [connectionMessage, setConnectionMessage] = useState<string | null>(null);
 
   // Sample data
   const sampleSongs: Song[] = [
@@ -158,7 +160,38 @@ export default function MusicPage() {
 
   useEffect(() => {
     loadUserData();
+    checkConnectionStatus();
   }, []);
+
+  const checkConnectionStatus = () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const connected = urlParams.get('connected');
+    const error = urlParams.get('error');
+    
+    if (connected === 'true') {
+      setSpotifyConnected(true);
+      setConnectionMessage('🎉 Successfully connected to Spotify!');
+      // Clear URL parameters
+      window.history.replaceState({}, document.title, '/music');
+    } else if (error) {
+      let errorMessage = 'Failed to connect to Spotify';
+      switch (error) {
+        case 'access_denied':
+          errorMessage = 'Spotify access was denied. Please try again and authorize the connection.';
+          break;
+        case 'config_missing':
+          errorMessage = 'Spotify configuration is missing. Please contact support.';
+          break;
+        case 'token_exchange_failed':
+          errorMessage = 'Failed to exchange authorization code. Please try again.';
+          break;
+        default:
+          errorMessage = `Connection error: ${error}`;
+      }
+      setError(errorMessage);
+      window.history.replaceState({}, document.title, '/music');
+    }
+  };
 
   const loadUserData = async () => {
     try {
@@ -341,6 +374,37 @@ export default function MusicPage() {
     }
   }, []);
 
+  const connectSpotify = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      
+      // Generate Spotify authorization URL
+      const clientId = 'a3b9645329a2412ea6ce17794952958e';
+      const redirectUri = encodeURIComponent(`${window.location.origin}/api/music/spotify/callback`);
+      const scopes = encodeURIComponent('user-read-private user-read-email user-library-read user-top-read playlist-read-private');
+      const state = Math.random().toString(36).substring(2, 15);
+      
+      // Store state in sessionStorage for validation
+      sessionStorage.setItem('spotify_auth_state', state);
+      
+      const authUrl = `https://accounts.spotify.com/authorize?` +
+        `response_type=code&` +
+        `client_id=${clientId}&` +
+        `scope=${scopes}&` +
+        `redirect_uri=${redirectUri}&` +
+        `state=${state}`;
+      
+      // Redirect to Spotify authorization
+      window.location.href = authUrl;
+      
+    } catch (error) {
+      console.error('Error connecting to Spotify:', error);
+      setError('Failed to connect to Spotify. Please try again.');
+      setIsLoading(false);
+    }
+  }, []);
+
   const playNext = useCallback(() => {
     if (!currentPlaylist.length || !currentSong) return;
     
@@ -494,18 +558,63 @@ export default function MusicPage() {
               </div>
               
               <div className="flex items-center gap-3">
-                <Button className="bg-green-600 hover:bg-green-700 text-white">
+                <Button 
+                  className={spotifyConnected ? "bg-green-700 hover:bg-green-800 text-white" : "bg-green-600 hover:bg-green-700 text-white"}
+                  onClick={() => spotifyConnected ? null : connectSpotify()}
+                  disabled={isLoading || spotifyConnected}
+                >
                   <Music2 className="h-4 w-4 mr-2" />
-                  Connect Spotify
+                  {spotifyConnected ? '✓ Spotify Connected' : (isLoading ? 'Connecting...' : 'Connect Spotify')}
                 </Button>
-                <Button className="bg-red-600 hover:bg-red-700 text-white">
+                <Button 
+                  className="bg-red-600 hover:bg-red-700 text-white"
+                  onClick={() => {
+                    // Test the YouTube API connection
+                    searchMusic('test music');
+                  }}
+                >
                   <Video className="h-4 w-4 mr-2" />
-                  Connect YouTube
+                  Test YouTube Search
                 </Button>
               </div>
             </div>
           </div>
         </ModernCard>
+
+        {/* Connection Status Messages */}
+        {connectionMessage && (
+          <ModernCard gradient="green" blur="lg" className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="w-2 h-2 rounded-full bg-green-500"></div>
+              <p className="text-green-800 font-medium">{connectionMessage}</p>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setConnectionMessage(null)}
+                className="ml-auto text-green-600 hover:text-green-700"
+              >
+                ✕
+              </Button>
+            </div>
+          </ModernCard>
+        )}
+
+        {error && (
+          <ModernCard gradient="none" blur="lg" className="p-4 bg-red-50 border border-red-200">
+            <div className="flex items-center gap-3">
+              <div className="w-2 h-2 rounded-full bg-red-500"></div>
+              <p className="text-red-800 font-medium">{error}</p>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setError(null)}
+                className="ml-auto text-red-600 hover:text-red-700"
+              >
+                ✕
+              </Button>
+            </div>
+          </ModernCard>
+        )}
 
         {/* Controls Bar */}
         <ModernCard gradient="none" blur="lg" className="p-6">

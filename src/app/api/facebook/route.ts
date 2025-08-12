@@ -3,11 +3,11 @@ import { verifyToken, COOKIE_OPTIONS } from '@/lib/auth';
 import { ENV_VARS } from '@/lib/env-validation';
 import { getApiConfig, getSocialConfig } from '@/lib/config';
 
-// Use validated environment variables
-const FACEBOOK_PAGE_ACCESS_TOKEN = ENV_VARS.FACEBOOK_PAGE_ACCESS_TOKEN;
+// Use single user token from .env.local for main account
+const FACEBOOK_USER_ACCESS_TOKEN = process.env.FACEBOOK_USER_TOKEN;
 const { facebookApiUrl: FACEBOOK_API_URL } = getApiConfig();
 const socialConfig = getSocialConfig();
-const FACEBOOK_PAGE_ID = ENV_VARS.FACEBOOK_PAGE_ID || socialConfig.facebook?.pageId;
+// No page ID needed - using main account
 
 // Helper function to check if token is expired
 function isFacebookTokenExpired(errorMessage: string): boolean {
@@ -25,7 +25,7 @@ function isFacebookTokenInvalid(errorMessage: string): boolean {
 }
 
 interface FacebookPostRequest {
-  action: 'post' | 'get_posts' | 'get_insights' | 'get_page_info' | 'test_token';
+  action: 'connect' | 'post' | 'get_posts' | 'get_insights' | 'get_page_info' | 'test_token';
   message?: string;
   link?: string;
   scheduled_publish_time?: number;
@@ -33,8 +33,29 @@ interface FacebookPostRequest {
   limit?: number;
 }
 
+export async function GET(request: NextRequest) {
+  // Simple GET endpoint to check configuration status
+  return NextResponse.json({
+    success: true,
+    config: {
+      hasToken: !!process.env.FACEBOOK_USER_TOKEN,
+      tokenLength: process.env.FACEBOOK_USER_TOKEN?.length || 0,
+      accountType: 'User Account (not Page)',
+      message: 'Facebook API configuration check - using main account'
+    }
+  });
+}
+
 export async function POST(request: NextRequest) {
   try {
+    // Debug environment variables
+    console.log('🔍 Facebook API Debug Info:');
+    console.log('🔍 FACEBOOK_USER_TOKEN exists:', !!process.env.FACEBOOK_USER_TOKEN);
+    console.log('🔍 FACEBOOK_USER_TOKEN length:', process.env.FACEBOOK_USER_TOKEN?.length || 0);
+    console.log('🔍 FACEBOOK_USER_ACCESS_TOKEN exists:', !!FACEBOOK_USER_ACCESS_TOKEN);
+    console.log('🔍 FACEBOOK_USER_ACCESS_TOKEN length:', FACEBOOK_USER_ACCESS_TOKEN?.length || 0);
+    console.log('🔍 Account Type: User Account');
+    
     // Verify user authentication
     const token = request.cookies.get(COOKIE_OPTIONS.name)?.value;
     if (!token) {
@@ -46,25 +67,27 @@ export async function POST(request: NextRequest) {
     
     const user = verifyToken(token);
     
-    if (!FACEBOOK_PAGE_ACCESS_TOKEN || !FACEBOOK_PAGE_ID) {
-      const tokenMask = FACEBOOK_PAGE_ACCESS_TOKEN ? 
-        `${FACEBOOK_PAGE_ACCESS_TOKEN.substring(0, 6)}...${FACEBOOK_PAGE_ACCESS_TOKEN.substring(FACEBOOK_PAGE_ACCESS_TOKEN.length - 4)}` : 
+    if (!FACEBOOK_USER_ACCESS_TOKEN) {
+      const tokenMask = FACEBOOK_USER_ACCESS_TOKEN ? 
+        `${FACEBOOK_USER_ACCESS_TOKEN.substring(0, 6)}...${FACEBOOK_USER_ACCESS_TOKEN.substring(FACEBOOK_USER_ACCESS_TOKEN.length - 4)}` : 
         'NOT_SET';
       
       console.error('🚨 Facebook configuration missing:');
-      console.error(`  Access Token: ${tokenMask} (Length: ${FACEBOOK_PAGE_ACCESS_TOKEN?.length || 0})`);
-      console.error(`  Page ID: ${FACEBOOK_PAGE_ID || 'NOT_SET'}`);
+      console.error(`  Access Token: ${tokenMask} (Length: ${FACEBOOK_USER_ACCESS_TOKEN?.length || 0})`);
+      console.error(`  Environment variable FACEBOOK_USER_TOKEN: ${process.env.FACEBOOK_USER_TOKEN ? 'EXISTS' : 'MISSING'}`);
+      console.error(`  Environment variable length: ${process.env.FACEBOOK_USER_TOKEN?.length || 0}`);
       console.error('  Please check your .env.local file and ensure variables are properly set');
       
       return NextResponse.json({
         success: false, 
-        message: 'Facebook API is not configured. Please set FACEBOOK_PAGE_ACCESS_TOKEN and FACEBOOK_PAGE_ID in your environment variables.',
+        message: 'Facebook API is not configured. Please set FACEBOOK_USER_TOKEN in your .env.local file.',
         error: 'FACEBOOK_CONFIG_ERROR',
         help: 'Check your .env.local file and restart the server',
         details: {
-          missingToken: !FACEBOOK_PAGE_ACCESS_TOKEN,
-          missingPageId: !FACEBOOK_PAGE_ID,
-          tokenLength: FACEBOOK_PAGE_ACCESS_TOKEN?.length || 0
+          missingToken: !FACEBOOK_USER_ACCESS_TOKEN,
+          tokenLength: FACEBOOK_USER_ACCESS_TOKEN?.length || 0,
+          envVarExists: !!process.env.FACEBOOK_USER_TOKEN,
+          envVarLength: process.env.FACEBOOK_USER_TOKEN?.length || 0
         }
       }, { status: 500 });
     }
@@ -83,6 +106,28 @@ export async function POST(request: NextRequest) {
     let facebookResponse;
     
     switch (body.action) {
+      case 'connect':
+        // Test the connection by getting basic user account info
+        console.log('🔗 Testing Facebook connection...');
+        console.log(`🔗 Token (first 20 chars): ${FACEBOOK_USER_ACCESS_TOKEN?.substring(0, 20)}...`);
+        
+        facebookResponse = await fetch(
+          `${FACEBOOK_API_URL}/me?fields=id,name,email&access_token=${FACEBOOK_USER_ACCESS_TOKEN}`
+        );
+        
+        // Log the response for debugging
+        const connectResult = await facebookResponse.text();
+        console.log('🔗 Facebook connect response status:', facebookResponse.status);
+        console.log('🔗 Facebook connect response:', connectResult);
+        
+        // Re-create response for further processing
+        facebookResponse = new Response(connectResult, {
+          status: facebookResponse.status,
+          statusText: facebookResponse.statusText,
+          headers: facebookResponse.headers
+        });
+        break;
+        
       case 'post':
         if (!body.message && !body.link) {
           return NextResponse.json(
@@ -92,7 +137,7 @@ export async function POST(request: NextRequest) {
         }
         
         const postData: any = {
-          access_token: FACEBOOK_PAGE_ACCESS_TOKEN
+          access_token: FACEBOOK_USER_ACCESS_TOKEN
         };
         
         if (body.message) postData.message = body.message;
@@ -104,7 +149,7 @@ export async function POST(request: NextRequest) {
           postData.published = body.published !== false;
         }
         
-        facebookResponse = await fetch(`${FACEBOOK_API_URL}/${FACEBOOK_PAGE_ID}/feed`, {
+        facebookResponse = await fetch(`${FACEBOOK_API_URL}/me/feed`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -116,30 +161,29 @@ export async function POST(request: NextRequest) {
       case 'get_posts':
         const limit = body.limit || 10;
         facebookResponse = await fetch(
-          `${FACEBOOK_API_URL}/${FACEBOOK_PAGE_ID}/posts?limit=${limit}&access_token=${FACEBOOK_PAGE_ACCESS_TOKEN}`
+          `${FACEBOOK_API_URL}/me/posts?limit=${limit}&access_token=${FACEBOOK_USER_ACCESS_TOKEN}`
         );
         break;
         
       case 'get_insights':
         facebookResponse = await fetch(
-          `${FACEBOOK_API_URL}/${FACEBOOK_PAGE_ID}/insights?metric=page_impressions,page_reach,page_likes&access_token=${FACEBOOK_PAGE_ACCESS_TOKEN}`
+          `${FACEBOOK_API_URL}/me/insights?metric=page_impressions,page_reach,page_likes&access_token=${FACEBOOK_USER_ACCESS_TOKEN}`
         );
         break;
         
       case 'get_page_info':
         facebookResponse = await fetch(
-          `${FACEBOOK_API_URL}/${FACEBOOK_PAGE_ID}?fields=name,likes,followers_count,about,website,phone&access_token=${FACEBOOK_PAGE_ACCESS_TOKEN}`
+          `${FACEBOOK_API_URL}/me?fields=id,name,email,about,website,phone&access_token=${FACEBOOK_USER_ACCESS_TOKEN}`
         );
         break;
         
       case 'test_token':
-        // Test the access token validity by getting basic page info
+        // Test the access token validity by getting basic user account info
         console.log('🔍 Testing Facebook token validity...');
-        console.log(`🔍 Page ID: ${FACEBOOK_PAGE_ID}`);
-        console.log(`🔍 Token (first 20 chars): ${FACEBOOK_PAGE_ACCESS_TOKEN?.substring(0, 20)}...`);
+        console.log(`🔍 Token (first 20 chars): ${FACEBOOK_USER_ACCESS_TOKEN?.substring(0, 20)}...`);
         
         facebookResponse = await fetch(
-          `${FACEBOOK_API_URL}/${FACEBOOK_PAGE_ID}?fields=id,name,access_token&access_token=${FACEBOOK_PAGE_ACCESS_TOKEN}`
+          `${FACEBOOK_API_URL}/me?fields=id,name,email&access_token=${FACEBOOK_USER_ACCESS_TOKEN}`
         );
         
         // Log the response for debugging
@@ -157,7 +201,7 @@ export async function POST(request: NextRequest) {
         
       default:
         return NextResponse.json(
-          { success: false, message: 'Invalid action. Use post, get_posts, get_insights, get_page_info, or test_token' },
+          { success: false, message: 'Invalid action. Use connect, post, get_posts, get_insights, get_page_info, or test_token' },
           { status: 400 }
         );
     }
@@ -175,15 +219,15 @@ export async function POST(request: NextRequest) {
         // Use raw text if not JSON
       }
       
-      const tokenMask = FACEBOOK_PAGE_ACCESS_TOKEN ? 
-        `${FACEBOOK_PAGE_ACCESS_TOKEN.substring(0, 6)}...${FACEBOOK_PAGE_ACCESS_TOKEN.substring(FACEBOOK_PAGE_ACCESS_TOKEN.length - 4)}` : 
+      const tokenMask = FACEBOOK_USER_ACCESS_TOKEN ? 
+        `${FACEBOOK_USER_ACCESS_TOKEN.substring(0, 6)}...${FACEBOOK_USER_ACCESS_TOKEN.substring(FACEBOOK_USER_ACCESS_TOKEN.length - 4)}` : 
         'NOT_SET';
       
       console.error('🚨 Facebook API Error:');
       console.error(`  Status: ${facebookResponse.status}`);
       console.error(`  Error: ${errorDetail}`);
       console.error(`  Token: ${tokenMask}`);
-      console.error(`  Page ID: ${FACEBOOK_PAGE_ID}`);
+      console.error(`  Account: User Account`);
       
       // Check for specific error types
       if (isFacebookTokenExpired(errorDetail)) {
@@ -193,7 +237,7 @@ export async function POST(request: NextRequest) {
           message: `Facebook token expired: ${errorDetail}. Please generate a new long-lived access token from Facebook Developer Console.`,
           error: 'FACEBOOK_TOKEN_EXPIRED',
           help: 'Go to Facebook Developer Console → Graph API Explorer → Generate new long-lived token',
-          details: { errorDetail, tokenMask, pageId: FACEBOOK_PAGE_ID }
+          details: { errorDetail, tokenMask, accountType: 'User Account' }
         }, { status: 401 });
       }
       
@@ -201,10 +245,10 @@ export async function POST(request: NextRequest) {
         console.error('  🔑 Facebook token is INVALID - please check your access token');
         return NextResponse.json({
           success: false,
-          message: `Facebook token invalid: ${errorDetail}. Please verify your FACEBOOK_PAGE_ACCESS_TOKEN is correct.`,
+          message: `Facebook token invalid: ${errorDetail}. Please verify your FACEBOOK_USER_TOKEN is correct.`,
           error: 'FACEBOOK_TOKEN_INVALID',
           help: 'Verify your access token from Facebook Developer Console',
-          details: { errorDetail, tokenMask, pageId: FACEBOOK_PAGE_ID }
+          details: { errorDetail, tokenMask, accountType: 'User Account' }
         }, { status: 401 });
       }
       
@@ -213,10 +257,10 @@ export async function POST(request: NextRequest) {
         console.error('  📋 Facebook API configuration error');
         return NextResponse.json({
           success: false,
-          message: `Facebook API configuration error: ${errorDetail}. Please verify your page ID and token permissions.`,
+          message: `Facebook API configuration error: ${errorDetail}. Please verify your token permissions.`,
           error: 'FACEBOOK_CONFIG_ERROR',
-          help: 'Check your FACEBOOK_PAGE_ID and ensure your token has required permissions',
-          details: { errorDetail, tokenMask, pageId: FACEBOOK_PAGE_ID }
+          help: 'Check your FACEBOOK_USER_TOKEN and ensure it has required permissions',
+          details: { errorDetail, tokenMask, accountType: 'User Account' }
         }, { status: 400 });
       }
       
@@ -226,8 +270,8 @@ export async function POST(request: NextRequest) {
           success: false,
           message: `Facebook permission denied: ${errorDetail}. Your token may not have sufficient permissions.`,
           error: 'FACEBOOK_PERMISSION_ERROR',
-          help: 'Ensure your access token has pages_read_engagement and pages_manage_posts permissions',
-          details: { errorDetail, tokenMask, pageId: FACEBOOK_PAGE_ID }
+          help: 'Ensure your access token has user_posts and user_status permissions',
+          details: { errorDetail, tokenMask, accountType: 'User Account' }
         }, { status: 403 });
       }
       
@@ -236,7 +280,22 @@ export async function POST(request: NextRequest) {
       throw new Error(`Facebook API failed with status: ${facebookResponse.status} - ${errorDetail}`);
     }
     
-    const facebookResult = await facebookResponse.json();
+    let facebookResult;
+    
+    // Handle different response types based on action
+    if (body.action === 'connect' || body.action === 'test_token') {
+      // For connect and test_token, we already have the response text
+      try {
+        facebookResult = JSON.parse(await facebookResponse.text());
+      } catch (e) {
+        // If parsing fails, create a basic response
+        facebookResult = { status: 'connected', message: 'Facebook API response received' };
+      }
+    } else {
+      // For other actions, parse normally
+      facebookResult = await facebookResponse.json();
+    }
+    
     console.log('Facebook API response:', facebookResult);
     
     return NextResponse.json({
@@ -261,144 +320,10 @@ export async function POST(request: NextRequest) {
 }
 
 
-export async function GET(request: NextRequest) {
-  const { searchParams } = new URL(request.url);
-  const action = searchParams.get('action') || 'page_info';
+// Removed duplicate GET endpoint - using the simple one above for configuration check
 
-  if (!FACEBOOK_PAGE_ID || !FACEBOOK_PAGE_ACCESS_TOKEN) {
-    return NextResponse.json({
-      success: false,
-      error: 'Facebook credentials not configured'
-    }, { status: 400 });
-  }
+// Removed unused page-based function
 
-  try {
-    let data;
+// Removed unused page-based function
 
-    switch (action) {
-      case 'page_info':
-        data = await getPageInfo();
-        break;
-      case 'posts':
-        data = await getPagePosts();
-        break;
-      case 'insights':
-        data = await getPageInsights();
-        break;
-      case 'followers':
-        data = await getPageFollowers();
-        break;
-      default:
-        return NextResponse.json({
-          success: false,
-          error: 'Invalid action'
-        }, { status: 400 });
-    }
-
-    return NextResponse.json({
-      success: true,
-      data,
-      timestamp: new Date().toISOString()
-    });
-
-  } catch (error: any) {
-    console.error('Facebook API error:', error);
-    return NextResponse.json({
-      success: false,
-      error: error.message || 'Failed to fetch Facebook data'
-    }, { status: 500 });
-  }
-}
-
-async function getPageInfo() {
-  try {
-    const response = await fetch(
-      `${FACEBOOK_API_URL}/${FACEBOOK_PAGE_ID}?fields=id,name,username,fan_count,followers_count,verification_status,category,phone,website,location,description,cover,profile_picture&access_token=${FACEBOOK_PAGE_ACCESS_TOKEN}`
-    );
-    
-    if (!response.ok) {
-      throw new Error('Failed to get Facebook page info');
-    }
-    
-    const pageData = await response.json();
-    
-    // Calculate engagement rate (this would need more complex logic in real implementation)
-    const engagementRate = 8.2; // Placeholder - would need to calculate from actual engagement data
-    
-    return {
-      ...pageData,
-      engagement_rate: engagementRate,
-      connected: true
-    };
-  } catch (error) {
-    console.error('Error getting Facebook page info:', error);
-    return {
-      connected: false,
-      error: error instanceof Error ? error.message : 'Unknown error'
-    };
-  }
-}
-
-async function getPagePosts() {
-  try {
-    const response = await fetch(
-      `${FACEBOOK_API_URL}/${FACEBOOK_PAGE_ID}/posts?fields=id,message,created_time,type,permalink_url,full_picture,shares,comments.summary(true),reactions.summary(true)&limit=10&access_token=${FACEBOOK_PAGE_ACCESS_TOKEN}`
-    );
-    
-    if (!response.ok) {
-      throw new Error('Failed to get Facebook posts');
-    }
-    
-    const postsData = await response.json();
-    return postsData.data || [];
-  } catch (error) {
-    console.error('Error getting Facebook posts:', error);
-    return [];
-  }
-}
-
-async function getPageInsights() {
-  try {
-    // Get page insights for the last 30 days
-    const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-    const until = new Date().toISOString().split('T')[0];
-    
-    const response = await fetch(
-      `${FACEBOOK_API_URL}/${FACEBOOK_PAGE_ID}/insights?metric=page_views_total,page_fans,page_fan_adds,page_impressions,page_engaged_users&period=day&since=${since}&until=${until}&access_token=${FACEBOOK_PAGE_ACCESS_TOKEN}`
-    );
-    
-    if (!response.ok) {
-      throw new Error('Failed to get Facebook insights');
-    }
-    
-    const insightsData = await response.json();
-    return insightsData.data || [];
-  } catch (error) {
-    console.error('Error getting Facebook insights:', error);
-    return [];
-  }
-}
-
-async function getPageFollowers() {
-  try {
-    const response = await fetch(
-      `${FACEBOOK_API_URL}/${FACEBOOK_PAGE_ID}?fields=followers_count,followers&access_token=${FACEBOOK_PAGE_ACCESS_TOKEN}`
-    );
-    
-    if (!response.ok) {
-      throw new Error('Failed to get Facebook followers');
-    }
-    
-    const followersData = await response.json();
-    return {
-      total_followers: followersData.followers_count || 0,
-      followers: followersData.followers?.data || []
-    };
-  } catch (error) {
-    console.error('Error getting Facebook followers:', error);
-    return {
-      total_followers: 0,
-      followers: []
-    };
-  }
-}
+// Removed unused page-based function

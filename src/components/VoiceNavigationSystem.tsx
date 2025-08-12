@@ -29,7 +29,10 @@ import {
   MessageSquare,
   Briefcase,
   Camera,
-  MapPin
+  MapPin,
+  Music,
+  Eye,
+  Globe
 } from 'lucide-react';
 
 interface VoiceCommand {
@@ -138,9 +141,16 @@ export const VoiceNavigationSystem: React.FC<VoiceNavigationSystemProps> = ({
       category: 'navigation'
     },
     {
-      pattern: ['messenger', 'chat', 'messaging'],
+      pattern: ['messenger', 'messaging'],
       action: () => router.push('/messenger'),
       description: 'Open Messenger',
+      icon: <MessageSquare className="h-4 w-4" />,
+      category: 'navigation'
+    },
+    {
+      pattern: ['chat', 'conversation', 'ai chat'],
+      action: () => router.push('/chat'),
+      description: 'Open Chat',
       icon: <MessageSquare className="h-4 w-4" />,
       category: 'navigation'
     },
@@ -152,7 +162,7 @@ export const VoiceNavigationSystem: React.FC<VoiceNavigationSystemProps> = ({
       category: 'navigation'
     },
     {
-      pattern: ['photos', 'pictures', 'images', 'gallery'],
+      pattern: ['photos', 'pictures', 'images', 'gallery', 'photo album'],
       action: () => router.push('/photo-album'),
       description: 'Open Photo Album',
       icon: <Camera className="h-4 w-4" />,
@@ -184,6 +194,132 @@ export const VoiceNavigationSystem: React.FC<VoiceNavigationSystemProps> = ({
       action: () => router.push('/weather'),
       description: 'Open Weather',
       icon: <MapPin className="h-4 w-4" />,
+      category: 'navigation'
+    },
+    {
+      pattern: ['customization', 'customize', 'personalize', 'themes'],
+      action: () => router.push('/customization'),
+      description: 'Open Customization',
+      icon: <Settings className="h-4 w-4" />,
+      category: 'navigation'
+    },
+    {
+      pattern: ['api tokens', 'tokens', 'api keys', 'keys'],
+      action: () => router.push('/api-tokens'),
+      description: 'Open API Tokens',
+      icon: <Command className="h-4 w-4" />,
+      category: 'navigation'
+    },
+    {
+      pattern: ['business', 'work', 'professional'],
+      action: () => router.push('/business'),
+      description: 'Open Business',
+      icon: <Briefcase className="h-4 w-4" />,
+      category: 'navigation'
+    },
+    {
+      pattern: ['travel', 'trip', 'journey', 'vacation'],
+      action: () => router.push('/travel'),
+      description: 'Open Travel Companion',
+      icon: <Navigation className="h-4 w-4" />,
+      category: 'navigation'
+    },
+    {
+      pattern: ['islamic settings', 'islamic', 'prayer', 'religious'],
+      action: () => router.push('/islamic-settings'),
+      description: 'Open Islamic Settings',
+      icon: <Command className="h-4 w-4" />,
+      category: 'navigation'
+    },
+    {
+      pattern: ['security', 'privacy', 'protection'],
+      action: () => router.push('/security'),
+      description: 'Open Security',
+      icon: <Command className="h-4 w-4" />,
+      category: 'navigation'
+    },
+    {
+      pattern: ['workflow builder', 'workflows builder', 'automation builder'],
+      action: () => router.push('/workflow-builder'),
+      description: 'Open Workflow Builder',
+      icon: <Zap className="h-4 w-4" />,
+      category: 'navigation'
+    },
+    {
+      pattern: ['think tool', 'thinking', 'brain'],
+      action: () => router.push('/think-tool'),
+      description: 'Open Think Tool',
+      icon: <Command className="h-4 w-4" />,
+      category: 'navigation'
+    },
+    {
+      pattern: ['social media', 'social'],
+      action: () => router.push('/social-media'),
+      description: 'Open Social Media',
+      icon: <Command className="h-4 w-4" />,
+      category: 'navigation'
+    },
+    {
+      pattern: ['web scraper', 'scraper', 'web crawl'],
+      action: () => router.push('/web-scraper'),
+      description: 'Open Web Scraper',
+      icon: <Command className="h-4 w-4" />,
+      category: 'navigation'
+    },
+    {
+      pattern: ['budget', 'budgeting', 'financial planning'],
+      action: () => router.push('/budget'),
+      description: 'Open Budget',
+      icon: <DollarSign className="h-4 w-4" />,
+      category: 'navigation'
+    },
+    {
+      pattern: ['hotel expenses', 'hotel', 'accommodation'],
+      action: () => router.push('/hotel-expenses'),
+      description: 'Open Hotel Expenses',
+      icon: <DollarSign className="h-4 w-4" />,
+      category: 'navigation'
+    },
+    {
+      pattern: ['music', 'songs', 'spotify', 'audio', 'player'],
+      action: () => router.push('/music'),
+      description: 'Open Music Player',
+      icon: <Music className="h-4 w-4" />,
+      category: 'navigation'
+    },
+    {
+      pattern: ['image generation', 'generate image', 'create image', 'ai image'],
+      action: () => router.push('/image-generation'),
+      description: 'Open Image Generation',
+      icon: <Image className="h-4 w-4" />,
+      category: 'navigation'
+    },
+    {
+      pattern: ['firecrawl', 'web crawl', 'scrape web', 'crawl website'],
+      action: () => router.push('/firecrawl'),
+      description: 'Open Firecrawl',
+      icon: <Globe className="h-4 w-4" />,
+      category: 'navigation'
+    },
+    {
+      pattern: ['email intelligence', 'smart email', 'email ai'],
+      action: () => router.push('/email-intelligence'),
+      description: 'Open Email Intelligence',
+      icon: <Mail className="h-4 w-4" />,
+      category: 'navigation'
+    },
+    {
+      pattern: ['email summary', 'email digest', 'summarize email'],
+      action: () => router.push('/email-summary'),
+      description: 'Open Email Summary',
+      icon: <Mail className="h-4 w-4" />,
+      category: 'navigation'
+    },
+    {
+      pattern: ['features demo', 'demo', 'showcase', 'features'],
+      action: () => router.push('/features-demo'),
+      description: 'Open Features Demo',
+      icon: <Eye className="h-4 w-4" />,
       category: 'navigation'
     },
 

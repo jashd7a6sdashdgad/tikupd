@@ -18,7 +18,12 @@ import {
   MapPin,
   RefreshCw,
   Search,
-  Loader2
+  Loader2,
+  Calendar,
+  TrendingUp,
+  Sunrise,
+  Sunset,
+  Moon
 } from 'lucide-react';
 
 interface WeatherData {
@@ -43,14 +48,54 @@ interface WeatherData {
   };
 }
 
+interface ForecastDay {
+  date: string;
+  date_epoch: number;
+  day: {
+    maxtemp_c: number;
+    maxtemp_f: number;
+    mintemp_c: number;
+    mintemp_f: number;
+    avgtemp_c: number;
+    avgtemp_f: number;
+    condition: string;
+    icon: string;
+    maxwind_kph: number;
+    totalprecip_mm: number;
+    avghumidity: number;
+    daily_will_it_rain: number;
+    daily_chance_of_rain: number;
+    daily_will_it_snow: number;
+    daily_chance_of_snow: number;
+    uv: number;
+  };
+  astro: {
+    sunrise: string;
+    sunset: string;
+    moonrise: string;
+    moonset: string;
+    moon_phase: string;
+    moon_illumination: string;
+  };
+}
+
+interface ForecastData extends WeatherData {
+  forecast: {
+    forecastday: ForecastDay[];
+  };
+}
+
 export default function WeatherPage() {
   const { language } = useSettings();
   const { t } = useTranslation(language);
   const [weatherData, setWeatherData] = useState<WeatherData | null>(null);
+  const [forecastData, setForecastData] = useState<ForecastData | null>(null);
   const [location, setLocation] = useState('muscat');
   const [searchLocation, setSearchLocation] = useState('');
   const [loading, setLoading] = useState(true);
+  const [forecastLoading, setForecastLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showForecast, setShowForecast] = useState(false);
 
   const fetchWeather = async (loc: string = location) => {
     setLoading(true);
@@ -72,6 +117,30 @@ export default function WeatherPage() {
       setError('Unable to fetch weather data. Please check your connection.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchForecast = async (loc: string = location, days: string = '3') => {
+    setForecastLoading(true);
+    setError(null);
+    
+    try {
+      console.log('Fetching weather forecast for:', loc, 'days:', days);
+      const response = await fetch(`/api/weather/forecast?q=${encodeURIComponent(loc)}&days=${days}`);
+      const data = await response.json();
+      
+      if (data.success) {
+        setForecastData(data.data);
+        setShowForecast(true);
+        console.log('Forecast data received:', data.data);
+      } else {
+        setError(data.message || 'Failed to fetch weather forecast data');
+      }
+    } catch (err) {
+      console.error('Weather forecast fetch error:', err);
+      setError('Unable to fetch weather forecast data. Please check your connection.');
+    } finally {
+      setForecastLoading(false);
     }
   };
 
@@ -144,6 +213,19 @@ export default function WeatherPage() {
               >
                 <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
                 {t('refresh')}
+              </Button>
+              <Button
+                variant={showForecast ? "primary" : "outline"}
+                size="sm"
+                onClick={() => fetchForecast()}
+                disabled={forecastLoading}
+              >
+                {forecastLoading ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <Calendar className="h-4 w-4 mr-2" />
+                )}
+                Forecast
               </Button>
             </div>
           </div>
@@ -364,6 +446,135 @@ export default function WeatherPage() {
                 </div>
               </CardContent>
             </Card>
+
+            {/* Weather Forecast Section */}
+            {showForecast && forecastData?.forecast?.forecastday && (
+              <Card className="card-3d">
+                <CardHeader>
+                  <CardTitle className="flex items-center text-black">
+                    <Calendar className="h-5 w-5 mr-2 text-primary" />
+                    3-Day Weather Forecast
+                  </CardTitle>
+                  <p className="text-sm text-gray-600">
+                    Extended weather forecast for {forecastData.location.name}
+                  </p>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {forecastData.forecast.forecastday.map((day, index) => (
+                      <div key={day.date} className={`p-4 rounded-lg border ${
+                        index === 0 ? 'bg-blue-50 border-blue-200' :
+                        index === 1 ? 'bg-green-50 border-green-200' :
+                        'bg-orange-50 border-orange-200'
+                      }`}>
+                        <div className="text-center">
+                          {/* Date */}
+                          <h3 className={`font-bold text-lg mb-2 ${
+                            index === 0 ? 'text-blue-900' :
+                            index === 1 ? 'text-green-900' :
+                            'text-orange-900'
+                          }`}>
+                            {index === 0 ? 'Today' : 
+                             index === 1 ? 'Tomorrow' :
+                             new Date(day.date).toLocaleDateString('en-US', { weekday: 'long' })}
+                          </h3>
+                          <p className="text-sm text-gray-600 mb-4">
+                            {new Date(day.date).toLocaleDateString('en-US', { 
+                              month: 'short', 
+                              day: 'numeric' 
+                            })}
+                          </p>
+
+                          {/* Weather Icon & Condition */}
+                          <div className="mb-4">
+                            <img
+                              src={`https:${day.day.icon}`}
+                              alt={day.day.condition}
+                              className="w-16 h-16 mx-auto mb-2"
+                            />
+                            <p className="text-sm font-medium text-gray-800">
+                              {day.day.condition}
+                            </p>
+                          </div>
+
+                          {/* Temperature */}
+                          <div className="mb-4">
+                            <div className="flex justify-between items-center">
+                              <span className={`text-xl font-bold ${
+                                index === 0 ? 'text-blue-700' :
+                                index === 1 ? 'text-green-700' :
+                                'text-orange-700'
+                              }`}>
+                                {Math.round(day.day.maxtemp_c)}°
+                              </span>
+                              <span className="text-sm text-gray-600">
+                                {Math.round(day.day.mintemp_c)}°
+                              </span>
+                            </div>
+                            <p className="text-xs text-gray-500">
+                              High / Low
+                            </p>
+                          </div>
+
+                          {/* Weather Details */}
+                          <div className="space-y-2 text-xs">
+                            <div className="flex justify-between">
+                              <span className="flex items-center">
+                                <Droplets className="h-3 w-3 mr-1" />
+                                Rain
+                              </span>
+                              <span>{day.day.daily_chance_of_rain}%</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="flex items-center">
+                                <Wind className="h-3 w-3 mr-1" />
+                                Wind
+                              </span>
+                              <span>{day.day.maxwind_kph} km/h</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="flex items-center">
+                                <Eye className="h-3 w-3 mr-1" />
+                                Humidity
+                              </span>
+                              <span>{day.day.avghumidity}%</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="flex items-center">
+                                <Sun className="h-3 w-3 mr-1" />
+                                UV Index
+                              </span>
+                              <span>{day.day.uv}</span>
+                            </div>
+                          </div>
+
+                          {/* Sunrise/Sunset */}
+                          <div className="mt-4 pt-3 border-t border-gray-200">
+                            <div className="flex justify-between text-xs">
+                              <span className="flex items-center">
+                                <Sunrise className="h-3 w-3 mr-1 text-yellow-500" />
+                                {day.astro.sunrise}
+                              </span>
+                              <span className="flex items-center">
+                                <Sunset className="h-3 w-3 mr-1 text-orange-500" />
+                                {day.astro.sunset}
+                              </span>
+                            </div>
+                            <div className="flex justify-between text-xs mt-1">
+                              <span className="flex items-center">
+                                <Moon className="h-3 w-3 mr-1 text-gray-400" />
+                                {day.astro.moon_phase}
+                              </span>
+                              <span>{day.astro.moon_illumination}%</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </div>
         ) : null}
         

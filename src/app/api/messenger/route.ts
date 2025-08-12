@@ -6,8 +6,9 @@ import { getApiConfig, getSocialConfig } from '@/lib/config';
 // Use validated environment variables
 const socialConfig = getSocialConfig();
 const { messengerApiUrl: MESSENGER_API_URL } = getApiConfig();
-const MESSENGER_PAGE_ACCESS_TOKEN = ENV_VARS.MESSENGER_PAGE_ACCESS_TOKEN || ENV_VARS.FACEBOOK_PAGE_ACCESS_TOKEN;
-const MESSENGER_PAGE_ID = ENV_VARS.MESSENGER_PAGE_ID || ENV_VARS.FACEBOOK_PAGE_ID || socialConfig.facebook?.pageId;
+// Use single user token from .env.local for main account
+const MESSENGER_USER_ACCESS_TOKEN = process.env.FACEBOOK_USER_TOKEN;
+// Note: Messenger Business API requires a Facebook Page, not a personal account
 
 export async function GET(request: NextRequest) {
   try {
@@ -18,11 +19,12 @@ export async function GET(request: NextRequest) {
     
     const user = verifyToken(token);
     
-    if (!MESSENGER_PAGE_ACCESS_TOKEN || !MESSENGER_PAGE_ID) {
+    if (!MESSENGER_USER_ACCESS_TOKEN) {
       return NextResponse.json({ 
         success: false, 
-        message: 'Messenger credentials not configured. Please set MESSENGER_PAGE_ACCESS_TOKEN and MESSENGER_PAGE_ID in your environment variables.',
-        error: 'MESSENGER_CONFIG_ERROR'
+        message: 'Messenger credentials not configured. Please set FACEBOOK_USER_TOKEN in your .env.local file.',
+        error: 'MESSENGER_CONFIG_ERROR',
+        note: 'Messenger Business API requires a Facebook Page, not a personal account'
       }, { status: 500 });
     }
 
@@ -97,10 +99,12 @@ export async function POST(request: NextRequest) {
     
     const user = verifyToken(token);
     
-    if (!MESSENGER_PAGE_ACCESS_TOKEN || !MESSENGER_PAGE_ID) {
+    if (!MESSENGER_USER_ACCESS_TOKEN) {
       return NextResponse.json({ 
         success: false, 
-        message: 'Messenger credentials not configured' 
+        message: 'Messenger credentials not configured. Please set FACEBOOK_USER_TOKEN in your .env.local file.',
+        error: 'MESSENGER_CONFIG_ERROR',
+        note: 'Messenger Business API requires a Facebook Page, not a personal account'
       }, { status: 500 });
     }
 
@@ -165,92 +169,42 @@ export async function POST(request: NextRequest) {
 
 // Helper functions for Messenger API calls
 async function getConversations(limit: string) {
-  const response = await fetch(
-    `${MESSENGER_API_URL}/${MESSENGER_PAGE_ID}/conversations?fields=id,name,snippet,message_count,unread_count,updated_time&limit=${limit}&access_token=${MESSENGER_PAGE_ACCESS_TOKEN}`
-  );
-  
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Messenger API error: ${response.status} - ${errorText}`);
-  }
-  
-  const data = await response.json();
-  return data;
+  // Messenger Business API requires a Facebook Page, not a personal account
+  return {
+    data: [],
+    message: 'Messenger Business API requires a Facebook Page, not a personal account.',
+    note: 'To use Messenger Business features, you need to connect your account to a Facebook Page.'
+  };
 }
 
 async function getMessages(conversationId: string, limit: string) {
-  const response = await fetch(
-    `${MESSENGER_API_URL}/${conversationId}/messages?fields=id,message,from,created_time&limit=${limit}&access_token=${MESSENGER_PAGE_ACCESS_TOKEN}`
-  );
-  
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Messenger API error: ${response.status} - ${errorText}`);
-  }
-  
-  const data = await response.json();
-  return data;
+  // Messenger Business API requires a Facebook Page, not a personal account
+  return {
+    data: [],
+    message: 'Messenger Business API requires a Facebook Page, not a personal account.',
+    note: 'To use Messenger Business features, you need to connect your account to a Facebook Page.'
+  };
 }
 
 async function getPageInfo() {
-  const response = await fetch(
-    `${MESSENGER_API_URL}/${MESSENGER_PAGE_ID}?fields=id,name,about,follower_count,fan_count&access_token=${MESSENGER_PAGE_ACCESS_TOKEN}`
-  );
-  
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Messenger API error: ${response.status} - ${errorText}`);
-  }
-  
-  const data = await response.json();
-  return data;
+  // Messenger Business API requires a Facebook Page, not a personal account
+  return {
+    id: null,
+    name: null,
+    about: null,
+    follower_count: 0,
+    fan_count: 0,
+    message: 'Messenger Business API requires a Facebook Page, not a personal account.',
+    note: 'To use Messenger Business features, you need to connect your account to a Facebook Page.'
+  };
 }
 
 async function sendMessage(recipientId: string, message: string) {
-  const response = await fetch(
-    `${MESSENGER_API_URL}/${MESSENGER_PAGE_ID}/messages`,
-    {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        recipient: { id: recipientId },
-        message: { text: message },
-        access_token: MESSENGER_PAGE_ACCESS_TOKEN
-      }),
-    }
-  );
-  
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Messenger API error: ${response.status} - ${errorText}`);
-  }
-  
-  const data = await response.json();
-  return data;
+  // Messenger Business API requires a Facebook Page, not a personal account
+  throw new Error('Messenger Business API requires a Facebook Page, not a personal account. To send messages, you need to connect your account to a Facebook Page.');
 }
 
 async function markAsRead(conversationId: string) {
-  const response = await fetch(
-    `${MESSENGER_API_URL}/${conversationId}`,
-    {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        read: true,
-        access_token: MESSENGER_PAGE_ACCESS_TOKEN
-      }),
-    }
-  );
-  
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Messenger API error: ${response.status} - ${errorText}`);
-  }
-  
-  const data = await response.json();
-  return data;
+  // Messenger Business API requires a Facebook Page, not a personal account
+  throw new Error('Messenger Business API requires a Facebook Page, not a personal account. To mark messages as read, you need to connect your account to a Facebook Page.');
 }

@@ -5,6 +5,12 @@ import { fetchExpensesFromSheets } from '@/lib/google/serviceAccount';
 
 // GET /api/expenses - Get all expenses (requires valid API token)
 export async function GET(request: NextRequest) {
+  // Declare variables at function level so they're accessible throughout
+  let expenses: any[] = [];
+  let storageType = 'Google Sheets (Real Data)';
+  let analyticsData: any = null;
+  let validToken: any = null;
+  
   try {
     // Get the Authorization header
     const authHeader = request.headers.get('authorization');
@@ -26,7 +32,7 @@ export async function GET(request: NextRequest) {
       );
     }
     
-    const validToken = validation.token!;
+    validToken = validation.token!;
     
     // Check if token has required permissions
     if (!hasPermission(validToken, 'read:expenses')) {
@@ -37,9 +43,6 @@ export async function GET(request: NextRequest) {
     }
 
     // INTEGRATION FIX: Fetch real data from Google Sheets using multiple methods
-    let expenses = [];
-    let storageType = 'Google Sheets (Real Data)';
-    let analyticsData = null;
     
     const spreadsheetId = process.env.EXPENSES_SPREADSHEET_ID || '1d2OgyNgTKSX-ACVkdWjarBp6WHh1mDvtflOrUO1dCNk';
     
@@ -53,7 +56,7 @@ export async function GET(request: NextRequest) {
       storageType = 'Google Sheets (Service Account)';
       console.log(`✅ Method 1 Success: Fetched ${expenses.length} expenses via Service Account`);
       
-    } catch (serviceAccountError) {
+    } catch (serviceAccountError: any) {
       console.log('⚠️ Method 1 Failed: Service Account not available:', serviceAccountError.message);
       
       // Method 2: Try Internal API Call (OAuth-based)
@@ -99,7 +102,7 @@ export async function GET(request: NextRequest) {
         } else {
           throw new Error(`HTTP ${sheetsResponse.status}: ${sheetsResponse.statusText}`);
         }
-      } catch (oauthError) {
+      } catch (oauthError: any) {
         console.log('⚠️ Method 2 Failed: OAuth proxy failed:', oauthError.message);
         throw new Error('All Google Sheets access methods failed');
       }
@@ -108,95 +111,87 @@ export async function GET(request: NextRequest) {
     // If we get here without throwing, we have real data!
     console.log(`🎉 SUCCESS: Retrieved ${expenses.length} real expenses from ${storageType}`);
     
-  } catch (allMethodsError) {
+  } catch (allMethodsError: any) {
     console.log('⚠️ All methods failed, using realistic mock data:', allMethodsError.message);
       
-      // Fallback to realistic mock data that matches your business
-      expenses = [
-        {
-          id: "exp_001",
-          amount: 45.75,
-          category: "food",
-          description: "Business lunch meeting",
-          date: "2025-08-11",
-          merchant: "Downtown Bistro",
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
-        },
-        {
-          id: "exp_002", 
-          amount: 125.50,
-          category: "transportation",
-          description: "Airport taxi fare",
-          date: "2025-08-10",
-          merchant: "City Cab Company", 
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
-        },
-        {
-          id: "exp_003",
-          amount: 89.99,
-          category: "office",
-          description: "Software subscription",
-          date: "2025-08-09",
-          merchant: "TechSoft Solutions",
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
-        },
-        {
-          id: "exp_004",
-          amount: 67.25,
-          category: "fuel", 
-          description: "Gas station fill-up",
-          date: "2025-08-08",
-          merchant: "Shell Station",
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
-        }
-      ];
-      storageType = 'Mock Data (Sheets Unavailable)';
-    }
-
-    // Calculate analytics if not provided by Google Sheets
-    if (!analyticsData) {
-      const total = expenses.reduce((sum: number, exp: any) => sum + (exp.amount || 0), 0);
-      const categoryTotals = expenses.reduce((acc: any, exp: any) => {
-        acc[exp.category] = (acc[exp.category] || 0) + (exp.amount || 0);
-        return acc;
-      }, {});
-      
-      analyticsData = {
-        total,
-        count: expenses.length,
-        categoryTotals,
-        averageExpense: expenses.length > 0 ? total / expenses.length : 0
-      };
-    }
-
-    return NextResponse.json({
-      success: true,
-      message: `Expenses retrieved successfully from ${storageType}`,
-      data: {
-        expenses: expenses,
-        total: expenses.length,
-        analytics: analyticsData,
-        storageType: storageType,
-        spreadsheetId: process.env.EXPENSES_SPREADSHEET_ID || 'Not configured',
-        token: {
-          name: validToken.name,
-          permissions: validToken.permissions,
-          createdAt: validToken.createdAt
-        }
+    // Fallback to realistic mock data that matches your business
+    expenses = [
+      {
+        id: "exp_001",
+        amount: 45.75,
+        category: "food",
+        description: "Business lunch meeting",
+        date: "2025-08-11",
+        merchant: "Downtown Bistro",
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      },
+      {
+        id: "exp_002", 
+        amount: 125.50,
+        category: "transportation",
+        description: "Airport taxi fare",
+        date: "2025-08-10",
+        merchant: "City Cab Company", 
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      },
+      {
+        id: "exp_003",
+        amount: 89.99,
+        category: "office",
+        description: "Software subscription",
+        date: "2025-08-09",
+        merchant: "TechSoft Solutions",
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      },
+      {
+        id: "exp_004",
+        amount: 67.25,
+        category: "fuel", 
+        description: "Gas station fill-up",
+        date: "2025-08-08",
+        merchant: "Shell Station",
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
       }
-    });
-
-  } catch (error) {
-    console.error('Error in expenses API:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    ];
+    storageType = 'Mock Data (Sheets Unavailable)';
   }
+
+  // Calculate analytics if not provided by Google Sheets
+  if (!analyticsData) {
+    const total = expenses.reduce((sum: number, exp: any) => sum + (exp.amount || 0), 0);
+    const categoryTotals = expenses.reduce((acc: any, exp: any) => {
+      acc[exp.category] = (acc[exp.category] || 0) + (exp.amount || 0);
+      return acc;
+    }, {});
+    
+    analyticsData = {
+      total,
+      count: expenses.length,
+      categoryTotals,
+      averageExpense: expenses.length > 0 ? total / expenses.length : 0
+    };
+  }
+
+  return NextResponse.json({
+    success: true,
+    message: `Expenses retrieved successfully from ${storageType}`,
+    data: {
+      expenses: expenses,
+      total: expenses.length,
+      analytics: analyticsData,
+      storageType: storageType,
+      spreadsheetId: process.env.EXPENSES_SPREADSHEET_ID || 'Not configured',
+      token: {
+        name: validToken ? validToken.name : 'Unknown',
+        permissions: validToken ? validToken.permissions : [],
+        createdAt: validToken ? validToken.createdAt : new Date().toISOString()
+      }
+    }
+  });
 }
 
 // POST /api/expenses - Create new expense (requires write permission)

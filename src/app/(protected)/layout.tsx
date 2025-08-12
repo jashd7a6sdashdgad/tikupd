@@ -7,6 +7,7 @@ import { useTheme } from '@/hooks/useTheme';
 import { ModernVoiceWidget } from '@/components/ui/ModernVoiceWidget';
 import { VoiceNavigationSystem } from '@/components/VoiceNavigationSystem';
 import { GestureControls } from '@/components/GestureControls';
+import { ThemeProvider } from '@/contexts/ThemeContext';
 
 function ProtectedLayoutContent({ children }: { children: React.ReactNode }) {
   useTheme(); // Apply saved theme settings
@@ -43,9 +44,11 @@ export default function ProtectedLayout({
 }) {
   return (
     <AuthGuard>
-      <ProtectedLayoutContent>
-        {children}
-      </ProtectedLayoutContent>
+      <ThemeProvider>
+        <ProtectedLayoutContent>
+          {children}
+        </ProtectedLayoutContent>
+      </ThemeProvider>
     </AuthGuard>
   );
 }

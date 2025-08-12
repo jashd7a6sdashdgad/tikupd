@@ -378,8 +378,8 @@ export default function SocialMediaPage() {
               <h4 className="font-medium text-black mb-2">Environment Variables Required:</h4>
               <div className="bg-black text-green-400 p-4 rounded font-mono text-sm">
                 <p>NEXT_PUBLIC_FACEBOOK_APP_ID=your_facebook_app_id</p>
-                <p>FACEBOOK_PAGE_ACCESS_TOKEN=your_page_access_token</p>
-                <p>FACEBOOK_PAGE_ID=196199373900228</p>
+                        <p>Using hardcoded Facebook token and page ID</p>
+        <p>Page ID: 196199373900228</p>
                 <p>NEXT_PUBLIC_FACEBOOK_PIXEL_ID=your_pixel_id</p>
                 <p>NEXT_PUBLIC_GA_MEASUREMENT_ID=your_ga_id</p>
                 <p>NEXT_PUBLIC_BASE_URL=https://mahboobagents.fun</p>
