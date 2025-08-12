@@ -381,7 +381,9 @@ export default function MusicPage() {
       
       // Generate Spotify authorization URL
       const clientId = 'a3b9645329a2412ea6ce17794952958e';
-      const redirectUri = encodeURIComponent(`${window.location.origin}/api/music/spotify/callback`);
+      // Use environment variable for redirect URI or fallback to current origin
+      const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || window.location.origin;
+      const redirectUri = encodeURIComponent(`${baseUrl}/api/music/spotify/callback`);
       const scopes = encodeURIComponent('user-read-private user-read-email user-library-read user-top-read playlist-read-private');
       const state = Math.random().toString(36).substring(2, 15);
       
