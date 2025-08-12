@@ -72,6 +72,14 @@ export const GestureControls: React.FC<GestureControlsProps> = ({
   const gestureTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
+  // Get current page context for dynamic gestures
+  const getCurrentPage = () => {
+    if (typeof window !== 'undefined') {
+      return window.location.pathname;
+    }
+    return '';
+  };
+
   // Default gesture configurations
   const defaultGestures: GestureConfig[] = [
     {
@@ -95,20 +103,53 @@ export const GestureControls: React.FC<GestureControlsProps> = ({
     {
       id: 'swipe-up',
       name: 'Swipe Up',
-      description: 'Go to dashboard/home',
+      description: 'Context-aware navigation up',
       gesture: 'swipe-up',
-      action: () => router.push('/dashboard'),
+      action: () => {
+        const currentPage = getCurrentPage();
+        console.log('🔥 SWIPE UP EXECUTED from:', currentPage);
+        
+        // Context-aware navigation based on current page
+        if (currentPage.includes('/dashboard')) {
+          console.log('📱 Navigating from dashboard to search');
+          router.push('/search');
+        } else if (currentPage.includes('/search')) {
+          console.log('📱 Navigating from search to voice-chat');
+          router.push('/voice-chat');
+        } else if (currentPage.includes('/expenses')) {
+          console.log('📱 Navigating from expenses to budget');
+          router.push('/budget');
+        } else {
+          console.log('📱 Default navigation to dashboard');
+          router.push('/dashboard');
+        }
+      },
       enabled: true,
-      icon: <Home className="h-4 w-4" />
+      icon: <ArrowUp className="h-4 w-4" />
     },
     {
       id: 'swipe-down',
       name: 'Swipe Down',
-      description: 'Open search',
+      description: 'Context-aware navigation down',
       gesture: 'swipe-down',
-      action: () => router.push('/search'),
+      action: () => {
+        const currentPage = getCurrentPage();
+        console.log('🔥 SWIPE DOWN EXECUTED from:', currentPage);
+        
+        // Context-aware navigation based on current page
+        if (currentPage.includes('/dashboard')) {
+          console.log('📱 Navigating from dashboard to expenses');
+          router.push('/expenses');
+        } else if (currentPage.includes('/search')) {
+          console.log('📱 Navigating from search to dashboard');
+          router.push('/dashboard');
+        } else {
+          console.log('📱 Default navigation to search');
+          router.push('/search');
+        }
+      },
       enabled: true,
-      icon: <Search className="h-4 w-4" />
+      icon: <ArrowDown className="h-4 w-4" />
     },
     {
       id: 'double-tap',
@@ -281,7 +322,7 @@ export const GestureControls: React.FC<GestureControlsProps> = ({
     const touchEvent = event as TouchEvent;
     if (!isEnabled) return;
 
-    event.preventDefault();
+    console.log('👆 TOUCH START detected', touchEvent.touches.length, 'fingers');
     
     const touch = touchEvent.touches[0];
     touchStartRef.current = {
@@ -330,11 +371,15 @@ export const GestureControls: React.FC<GestureControlsProps> = ({
     const touchEvent = event as TouchEvent;
     if (!isEnabled || !touchStartRef.current) return;
 
+    console.log('👆 TOUCH END detected');
+
     const gesture = determineGesture(
       touchEvent.changedTouches, 
       touchStartRef.current, 
       touchMoveRef.current
     );
+    
+    console.log('🎯 DETERMINED GESTURE:', gesture);
     
     if (gesture) {
       // Find and execute gesture action
@@ -342,20 +387,32 @@ export const GestureControls: React.FC<GestureControlsProps> = ({
         config => config.gesture === gesture && config.enabled
       );
       
+      console.log('🎯 FOUND CONFIG:', gestureConfig);
+      
       if (gestureConfig) {
+        console.log('🎯 GESTURE DETECTED:', gesture);
+        console.log('🎯 GESTURE CONFIG:', gestureConfig);
+        console.log('🎯 ABOUT TO EXECUTE ACTION');
+        
         setLastGesture(`${gestureConfig.name} executed`);
         setGestureHistory(prev => [gesture, ...prev.slice(0, 4)]);
         
-        // Execute the action with a small delay for feedback
-        setTimeout(() => {
+        // Execute the action immediately with logging
+        try {
+          console.log('🚀 EXECUTING GESTURE ACTION NOW');
           gestureConfig.action();
-        }, 100);
+          console.log('✅ GESTURE ACTION COMPLETED');
+        } catch (error) {
+          console.error('❌ GESTURE ACTION FAILED:', error);
+          setLastGesture(`Error executing ${gestureConfig.name}`);
+        }
         
         // Provide haptic feedback if available
         if ('vibrate' in navigator) {
           navigator.vibrate(50);
         }
       } else {
+        console.log('❌ GESTURE NOT CONFIGURED:', gesture);
         setLastGesture(`Gesture "${gesture}" not configured`);
       }
     }
