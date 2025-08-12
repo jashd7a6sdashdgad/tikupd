@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
       };
       authType = 'website-jwt';
       
-    } catch (jwtError) {
+    } catch (jwtError: any) {
       console.log('⚠️ Website JWT validation failed:', jwtError.message);
       console.log('🔍 Trying API token validation...');
       
