@@ -9,6 +9,8 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useSettings } from '@/contexts/SettingsContext';
+import { useTranslation } from '@/lib/translations';
 import { 
   Plane,
   MapPin,
@@ -158,6 +160,8 @@ const categoryColors = {
 };
 
 export default function TravelCompanionPage() {
+  const { language } = useSettings();
+  const { t } = useTranslation(language);
   const [activeTab, setActiveTab] = useState('itinerary');
   const [itineraries, setItineraries] = useState<TravelItinerary[]>([]);
   const [expenses, setExpenses] = useState<TravelExpense[]>([]);
@@ -327,11 +331,11 @@ export default function TravelCompanionPage() {
               </div>
               <div>
                 <h1 className="text-5xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent mb-2">
-                  Travel Companion
+                  {t('travelCompanion') || 'Travel Companion'}
                 </h1>
                 <p className="text-gray-600 font-medium text-lg flex items-center gap-2">
                   <MapPin className="h-5 w-5 text-blue-500" />
-                  Plan, track, and manage your journeys
+                  {t('planTrackManage') || 'Plan, track, and manage your journeys'}
                 </p>
               </div>
             </div>
@@ -342,7 +346,7 @@ export default function TravelCompanionPage() {
                 className={`${isRecording ? 'bg-red-500 hover:bg-red-600' : 'bg-gradient-to-r from-blue-500 to-cyan-600 hover:from-blue-600 hover:to-cyan-700'} text-black font-bold`}
               >
                 <Mic className="h-4 w-4 mr-2" />
-                {isRecording ? 'Stop Recording' : 'Voice Input'}
+                {isRecording ? t('stopRecording') || 'Stop Recording' : t('voiceInput') || 'Voice Input'}
               </Button>
             </div>
           </div>
@@ -353,23 +357,23 @@ export default function TravelCompanionPage() {
           <TabsList className="grid w-full grid-cols-5 bg-white/70 backdrop-blur-xl border-2 border-white/30 rounded-2xl p-2 shadow-lg">
             <TabsTrigger value="itinerary" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-cyan-600 data-[state=active]:text-black data-[state=active]:font-bold">
               <Route className="h-4 w-4 mr-2" />
-              Itinerary
+              {t('itinerary') || 'Itinerary'}
             </TabsTrigger>
             <TabsTrigger value="transport" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-green-500 data-[state=active]:to-emerald-600 data-[state=active]:text-black data-[state=active]:font-bold">
               <Plane className="h-4 w-4 mr-2" />
-              Transport
+              {t('transport') || 'Transport'}
             </TabsTrigger>
             <TabsTrigger value="expenses" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-pink-600 data-[state=active]:text-black data-[state=active]:font-bold">
               <Wallet className="h-4 w-4 mr-2" />
-              Expenses
+              {t('expenses')}
             </TabsTrigger>
             <TabsTrigger value="documents" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-orange-500 data-[state=active]:to-red-600 data-[state=active]:text-black data-[state=active]:font-bold">
               <FileText className="h-4 w-4 mr-2" />
-              Documents
+              {t('documents') || 'Documents'}
             </TabsTrigger>
             <TabsTrigger value="translate" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-indigo-500 data-[state=active]:to-purple-600 data-[state=active]:text-black data-[state=active]:font-bold">
               <Languages className="h-4 w-4 mr-2" />
-              Translate
+              {t('translate') || 'Translate'}
             </TabsTrigger>
           </TabsList>
 

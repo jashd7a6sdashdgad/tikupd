@@ -57,12 +57,6 @@ const getNavigation = (t: (key: string) => string): NavigationItem[] => [
     icon: Search
   },
   {
-    key: 'search',
-    name: t('search') || 'Global Search',
-    href: '/search',
-    icon: Search
-  },
-  {
     key: 'think-tool',
     name: t('thinkTool'),
     href: '/think-tool',
@@ -123,28 +117,10 @@ const getNavigation = (t: (key: string) => string): NavigationItem[] => [
     icon: FileSpreadsheet
   },
   {
-    key: 'hotel-expenses',
-    name: t('hotelExpenses'),
-    href: '/hotel-expenses',
-    icon: FileSpreadsheet
-  },
-  {
     key: 'tracking',
     name: t('tracking'),
     href: '/tracking',
     icon: Stethoscope
-  },
-  {
-    key: 'facebook',
-    name: t('facebook'),
-    href: '/facebook',
-    icon: Facebook
-  },
-  {
-    key: 'messenger',
-    name: t('messenger'),
-    href: '/messenger',
-    icon: MessageCircle
   },
   {
     key: 'youtube',
@@ -194,12 +170,6 @@ const getNavigation = (t: (key: string) => string): NavigationItem[] => [
     href: '/api-tokens',
     icon: Key
   },
-  {
-    key: 'business',
-    name: t('business') || 'Business',
-    href: '/business',
-    icon: Briefcase
-  }
 ];
 
 export function Navigation() {
@@ -293,14 +263,6 @@ export function Navigation() {
               
               <li className="mt-auto">
                 <div className="space-y-3 pt-6 border-t border-white/20">
-                  {/* Voice Navigation Widget */}
-                  <div className="mb-4">
-                    <VoiceNavigationSystem 
-                      className="w-full" 
-                      compact={true}
-                      showLabel={false}
-                    />
-                  </div>
                   
                   {/* Google Connect Button */}
                   <Button
@@ -453,16 +415,6 @@ export function Navigation() {
                     );
                   })}
                   
-                  {/* Voice Navigation Widget for Mobile */}
-                  <li className="mb-4">
-                    <div className="px-3">
-                      <VoiceNavigationSystem 
-                        className="w-full" 
-                        compact={true}
-                        showLabel={false}
-                      />
-                    </div>
-                  </li>
                   
                   {/* Google Connect Button for Mobile */}
                   <li className="mb-4">

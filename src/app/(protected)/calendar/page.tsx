@@ -265,12 +265,17 @@ export default function CalendarPage() {
   };
 
   const startEdit = (event: CalendarEvent) => {
-    setEditingEvent(event);
-    setNewEventTitle(event.summary || '');
-    setNewEventDescription(event.description || '');
-    setNewEventStart(formatDateTimeForInput(event.start.dateTime));
-    setNewEventEnd(formatDateTimeForInput(event.end.dateTime));
-    setShowCreateForm(true);
+    try {
+      setEditingEvent(event);
+      setNewEventTitle(event.summary || '');
+      setNewEventDescription(event.description || '');
+      setNewEventStart(formatDateTimeForInput(event?.start?.dateTime));
+      setNewEventEnd(formatDateTimeForInput(event?.end?.dateTime));
+      setShowCreateForm(true);
+    } catch (error) {
+      console.error('Error starting edit:', error);
+      alert('Error editing event. Please try again.');
+    }
   };
 
   const cancelEdit = () => {
@@ -307,36 +312,76 @@ export default function CalendarPage() {
     }
   };
 
-  const formatDateTime = (dateTime: string) => {
-    const date = new Date(dateTime);
-    return {
-      date: date.toLocaleDateString(),
-      time: date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-    };
+  const formatDateTime = (dateTime: string | undefined) => {
+    if (!dateTime) {
+      return { date: 'Invalid Date', time: 'Invalid Time' };
+    }
+    try {
+      const date = new Date(dateTime);
+      if (isNaN(date.getTime())) {
+        return { date: 'Invalid Date', time: 'Invalid Time' };
+      }
+      return {
+        date: date.toLocaleDateString(),
+        time: date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      };
+    } catch (error) {
+      console.error('Error formatting date:', error);
+      return { date: 'Invalid Date', time: 'Invalid Time' };
+    }
   };
 
-  const formatDateTimeForInput = (dateTime: string) => {
-    const date = new Date(dateTime);
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    const hours = String(date.getHours()).padStart(2, '0');
-    const minutes = String(date.getMinutes()).padStart(2, '0');
-    return `${year}-${month}-${day}T${hours}:${minutes}`;
+  const formatDateTimeForInput = (dateTime: string | undefined) => {
+    if (!dateTime) return '';
+    try {
+      const date = new Date(dateTime);
+      if (isNaN(date.getTime())) return '';
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      const hours = String(date.getHours()).padStart(2, '0');
+      const minutes = String(date.getMinutes()).padStart(2, '0');
+      return `${year}-${month}-${day}T${hours}:${minutes}`;
+    } catch (error) {
+      console.error('Error formatting date for input:', error);
+      return '';
+    }
   };
 
   const getTodayEvents = () => {
     const today = new Date().toDateString();
-    return events.filter(event => 
-      new Date(event.start.dateTime).toDateString() === today
-    );
+    return events.filter(event => {
+      try {
+        if (!event?.start?.dateTime) return false;
+        return new Date(event.start.dateTime).toDateString() === today;
+      } catch (error) {
+        console.error('Error filtering today events:', error);
+        return false;
+      }
+    });
   };
 
   const getUpcomingEvents = () => {
     const now = new Date();
     return events
-      .filter(event => new Date(event.start.dateTime) > now)
-      .sort((a, b) => new Date(a.start.dateTime).getTime() - new Date(b.start.dateTime).getTime())
+      .filter(event => {
+        try {
+          if (!event?.start?.dateTime) return false;
+          return new Date(event.start.dateTime) > now;
+        } catch (error) {
+          console.error('Error filtering upcoming events:', error);
+          return false;
+        }
+      })
+      .sort((a, b) => {
+        try {
+          if (!a?.start?.dateTime || !b?.start?.dateTime) return 0;
+          return new Date(a.start.dateTime).getTime() - new Date(b.start.dateTime).getTime();
+        } catch (error) {
+          console.error('Error sorting events:', error);
+          return 0;
+        }
+      })
       .slice(0, 10);
   };
 
@@ -631,13 +676,14 @@ export default function CalendarPage() {
                 </div>
               ) : getTodayEvents().length > 0 ? (
                 <div className="space-y-3">
-                  {getTodayEvents().map((event) => {
-                    const datetime = formatDateTime(event.start.dateTime);
+                  {getTodayEvents().map((event, index) => {
+                    if (!event) return null;
+                    const datetime = formatDateTime(event?.start?.dateTime);
                     return (
-                      <div key={event.id} className="p-4 bg-muted rounded-lg">
+                      <div key={event.id || `today-event-${index}`} className="p-4 bg-muted rounded-lg">
                         <div className="flex justify-between items-start">
                           <div className="flex-1">
-                            <h4 className="font-medium text-black">{event.summary}</h4>
+                            <h4 className="font-medium text-black">{event.summary || 'Untitled Event'}</h4>
                             {event.description && (
                               <p className="text-sm text-black mt-1">{event.description}</p>
                             )}
@@ -651,7 +697,7 @@ export default function CalendarPage() {
                               variant="ghost" 
                               size="sm"
                               onClick={() => startEdit(event)}
-                              disabled={showCreateForm}
+                              disabled={showCreateForm || !event?.start?.dateTime}
                             >
                               <Edit className="h-4 w-4" />
                             </Button>
@@ -659,6 +705,7 @@ export default function CalendarPage() {
                               variant="ghost" 
                               size="sm"
                               onClick={() => event.id && deleteEvent(event.id)}
+                              disabled={!event.id}
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>
@@ -666,7 +713,7 @@ export default function CalendarPage() {
                         </div>
                       </div>
                     );
-                  })}
+                  }).filter(Boolean)}
                 </div>
               ) : (
                 <p className="text-black text-center py-8">{t('todayEvents')}</p>

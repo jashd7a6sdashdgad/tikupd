@@ -536,6 +536,20 @@ export const GestureControls: React.FC<GestureControlsProps> = ({
     };
   }, [isEnabled, handleTouchStart, handleTouchMove, handleTouchEnd, handleClick]);
 
+  // Handle escape key to close settings
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && showSettings) {
+        setShowSettings(false);
+      }
+    };
+
+    if (showSettings) {
+      document.addEventListener('keydown', handleKeyDown);
+      return () => document.removeEventListener('keydown', handleKeyDown);
+    }
+  }, [showSettings]);
+
   // Cleanup timers
   useEffect(() => {
     return () => {
@@ -606,19 +620,26 @@ export const GestureControls: React.FC<GestureControlsProps> = ({
 
         {/* Settings Panel */}
         {showSettings && (
-          <div className="fixed inset-x-4 top-20 md:absolute md:top-14 md:right-0 md:inset-x-auto bg-white border border-gray-200 rounded-xl shadow-xl p-4 w-full md:w-80 max-h-96 overflow-y-auto z-50">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <Smartphone className="h-5 w-5 text-blue-600" />
-                <h3 className="font-bold text-gray-800">Gesture Controls</h3>
+          <>
+            {/* Backdrop for mobile - click to close */}
+            <div 
+              className="fixed inset-0 bg-black/20 z-40 md:hidden"
+              onClick={() => setShowSettings(false)}
+            />
+            <div className="fixed inset-x-4 top-20 md:absolute md:top-14 md:right-0 md:inset-x-auto bg-white border border-gray-200 rounded-xl shadow-xl p-4 w-full md:w-80 max-h-96 overflow-y-auto z-50">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <Smartphone className="h-5 w-5 text-blue-600" />
+                  <h3 className="font-bold text-gray-800">Gesture Controls</h3>
+                </div>
+                <button 
+                  onClick={() => setShowSettings(false)}
+                  className="p-1 hover:bg-gray-100 rounded transition-colors"
+                  title="Close settings"
+                >
+                  <X className="h-4 w-4" />
+                </button>
               </div>
-              <button 
-                onClick={() => setShowSettings(false)}
-                className="md:hidden p-1 hover:bg-gray-100 rounded"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
 
             <div className="space-y-3">
               {gestureConfigs.map(config => (
@@ -693,6 +714,7 @@ export const GestureControls: React.FC<GestureControlsProps> = ({
               </p>
             </div>
           </div>
+          </>
         )}
       </div>
     </div>

@@ -41,7 +41,6 @@ import ActivityTimeline from '@/components/ActivityTimeline';
 import { CollapsibleSidebar } from '@/components/ui/CollapsibleSidebar';
 import { ModernCard } from '@/components/ui/ModernCard';
 import { NotificationPanel } from '@/components/ui/NotificationPanel';
-import { ModernVoiceWidget } from '@/components/ui/ModernVoiceWidget';
 
 interface CalendarEvent {
   start?: {
@@ -97,7 +96,6 @@ export default function DashboardPage() {
     expenses: 'loading',
     photos: 'loading'
   });
-  const [isVoiceCollapsed, setIsVoiceCollapsed] = useState(true);
 
   // Helper function to safely parse JSON responses
   const safeJsonParse = async (response: Response | null) => {
@@ -1122,15 +1120,6 @@ if (calendarResponse && calendarResponse.ok) {
                 <div className="mt-4 pt-4 border-t border-gray-200">
                   <h4 className="text-xs font-semibold text-gray-600 mb-2 uppercase tracking-wide">{t('businessTools')}</h4>
                   <div className="grid grid-cols-2 gap-2">
-                    <Button 
-                      className="h-12 flex flex-col items-center justify-center text-black hover:bg-purple-50 hover:text-purple-700 transition-all duration-200" 
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => router.push('/facebook')}
-                    >
-                      <Facebook className="h-4 w-4 mb-1" />
-                      <span className="text-xs">{t('facebook')}</span>
-                    </Button>
                     
                     <Button 
                       className="h-12 flex flex-col items-center justify-center text-black hover:bg-purple-50 hover:text-purple-700 transition-all duration-200" 
@@ -1152,15 +1141,6 @@ if (calendarResponse && calendarResponse.ok) {
                       <span className="text-xs">{t('budget')}</span>
                     </Button>
                     
-                    <Button 
-                      className="h-12 flex flex-col items-center justify-center text-black hover:bg-purple-50 hover:text-purple-700 transition-all duration-200" 
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => router.push('/hotel-expenses')}
-                    >
-                      <Building2 className="h-4 w-4 mb-1" />
-                      <span className="text-xs">{t('hotels')}</span>
-                    </Button>
                   </div>
                 </div>
               </CardContent>
@@ -1216,18 +1196,6 @@ if (calendarResponse && calendarResponse.ok) {
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="flex items-center space-x-3 p-3 bg-purple-50 rounded-lg">
-                    <Facebook className="h-6 w-6 text-purple-600" />
-                    <div>
-                      <p className="text-sm font-medium text-black">{t('facebook')}</p>
-                      <p className="text-xs text-gray-600">
-                        {socialMediaStats?.facebook?.followers || 'N/A'} {t('followers')}
-                      </p>
-                      <p className="text-xs text-purple-600">
-                        {socialMediaStats?.facebook?.posts || 0} {t('posts')}
-                      </p>
-                    </div>
-                  </div>
                   
                   <div className="flex items-center space-x-3 p-3 bg-purple-50 rounded-lg">
                     <Youtube className="h-6 w-6 text-purple-600" />
@@ -1255,30 +1223,9 @@ if (calendarResponse && calendarResponse.ok) {
                     </div>
                   </div>
                   
-                  <div className="flex items-center space-x-3 p-3 bg-purple-50 rounded-lg">
-                    <MessageCircle className="h-6 w-6 text-purple-600" />
-                    <div>
-                      <p className="text-sm font-medium text-black">{t('messenger')}</p>
-                      <p className="text-xs text-gray-600">
-                        {socialMediaStats?.messenger?.conversations || 'N/A'} {t('conversations')}
-                      </p>
-                      <p className="text-xs text-purple-600">
-                        {socialMediaStats?.messenger?.messages || 0} {t('messages')}
-                      </p>
-                    </div>
-                  </div>
                 </div>
                 
                 <div className="mt-4 flex justify-between">
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={() => router.push('/facebook')}
-                    className="text-xs"
-                  >
-                    <Facebook className="h-3 w-3 mr-1" />
-                    {t('facebook')}
-                  </Button>
                   <Button 
                     variant="outline" 
                     size="sm" 
@@ -1310,8 +1257,6 @@ if (calendarResponse && calendarResponse.ok) {
             { name: 'Email', icon: Mail, route: '/email', color: 'from-green-500 to-emerald-600' },
             { name: 'Expenses', icon: DollarSign, route: '/expenses', color: 'from-amber-500 to-orange-600' },
             { name: 'Diary', icon: BookOpen, route: '/diary', color: 'from-pink-500 to-rose-600' },
-            { name: 'Search', icon: Search, route: '/search', color: 'from-violet-500 to-purple-600' },
-            { name: 'Business', icon: Briefcase, route: '/business', color: 'from-slate-500 to-gray-600' }
           ].map((feature, index) => {
             const IconComponent = feature.icon;
             return (
@@ -1346,11 +1291,6 @@ if (calendarResponse && calendarResponse.ok) {
         <NotificationPanel />
       </CollapsibleSidebar>
 
-      {/* Modern Voice Widget - Dashboard Specific */}
-      <ModernVoiceWidget
-        collapsed={isVoiceCollapsed}
-        onToggleCollapse={() => setIsVoiceCollapsed(!isVoiceCollapsed)}
-      />
 
     </div>
   );
