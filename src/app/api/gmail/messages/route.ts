@@ -87,7 +87,7 @@ export async function GET(request: NextRequest) {
     const maxResults = parseInt(searchParams.get('maxResults') || '10');
     
     // List messages
-    const messages = await gmail.getMessages(maxResults);
+    const messages = await gmail.listMessages('', maxResults);
     
     return NextResponse.json({
       success: true,

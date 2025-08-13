@@ -91,7 +91,8 @@ export async function GET(request: NextRequest) {
     const maxResults = parseInt(searchParams.get('maxResults') || '10');
     
     // List events
-    const events = await calendar.getEvents(maxResults);
+    const eventsResponse = await calendar.listEvents(undefined, undefined, maxResults);
+    const events = eventsResponse || [];
     
     return NextResponse.json({
       success: true,

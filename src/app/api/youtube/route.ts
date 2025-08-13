@@ -166,7 +166,7 @@ export async function GET(request: NextRequest) {
             }, { status: 400 });
           }
           // For search, we'll use the basic Google API since the YouTube class doesn't have a search method
-          data = await searchVideos(query, auth);
+          data = await searchVideos(query, googleTokens);
           break;
         case 'connect':
           // Test connection by getting channel info
@@ -186,7 +186,12 @@ export async function GET(request: NextRequest) {
         success: true,
         data,
         message: `YouTube ${action} retrieved successfully`,
-        userId: user.id,
+        authType,
+        token: {
+          name: validToken.name,
+          permissions: validToken.permissions,
+          type: validToken.type
+        },
         timestamp: new Date().toISOString()
       });
 
@@ -203,7 +208,7 @@ export async function GET(request: NextRequest) {
           message: `YouTube OAuth authentication failed: ${errorMessage}. Please re-authenticate with Google.`,
           error: 'YOUTUBE_OAUTH_INVALID',
           help: 'Re-authenticate via /api/google/auth to refresh your tokens',
-          details: { errorMessage, userId: user.id }
+          details: { errorMessage, authType }
         }, { status: 401 });
       }
       
@@ -214,7 +219,7 @@ export async function GET(request: NextRequest) {
           message: `YouTube API quota exceeded: ${errorMessage}. Please check your quota usage in Google Cloud Console.`,
           error: 'YOUTUBE_QUOTA_EXCEEDED',
           help: 'Check quota usage in Google Cloud Console',
-          details: { errorMessage, userId: user.id }
+          details: { errorMessage, authType }
         }, { status: 429 });
       }
       
@@ -222,7 +227,7 @@ export async function GET(request: NextRequest) {
         success: false,
         message: error.message || 'Failed to fetch YouTube data',
         error: 'YOUTUBE_API_ERROR',
-        userId: user.id,
+        authType,
         timestamp: new Date().toISOString()
       }, { status: 500 });
     }
