@@ -30,7 +30,8 @@ import {
   Camera,
   ShoppingBag,
   Youtube,
-  Facebook
+  Facebook,
+  X
 } from 'lucide-react';
 
 interface GestureConfig {
@@ -292,8 +293,8 @@ export const GestureControls: React.FC<GestureControlsProps> = ({
     const angle = calculateAngle(startPoint, endPoint);
     const duration = endPoint.timestamp - startPoint.timestamp;
 
-    // Minimum distance for swipe recognition
-    const minSwipeDistance = 50;
+    // Reduced minimum distance for better mobile sensitivity
+    const minSwipeDistance = 30;
     
     if (distance < minSwipeDistance) {
       // Check for tap gestures
@@ -336,6 +337,9 @@ export const GestureControls: React.FC<GestureControlsProps> = ({
 
     console.log('👆 TOUCH START detected', touchEvent.touches.length, 'fingers');
     
+    // Store the number of fingers for multi-touch detection
+    const fingerCount = touchEvent.touches.length;
+    
     const touch = touchEvent.touches[0];
     touchStartRef.current = {
       x: touch.clientX,
@@ -355,6 +359,12 @@ export const GestureControls: React.FC<GestureControlsProps> = ({
     if (showIndicator) {
       setShowGestureIndicator(true);
     }
+    
+    // Store finger count for later use
+    touchStartRef.current = {
+      ...touchStartRef.current,
+      fingerCount
+    } as any;
   }, [isEnabled, showIndicator]);
 
   // Handle touch move
@@ -385,8 +395,13 @@ export const GestureControls: React.FC<GestureControlsProps> = ({
 
     console.log('👆 TOUCH END detected');
 
+    // Create a mock TouchList with the stored finger count for proper gesture detection
+    const mockTouches = {
+      length: (touchStartRef.current as any).fingerCount || 1
+    } as TouchList;
+
     const gesture = determineGesture(
-      touchEvent.changedTouches, 
+      mockTouches, 
       touchStartRef.current, 
       touchMoveRef.current
     );
@@ -475,20 +490,49 @@ export const GestureControls: React.FC<GestureControlsProps> = ({
 
   // Add event listeners
   useEffect(() => {
-    const container = containerRef.current || document;
-    
-    if (isEnabled) {
-      container.addEventListener('touchstart', handleTouchStart, { passive: false });
-      container.addEventListener('touchmove', handleTouchMove, { passive: false });
-      container.addEventListener('touchend', handleTouchEnd, { passive: false });
-      container.addEventListener('click', handleClick);
-    }
+    if (!isEnabled) return;
+
+    // Add event listeners to the document body for better mobile support
+    const addEventListeners = () => {
+      document.addEventListener('touchstart', handleTouchStart, { passive: false });
+      document.addEventListener('touchmove', handleTouchMove, { passive: false });
+      document.addEventListener('touchend', handleTouchEnd, { passive: false });
+      document.addEventListener('click', handleClick, { passive: true });
+      
+      // Prevent default touch behaviors that interfere with gestures
+      document.addEventListener('touchstart', (e) => {
+        if (e.touches.length > 1) {
+          e.preventDefault(); // Prevent zoom on multi-touch
+        }
+      }, { passive: false });
+      
+      // Prevent context menu on long press
+      document.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+      });
+    };
+
+    const removeEventListeners = () => {
+      document.removeEventListener('touchstart', handleTouchStart);
+      document.removeEventListener('touchmove', handleTouchMove);
+      document.removeEventListener('touchend', handleTouchEnd);
+      document.removeEventListener('click', handleClick);
+      
+      // Remove the additional listeners
+      document.removeEventListener('touchstart', (e) => {
+        if (e.touches.length > 1) {
+          e.preventDefault();
+        }
+      });
+      document.removeEventListener('contextmenu', (e) => {
+        e.preventDefault();
+      });
+    };
+
+    addEventListeners();
 
     return () => {
-      container.removeEventListener('touchstart', handleTouchStart);
-      container.removeEventListener('touchmove', handleTouchMove);
-      container.removeEventListener('touchend', handleTouchEnd);
-      container.removeEventListener('click', handleClick);
+      removeEventListeners();
     };
   }, [isEnabled, handleTouchStart, handleTouchMove, handleTouchEnd, handleClick]);
 
@@ -562,10 +606,18 @@ export const GestureControls: React.FC<GestureControlsProps> = ({
 
         {/* Settings Panel */}
         {showSettings && (
-          <div className="absolute top-14 right-0 bg-white border border-gray-200 rounded-xl shadow-xl p-4 w-80 max-h-96 overflow-y-auto">
-            <div className="flex items-center gap-2 mb-4">
-              <Smartphone className="h-5 w-5 text-blue-600" />
-              <h3 className="font-bold text-gray-800">Gesture Controls</h3>
+          <div className="fixed inset-x-4 top-20 md:absolute md:top-14 md:right-0 md:inset-x-auto bg-white border border-gray-200 rounded-xl shadow-xl p-4 w-full md:w-80 max-h-96 overflow-y-auto z-50">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <Smartphone className="h-5 w-5 text-blue-600" />
+                <h3 className="font-bold text-gray-800">Gesture Controls</h3>
+              </div>
+              <button 
+                onClick={() => setShowSettings(false)}
+                className="md:hidden p-1 hover:bg-gray-100 rounded"
+              >
+                <X className="h-4 w-4" />
+              </button>
             </div>
 
             <div className="space-y-3">
@@ -613,10 +665,31 @@ export const GestureControls: React.FC<GestureControlsProps> = ({
               </div>
             )}
 
+            {/* Status Indicator */}
+            <div className="mt-4 pt-3 border-t border-gray-200">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-gray-600">Status:</span>
+                <span className={`px-2 py-1 rounded text-xs font-medium ${
+                  isEnabled ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                }`}>
+                  {isEnabled ? 'Active' : 'Disabled'}
+                </span>
+              </div>
+              <div className="flex items-center justify-between text-sm mt-2">
+                <span className="text-gray-600">Active Gestures:</span>
+                <span className="text-gray-700 font-medium">
+                  {gestureConfigs.filter(c => c.enabled).length} / {gestureConfigs.length}
+                </span>
+              </div>
+            </div>
+
             {/* Help Text */}
             <div className="mt-4 pt-3 border-t border-gray-200">
               <p className="text-xs text-gray-500">
-                💡 Use touch gestures on mobile devices. Desktop users can simulate gestures with mouse clicks and movements.
+                💡 Use touch gestures on mobile devices. Swipe sensitivity has been optimized for mobile screens.
+              </p>
+              <p className="text-xs text-gray-400 mt-1">
+                Try: Swipe up/down to navigate, two-finger swipes for quick actions, long press for settings.
               </p>
             </div>
           </div>
