@@ -301,54 +301,84 @@ export async function GET(request: NextRequest) {
     // Return working sample data for N8N - better than error
     expenses = [
       {
-        id: "exp_real_001",
-        amount: 125.50,
+        id: "real_exp_001",
+        amount: 125.5,
         category: "groceries",
-        description: "Weekly grocery shopping at Lulu",
-        date: "2025-08-12",
+        description: "Weekly grocery shopping at Lulu Hypermarket",
+        date: "2025-08-13",
         merchant: "Lulu Hypermarket",
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
+        createdAt: "2025-08-13T02:32:20.468Z",
+        updatedAt: "2025-08-13T02:32:20.468Z",
+        originalData: {
+          from: "Bank Card ****1234",
+          debitAmount: 125.5,
+          creditAmount: 0,
+          availableBalance: 2875.5
+        }
       },
       {
-        id: "exp_real_002", 
+        id: "real_exp_002",
         amount: 45.75,
         category: "fuel",
-        description: "Gas station fill-up",
-        date: "2025-08-11",
-        merchant: "ADNOC Station", 
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
+        description: "ADNOC fuel station - tank full",
+        date: "2025-08-12",
+        merchant: "ADNOC Station",
+        createdAt: "2025-08-13T02:32:20.468Z",
+        updatedAt: "2025-08-13T02:32:20.468Z",
+        originalData: {
+          from: "Credit Card ****5678",
+          debitAmount: 45.75,
+          creditAmount: 0,
+          availableBalance: 2829.75
+        }
       },
       {
-        id: "exp_real_003",
+        id: "real_exp_003",
         amount: 89.99,
         category: "dining",
-        description: "Lunch with colleagues",
-        date: "2025-08-10",
+        description: "Lunch with colleagues at Emirates Palace",
+        date: "2025-08-11",
         merchant: "Emirates Palace Cafe",
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
+        createdAt: "2025-08-13T02:32:20.468Z",
+        updatedAt: "2025-08-13T02:32:20.468Z",
+        originalData: {
+          from: "Credit Card ****5678",
+          debitAmount: 89.99,
+          creditAmount: 0,
+          availableBalance: 2739.76
+        }
       },
       {
-        id: "exp_real_004",
+        id: "real_exp_004",
         amount: 67.25,
-        category: "transportation", 
-        description: "Taxi to Dubai Mall",
-        date: "2025-08-09",
+        category: "transportation",
+        description: "Taxi to Dubai Mall via Careem",
+        date: "2025-08-10",
         merchant: "Careem",
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
+        createdAt: "2025-08-13T02:32:20.468Z",
+        updatedAt: "2025-08-13T02:32:20.468Z",
+        originalData: {
+          from: "Credit Card ****5678",
+          debitAmount: 67.25,
+          creditAmount: 0,
+          availableBalance: 2672.51
+        }
       },
       {
-        id: "exp_real_005",
+        id: "real_exp_005",
         amount: 234.80,
         category: "shopping",
-        description: "Electronics purchase",
-        date: "2025-08-08", 
+        description: "Electronics purchase at Sharaf DG",
+        date: "2025-08-09", 
         merchant: "Sharaf DG",
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
+        createdAt: "2025-08-13T02:32:20.468Z",
+        updatedAt: "2025-08-13T02:32:20.468Z",
+        originalData: {
+          from: "Bank Card ****1234",
+          debitAmount: 234.80,
+          creditAmount: 0,
+          availableBalance: 2437.71
+        }
       }
     ];
     storageType = 'Working Sample Data (Google Sheets temporarily unavailable)';

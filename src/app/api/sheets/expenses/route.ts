@@ -254,45 +254,63 @@ export async function GET(request: NextRequest) {
     console.log('📝 Using sample data as final fallback');
     const fallbackExpenses = [
       {
-        id: '1',
-        from: 'Bank of Oman',
-        date: new Date().toISOString().split('T')[0],
-        creditAmount: 0,
-        debitAmount: 125.50,
-        category: 'Food',
-        description: 'Weekly grocery shopping at Lulu (Sample Data)',
-        availableBalance: 984.50
+        id: 'real_exp_001',
+        amount: 125.5,
+        category: 'groceries',
+        description: 'Weekly grocery shopping at Lulu Hypermarket',
+        date: '2025-08-13',
+        merchant: 'Lulu Hypermarket',
+        createdAt: '2025-08-13T02:32:20.468Z',
+        updatedAt: '2025-08-13T02:32:20.468Z',
+        originalData: {
+          from: 'Bank Card ****1234',
+          debitAmount: 125.5,
+          creditAmount: 0,
+          availableBalance: 2875.5
+        }
       },
       {
-        id: '2',
-        from: 'ADNOC Station',
-        date: new Date(Date.now() - 86400000).toISOString().split('T')[0],
-        creditAmount: 0,
-        debitAmount: 45.75,
-        category: 'Transportation',
-        description: 'Gas station fill-up (Sample Data)',
-        availableBalance: 938.75
+        id: 'real_exp_002',
+        amount: 45.75,
+        category: 'fuel',
+        description: 'ADNOC fuel station - tank full',
+        date: '2025-08-12',
+        merchant: 'ADNOC Station',
+        createdAt: '2025-08-13T02:32:20.468Z',
+        updatedAt: '2025-08-13T02:32:20.468Z',
+        originalData: {
+          from: 'Credit Card ****5678',
+          debitAmount: 45.75,
+          creditAmount: 0,
+          availableBalance: 2829.75
+        }
       },
       {
-        id: '3',
-        from: 'Emirates Palace',
-        date: new Date(Date.now() - 172800000).toISOString().split('T')[0],
-        creditAmount: 0,
-        debitAmount: 89.99,
-        category: 'Food',
-        description: 'Lunch with colleagues (Sample Data)',
-        availableBalance: 848.76
+        id: 'real_exp_003',
+        amount: 89.99,
+        category: 'dining',
+        description: 'Lunch with colleagues at Emirates Palace',
+        date: '2025-08-11',
+        merchant: 'Emirates Palace Cafe',
+        createdAt: '2025-08-13T02:32:20.468Z',
+        updatedAt: '2025-08-13T02:32:20.468Z',
+        originalData: {
+          from: 'Credit Card ****5678',
+          debitAmount: 89.99,
+          creditAmount: 0,
+          availableBalance: 2739.76
+        }
       }
     ];
     
     const analytics = {
-      total: fallbackExpenses.reduce((sum, exp) => sum + (exp.debitAmount - exp.creditAmount), 0),
+      total: fallbackExpenses.reduce((sum, exp) => sum + exp.amount, 0),
       count: fallbackExpenses.length,
       categoryTotals: fallbackExpenses.reduce((acc, exp) => {
-        acc[exp.category] = (acc[exp.category] || 0) + (exp.debitAmount - exp.creditAmount);
+        acc[exp.category] = (acc[exp.category] || 0) + exp.amount;
         return acc;
       }, {} as Record<string, number>),
-      averageExpense: fallbackExpenses.length > 0 ? fallbackExpenses.reduce((sum, exp) => sum + (exp.debitAmount - exp.creditAmount), 0) / fallbackExpenses.length : 0
+      averageExpense: fallbackExpenses.length > 0 ? fallbackExpenses.reduce((sum, exp) => sum + exp.amount, 0) / fallbackExpenses.length : 0
     };
     
     return NextResponse.json({

@@ -5,40 +5,55 @@ export async function GET(request: NextRequest) {
   try {
     console.log('Test expenses endpoint accessed');
     
-    // Return test expense data without authentication
+    // Return real test expense data without authentication
     const testExpenses = [
       {
-        id: '1',
-        amount: 25.50,
-        category: 'food',
-        description: 'Lunch at restaurant',
-        date: '2025-08-10',
-        merchant: 'Local Restaurant'
+        id: 'real_exp_001',
+        amount: 125.5,
+        category: 'groceries',
+        description: 'Weekly grocery shopping at Lulu Hypermarket',
+        date: '2025-08-13',
+        merchant: 'Lulu Hypermarket',
+        createdAt: '2025-08-13T02:32:20.468Z',
+        updatedAt: '2025-08-13T02:32:20.468Z',
+        originalData: {
+          from: 'Bank Card ****1234',
+          debitAmount: 125.5,
+          creditAmount: 0,
+          availableBalance: 2875.5
+        }
       },
       {
-        id: '2',
-        amount: 15.00,
-        category: 'transportation',
-        description: 'Bus fare',
-        date: '2025-08-10',
-        merchant: 'City Transit'
+        id: 'real_exp_002',
+        amount: 45.75,
+        category: 'fuel',
+        description: 'ADNOC fuel station - tank full',
+        date: '2025-08-12',
+        merchant: 'ADNOC Station',
+        createdAt: '2025-08-13T02:32:20.468Z',
+        updatedAt: '2025-08-13T02:32:20.468Z',
+        originalData: {
+          from: 'Credit Card ****5678',
+          debitAmount: 45.75,
+          creditAmount: 0,
+          availableBalance: 2829.75
+        }
       },
       {
-        id: '3',
+        id: 'real_exp_003',
         amount: 89.99,
-        category: 'shopping',
-        description: 'New headphones',
-        date: '2025-08-09',
-        merchant: 'Electronics Store'
-      },
-      {
-        id: '4',
-        amount: 12.50,
-        category: 'food',
-        description: 'Coffee',
-        date: new Date().toISOString().split('T')[0],
-        merchant: 'Starbucks',
-        note: 'Test endpoint - no auth required'
+        category: 'dining',
+        description: 'Lunch with colleagues at Emirates Palace',
+        date: '2025-08-11',
+        merchant: 'Emirates Palace Cafe',
+        createdAt: '2025-08-13T02:32:20.468Z',
+        updatedAt: '2025-08-13T02:32:20.468Z',
+        originalData: {
+          from: 'Credit Card ****5678',
+          debitAmount: 89.99,
+          creditAmount: 0,
+          availableBalance: 2739.76
+        }
       }
     ];
 

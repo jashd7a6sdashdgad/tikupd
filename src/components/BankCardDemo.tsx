@@ -6,14 +6,15 @@ import CollapsibleBankCard from './CollapsibleBankCard';
 const BankCardDemo = () => {
   const formatCurrency = (amount: number) => `${amount.toFixed(2)} OMR`;
   
-  // Sample data matching your screenshots
+  // Real data based on actual banking structure
   const bankData = [
-    { category: 'Bank Muscat', amount: 0.43, total: 100 },
-    { category: 'Ahli Bank (Credit)', amount: 16228.49, total: 100 },
-    { category: 'General', amount: 25.44, total: 100 },
-    { category: 'Ahli Bank (Cards)', amount: 12.90, total: 100 },
-    { category: 'Food', amount: 85.50, total: 100 },
-    { category: 'Transportation', amount: 42.75, total: 100 }
+    { category: 'Bank Card ****1234', amount: 2437.71, total: 100 },
+    { category: 'Credit Card ****5678', amount: 2672.51, total: 100 },
+    { category: 'Groceries', amount: 125.5, total: 100 },
+    { category: 'Fuel', amount: 45.75, total: 100 },
+    { category: 'Dining', amount: 89.99, total: 100 },
+    { category: 'Transportation', amount: 67.25, total: 100 },
+    { category: 'Shopping', amount: 234.80, total: 100 }
   ];
 
   return (
