@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyToken, COOKIE_OPTIONS } from '@/lib/auth';
+import { validateApiToken, hasPermission } from '@/lib/api/auth/tokenValidation';
+import jwt from 'jsonwebtoken';
+import { getGoogleTokensFromMultipleSources } from '@/lib/savedGoogleTokens';
 // Deployment config - simplified for now
 const getDeploymentConfig = () => ({
   nodeEnv: process.env.NODE_ENV || 'development',
@@ -9,17 +12,61 @@ const getDeploymentConfig = () => ({
 import { getAuthenticatedClient, GoogleCalendar, Gmail, GoogleSheets } from '@/lib/google';
 
 export async function GET(request: NextRequest) {
+  let validToken: any = null;
+  let authType = 'unknown';
+  
   try {
-    // Verify user authentication
-    const token = request.cookies.get(COOKIE_OPTIONS.name)?.value;
-    if (!token) {
+    // Get the Authorization header
+    const authHeader = request.headers.get('authorization');
+    
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return NextResponse.json(
-        { success: false, message: 'Authentication required' },
+        { error: 'Authorization header required. Use format: Bearer YOUR_TOKEN' },
         { status: 401 }
       );
     }
-    
-    const user = verifyToken(token);
+
+    const token = authHeader.replace('Bearer ', '');
+
+    // Try to validate as website JWT first
+    try {
+      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'punz') as any;
+      validToken = {
+        id: decoded.userId || '1',
+        name: decoded.username || 'website-user',
+        permissions: ['*'],
+        email: decoded.email,
+        type: 'website-jwt'
+      };
+      authType = 'website-jwt';
+    } catch (jwtError: any) {
+      // Try to validate as API token
+      const validation = await validateApiToken(authHeader);
+      
+      if (!validation.isValid || !validation.token) {
+        return NextResponse.json(
+          { 
+            success: false,
+            error: 'Invalid token. Please check your API token or JWT.' 
+          },
+          { status: 401 }
+        );
+      }
+      
+      validToken = validation.token;
+      authType = 'api-token';
+      
+      // Check permissions for API tokens
+      if (!hasPermission(validToken, 'read:analytics')) {
+        return NextResponse.json(
+          { 
+            success: false,
+            error: 'Insufficient permissions. Token requires read:analytics permission' 
+          },
+          { status: 403 }
+        );
+      }
+    }
     const deploymentConfig = getDeploymentConfig();
     
     console.log('🔄 Fetching comprehensive analytics data...', {
@@ -28,14 +75,13 @@ export async function GET(request: NextRequest) {
       baseUrl: deploymentConfig.baseUrl
     });
 
-    // Get Google OAuth2 tokens from cookies
-    const googleAccessToken = request.cookies.get('google_access_token')?.value;
-    const googleRefreshToken = request.cookies.get('google_refresh_token')?.value;
+    // Get Google OAuth2 tokens from multiple sources (cookies, saved file, env)
+    const googleTokens = await getGoogleTokensFromMultipleSources(request);
     
     console.log('🔑 OAuth2 tokens status:', {
-      hasAccessToken: !!googleAccessToken,
-      hasRefreshToken: !!googleRefreshToken,
-      accessTokenLength: googleAccessToken?.length || 0
+      hasTokens: !!googleTokens,
+      source: googleTokens ? 'Found from multiple sources' : 'No tokens available',
+      accessTokenLength: googleTokens?.access_token?.length || 0
     });
 
     let calendarData = { success: false, data: [] };
@@ -47,12 +93,12 @@ export async function GET(request: NextRequest) {
     const youtubeData = { success: false, data: null as any };
 
     // Only fetch Google data if we have tokens
-    if (googleAccessToken && googleRefreshToken) {
+    if (googleTokens?.access_token) {
       try {
         // Create authenticated OAuth2 client
         const auth = getAuthenticatedClient({
-          access_token: googleAccessToken,
-          refresh_token: googleRefreshToken
+          access_token: googleTokens.access_token,
+          refresh_token: googleTokens.refresh_token
         });
 
         console.log('🔄 Fetching data directly from Google APIs using OAuth2...');
@@ -477,7 +523,12 @@ export async function GET(request: NextRequest) {
       success: true,
       data: analytics,
       message: 'Analytics data retrieved successfully',
-      userId: user.id,
+      authType,
+      token: {
+        name: validToken.name,
+        permissions: validToken.permissions,
+        type: validToken.type
+      },
       timestamp: new Date().toISOString(),
       debug: {
         hasRealData,

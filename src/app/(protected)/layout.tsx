@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Navigation } from '@/components/Navigation';
 import { AuthGuard } from '@/components/AuthGuard';
 import { useTheme } from '@/hooks/useTheme';
@@ -12,6 +12,15 @@ import { ThemeProvider } from '@/contexts/ThemeContext';
 function ProtectedLayoutContent({ children }: { children: React.ReactNode }) {
   useTheme(); // Apply saved theme settings
   const [isVoiceCollapsed, setIsVoiceCollapsed] = useState(true);
+
+  // Setup auto-save for Google OAuth tokens
+  useEffect(() => {
+    const setupAutoSave = async () => {
+      const { setupAutoSaveGoogleTokens } = await import('@/lib/autoSaveGoogleTokens');
+      setupAutoSaveGoogleTokens();
+    };
+    setupAutoSave();
+  }, []);
 
   return (
     <div className="min-h-screen bg-background">
