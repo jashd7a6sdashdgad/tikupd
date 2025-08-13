@@ -151,11 +151,40 @@ export async function GET(request: NextRequest) {
     const messagesData = await response.json();
     const messages = messagesData.messages || [];
     
-    console.log(`📧 Retrieved ${messages.length} real Gmail messages from API`);
+    // Fetch message details to include headers/snippet required by client classifier
+    const detailed = await Promise.all(
+      messages.slice(0, maxResults).map(async (m: any) => {
+        try {
+          const d = await fetch(
+            `https://gmail.googleapis.com/gmail/v1/users/me/messages/${m.id}?format=metadata&metadataHeaders=Subject&metadataHeaders=From`,
+            {
+              headers: {
+                'Authorization': `Bearer ${googleTokens!.access_token}`,
+                'Content-Type': 'application/json',
+              },
+            }
+          );
+          if (!d.ok) return null;
+          const detail = await d.json();
+          return {
+            id: detail.id,
+            snippet: detail.snippet || '',
+            payload: { headers: detail.payload?.headers || [] },
+            labelIds: detail.labelIds || [],
+            internalDate: detail.internalDate ? new Date(parseInt(detail.internalDate)) : new Date(),
+          };
+        } catch {
+          return null;
+        }
+      })
+    );
+    const emails = detailed.filter(Boolean);
+    
+    console.log(`📧 Retrieved ${emails.length} detailed Gmail messages from API`);
     
     return NextResponse.json({
       success: true,
-      data: messages,
+      data: emails,
       message: 'Gmail messages retrieved successfully',
       authType,
       token: {
