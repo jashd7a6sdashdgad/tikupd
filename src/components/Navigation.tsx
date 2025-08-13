@@ -80,6 +80,12 @@ const getNavigation = (t: (key: string) => string) => [
     icon: Mail
   },
   {
+    key: 'gmail-setup',
+    name: 'Gmail Setup',
+    href: '/gmail-setup',
+    icon: Mail
+  },
+  {
     key: 'expenses',
     name: t('expenses'),
     href: '/expenses',

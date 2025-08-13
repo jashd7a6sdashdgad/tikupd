@@ -123,6 +123,36 @@ export async function GET(request: NextRequest) {
       maxAge: 60 * 60 * 24 * 30
     });
 
+    // ALSO save tokens to file for API access
+    try {
+      const { promises: fs } = await import('fs');
+      const path = await import('path');
+      
+      // Create tokens directory if it doesn't exist
+      const tokensDir = path.join(process.cwd(), 'data', 'tokens');
+      await fs.mkdir(tokensDir, { recursive: true });
+      
+      // Save Google OAuth tokens to file for API access
+      const tokenData = {
+        access_token: tokens.access_token,
+        refresh_token: tokens.refresh_token,
+        expires_in: tokens.expires_in || 3600,
+        token_type: 'Bearer',
+        scope: tokens.scope || 'openid email profile https://www.googleapis.com/auth/calendar https://www.googleapis.com/auth/gmail.compose https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/gmail.send https://www.googleapis.com/auth/gmail.modify https://www.googleapis.com/auth/gmail.labels https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/contacts https://www.googleapis.com/auth/contacts.readonly https://www.googleapis.com/auth/drive https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/youtube.readonly https://www.googleapis.com/auth/youtube',
+        created_at: new Date().toISOString(),
+        expires_at: new Date(Date.now() + ((tokens.expires_in || 3600) * 1000)).toISOString()
+      };
+      
+      const tokensFile = path.join(tokensDir, 'google-oauth-tokens.json');
+      await fs.writeFile(tokensFile, JSON.stringify(tokenData, null, 2));
+      
+      console.log('💾 Google OAuth tokens with Gmail scopes saved to file for API access');
+      
+    } catch (fileError) {
+      console.log('⚠️ Could not save tokens to file:', fileError);
+      // Don't fail the OAuth flow, just log the error
+    }
+
     return response;
   } catch (error) {
     console.error('Google OAuth error:', error);

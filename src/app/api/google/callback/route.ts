@@ -74,7 +74,7 @@ export async function GET(request: NextRequest) {
         refresh_token: refreshToken,
         expires_in: expiresIn,
         token_type: 'Bearer',
-        scope: 'https://www.googleapis.com/auth/spreadsheets',
+        scope: tokens.scope || 'https://www.googleapis.com/auth/calendar https://www.googleapis.com/auth/gmail.compose https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/gmail.send https://www.googleapis.com/auth/gmail.modify https://www.googleapis.com/auth/gmail.labels https://www.googleapis.com/auth/gmail.metadata https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/contacts https://www.googleapis.com/auth/contacts.readonly https://www.googleapis.com/auth/drive https://www.googleapis.com/auth/drive.file',
         created_at: new Date().toISOString(),
         expires_at: new Date(Date.now() + (expiresIn * 1000)).toISOString()
       };

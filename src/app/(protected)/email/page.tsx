@@ -96,6 +96,9 @@ export default function EmailPage() {
       
       if (data.success) {
         const rawMessages = data.data || [];
+        if (rawMessages.length === 0) {
+          console.log('📧 No emails found in your Gmail inbox');
+        }
         // Apply AI intelligence to classify messages
         const enhancedMessages = rawMessages.map((msg: EmailMessage) => 
           emailIntelligence.classifyEmail(msg as SmartEmailMessage)
@@ -104,6 +107,10 @@ export default function EmailPage() {
         setSmartMessages(enhancedMessages);
       } else {
         console.error('Failed to fetch messages:', data.message);
+        // If authentication error, show re-auth prompt
+        if (data.message?.includes('authentication') || data.error?.includes('authentication')) {
+          setMessages([]);
+        }
       }
     } catch (error) {
       console.error('Error fetching messages:', error);
@@ -665,18 +672,29 @@ export default function EmailPage() {
             ) : (
               <div className="text-center py-12">
                 <Mail className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-                <p className="text-black">No emails found</p>
+                <p className="text-black">Connect your Gmail account</p>
                 <p className="text-sm text-black mt-2">
-                  {searchQuery ? 'Try adjusting your search terms' : 'Your inbox is empty'}
+                  {searchQuery ? 'Please connect your Gmail account to search emails' : 'Connect your Gmail account to view your real emails'}
                 </p>
-                <Button 
-                  onClick={() => setShowTemplates(true)}
-                  variant="outline" 
-                  className="mt-4"
-                >
-                  <Sparkles className="h-4 w-4 mr-2" />
-                  Browse Email Templates
-                </Button>
+                <div className="flex gap-3 justify-center mt-6">
+                  <Button 
+                    onClick={() => window.open('/api/auth/google', '_self')}
+                    className="bg-red-600 hover:bg-red-700 text-white"
+                  >
+                    <Mail className="h-4 w-4 mr-2" />
+                    Connect Gmail Account
+                  </Button>
+                  <Button 
+                    onClick={() => setShowTemplates(true)}
+                    variant="outline"
+                  >
+                    <Sparkles className="h-4 w-4 mr-2" />
+                    Browse Email Templates
+                  </Button>
+                </div>
+                <p className="text-xs text-gray-500 mt-4">
+                  We'll request permission to read and send emails on your behalf
+                </p>
               </div>
             )}
           </CardContent>

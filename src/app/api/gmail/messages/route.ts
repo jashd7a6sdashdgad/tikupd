@@ -118,69 +118,9 @@ export async function GET(request: NextRequest) {
     }
 
     const messagesData = await response.json();
-    let messages = messagesData.messages || [];
+    const messages = messagesData.messages || [];
     
-    // If no messages from Gmail API, provide sample data for development
-    if (messages.length === 0) {
-      console.log('No Gmail messages found, providing sample data');
-      messages = [
-        {
-          id: 'sample_1',
-          snippet: 'Thank you for your recent purchase. Your order #12345 has been confirmed and will be shipped within 2-3 business days.',
-          payload: {
-            headers: [
-              { name: 'From', value: 'noreply@amazon.com' },
-              { name: 'Subject', value: 'Order Confirmation - Your Recent Purchase' },
-              { name: 'Date', value: new Date().toISOString() }
-            ]
-          }
-        },
-        {
-          id: 'sample_2', 
-          snippet: 'Your flight from MCT to DXB has been confirmed. Please arrive at the airport 2 hours before departure.',
-          payload: {
-            headers: [
-              { name: 'From', value: 'bookings@emirates.com' },
-              { name: 'Subject', value: 'Flight Confirmation - EK0123' },
-              { name: 'Date', value: new Date(Date.now() - 86400000).toISOString() }
-            ]
-          }
-        },
-        {
-          id: 'sample_3',
-          snippet: 'Your monthly statement is ready. View your account activity and recent transactions.',
-          payload: {
-            headers: [
-              { name: 'From', value: 'statements@bank.om' },
-              { name: 'Subject', value: 'Monthly Bank Statement - January 2024' },
-              { name: 'Date', value: new Date(Date.now() - 172800000).toISOString() }
-            ]
-          }
-        },
-        {
-          id: 'sample_4',
-          snippet: 'Meeting reminder: Team standup tomorrow at 9:00 AM. Please prepare your updates.',
-          payload: {
-            headers: [
-              { name: 'From', value: 'calendar@company.com' },
-              { name: 'Subject', value: 'Meeting Reminder: Team Standup' },
-              { name: 'Date', value: new Date(Date.now() - 259200000).toISOString() }
-            ]
-          }
-        },
-        {
-          id: 'sample_5',
-          snippet: 'Your subscription to Premium Plan will expire in 7 days. Renew now to continue enjoying all features.',
-          payload: {
-            headers: [
-              { name: 'From', value: 'billing@service.com' },
-              { name: 'Subject', value: 'Subscription Renewal Reminder' },
-              { name: 'Date', value: new Date(Date.now() - 345600000).toISOString() }
-            ]
-          }
-        }
-      ];
-    }
+    console.log(`📧 Retrieved ${messages.length} real Gmail messages from API`);
     
     return NextResponse.json({
       success: true,
@@ -188,9 +128,7 @@ export async function GET(request: NextRequest) {
         messages: messages,
         total: messages.length
       },
-      message: messages.length === 5 && messages[0].id === 'sample_1' ? 
-        'Sample emails loaded (Gmail API returned empty)' : 
-        'Gmail messages retrieved successfully',
+      message: 'Gmail messages retrieved successfully',
       authType,
       token: {
         name: validToken.name,
