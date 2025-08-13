@@ -2,13 +2,34 @@ import { NextRequest, NextResponse } from 'next/server';
 import { verifyToken, COOKIE_OPTIONS } from '@/lib/auth';
 import { validateApiToken, hasPermission } from '@/lib/api/auth/tokenValidation';
 import jwt from 'jsonwebtoken';
-import { getGoogleTokensFromMultipleSources } from '@/lib/savedGoogleTokens';
 // Deployment config - simplified for now
 const getDeploymentConfig = () => ({
   nodeEnv: process.env.NODE_ENV || 'development',
   isVercel: process.env.VERCEL === '1',
   baseUrl: process.env.NEXTAUTH_URL || 'http://localhost:3000'
 });
+
+// Helper function to get Google tokens from multiple sources
+async function getGoogleTokensFromMultipleSources(request: NextRequest) {
+  // Source 1: Check cookies (from browser OAuth flow)
+  let accessToken = request.cookies.get('google_access_token')?.value;
+  const rawRefreshToken = request.cookies.get('google_refresh_token')?.value;
+  let refreshToken = rawRefreshToken ? decodeURIComponent(rawRefreshToken) : undefined;
+  
+  // Source 2: Check environment variables (system-wide tokens)
+  if (!accessToken) {
+    accessToken = process.env.GOOGLE_ACCESS_TOKEN;
+    refreshToken = process.env.GOOGLE_REFRESH_TOKEN;
+    
+    // URL decode refresh token if needed
+    if (refreshToken && refreshToken.includes('%')) {
+      refreshToken = decodeURIComponent(refreshToken);
+    }
+  }
+  
+  return accessToken ? { access_token: accessToken, refresh_token: refreshToken } : null;
+}
+
 import { getAuthenticatedClient, GoogleCalendar, Gmail, GoogleSheets } from '@/lib/google';
 
 export async function GET(request: NextRequest) {
@@ -84,11 +105,11 @@ export async function GET(request: NextRequest) {
       accessTokenLength: googleTokens?.access_token?.length || 0
     });
 
-    let calendarData = { success: false, data: [] };
-    let emailData = { success: false, data: [] };
-    let expensesData = { success: false, data: [] };
-    let contactsData = { success: false, data: [] };
-    let diaryData = { success: false, data: [] };
+    let calendarData: any = { success: false, data: [] };
+    let emailData: any = { success: false, data: [] };
+    let expensesData: any = { success: false, data: [] };
+    let contactsData: any = { success: false, data: [] };
+    let diaryData: any = { success: false, data: [] };
     const facebookData = { success: false, data: null as any };
     const youtubeData = { success: false, data: null as any };
 
