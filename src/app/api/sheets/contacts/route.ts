@@ -1,32 +1,48 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getGoogleSheetsClient } from '@/lib/google';
-import { verifyToken, COOKIE_OPTIONS } from '@/lib/auth';
 import { SPREADSHEET_ID, getSheetConfig, SheetHelpers } from '@/lib/sheets-config';
 
 const CONTACTS_CONFIG = getSheetConfig('contacts');
 
+// Helper function to get Google auth from cookies or env
+function getGoogleAuth(request: NextRequest) {
+  // Try cookies first
+  const accessToken = request.cookies.get('google_access_token')?.value;
+  const rawRefreshToken = request.cookies.get('google_refresh_token')?.value;
+  const refreshToken = rawRefreshToken ? decodeURIComponent(rawRefreshToken) : undefined;
+  
+  if (accessToken) {
+    return {
+      access_token: accessToken,
+      refresh_token: refreshToken
+    };
+  }
+  
+  // Fallback to environment variables
+  const envAccessToken = process.env.GOOGLE_ACCESS_TOKEN;
+  const envRefreshToken = process.env.GOOGLE_REFRESH_TOKEN;
+  
+  if (envAccessToken) {
+    return {
+      access_token: envAccessToken,
+      refresh_token: envRefreshToken
+    };
+  }
+  
+  throw new Error('Google authentication required');
+}
+
 export async function GET(request: NextRequest) {
   try {
-    const token = request.cookies.get(COOKIE_OPTIONS.name)?.value;
-    if (!token) {
-      return NextResponse.json({ success: false, message: 'Authentication required' }, { status: 401 });
-    }
-    
-    const user = verifyToken(token);
     const { searchParams } = new URL(request.url);
     const search = searchParams.get('search');
     
-    // Get OAuth tokens from cookies
-    const accessToken = request.cookies.get('google_access_token')?.value;
-    const refreshToken = request.cookies.get('google_refresh_token')?.value;
-    
-    if (!accessToken) {
-      throw new Error('Google authentication required');
-    }
+    // Get Google authentication
+    const googleTokens = getGoogleAuth(request);
 
     const sheets = await getGoogleSheetsClient({
-      access_token: accessToken,
-      refresh_token: refreshToken
+      access_token: googleTokens.access_token,
+      refresh_token: googleTokens.refresh_token
     });
     
     try {
@@ -43,7 +59,6 @@ export async function GET(request: NextRequest) {
           success: true,
           data: [],
           message: 'No contacts found',
-          userId: user.id,
           timestamp: new Date().toISOString()
         });
       }
@@ -74,7 +89,6 @@ export async function GET(request: NextRequest) {
         success: true,
         data: contacts,
         message: 'Contacts retrieved successfully',
-        userId: user.id,
         timestamp: new Date().toISOString()
       });
 
@@ -99,12 +113,6 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const token = request.cookies.get(COOKIE_OPTIONS.name)?.value;
-    if (!token) {
-      return NextResponse.json({ success: false, message: 'Authentication required' }, { status: 401 });
-    }
-    
-    const user = verifyToken(token);
     const body = await request.json();
     const { name, email = '', phone = '', company = '', notes = '' } = body;
     
@@ -115,17 +123,12 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    // Get OAuth tokens from cookies
-    const accessToken = request.cookies.get('google_access_token')?.value;
-    const refreshToken = request.cookies.get('google_refresh_token')?.value;
-    
-    if (!accessToken) {
-      throw new Error('Google authentication required');
-    }
+    // Get Google authentication
+    const googleTokens = getGoogleAuth(request);
 
     const sheets = await getGoogleSheetsClient({
-      access_token: accessToken,
-      refresh_token: refreshToken
+      access_token: googleTokens.access_token,
+      refresh_token: googleTokens.refresh_token
     });
     
     // Check if sheet exists, if not create it
@@ -178,7 +181,6 @@ export async function POST(request: NextRequest) {
           updatedRows: response.data.updates?.updatedRows
         },
         message: 'Contact added successfully',
-        userId: user.id,
         timestamp: new Date().toISOString()
       });
 
@@ -203,12 +205,6 @@ export async function POST(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
-    const token = request.cookies.get(COOKIE_OPTIONS.name)?.value;
-    if (!token) {
-      return NextResponse.json({ success: false, message: 'Authentication required' }, { status: 401 });
-    }
-    
-    const user = verifyToken(token);
     const body = await request.json();
     const { id, name, email, phone, company, notes } = body;
     
@@ -219,17 +215,12 @@ export async function PUT(request: NextRequest) {
       }, { status: 400 });
     }
 
-    // Get OAuth tokens from cookies
-    const accessToken = request.cookies.get('google_access_token')?.value;
-    const refreshToken = request.cookies.get('google_refresh_token')?.value;
-    
-    if (!accessToken) {
-      throw new Error('Google authentication required');
-    }
+    // Get Google authentication
+    const googleTokens = getGoogleAuth(request);
 
     const sheets = await getGoogleSheetsClient({
-      access_token: accessToken,
-      refresh_token: refreshToken
+      access_token: googleTokens.access_token,
+      refresh_token: googleTokens.refresh_token
     });
     const rowIndex = parseInt(id) + 1; // +1 for header row
 
@@ -255,7 +246,6 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({
         success: true,
         message: 'Contact updated successfully',
-        userId: user.id,
         timestamp: new Date().toISOString()
       });
 
@@ -282,15 +272,6 @@ export async function DELETE(request: NextRequest) {
   try {
     console.log('DELETE /api/sheets/contacts: Starting contact deletion...');
     
-    const token = request.cookies.get(COOKIE_OPTIONS.name)?.value;
-    if (!token) {
-      console.log('DELETE /api/sheets/contacts: No authentication token found');
-      return NextResponse.json({ success: false, message: 'Authentication required' }, { status: 401 });
-    }
-    
-    const user = verifyToken(token);
-    console.log('DELETE /api/sheets/contacts: User authenticated:', user.id);
-    
     const body = await request.json();
     const { id } = body;
     console.log('DELETE /api/sheets/contacts: Deleting contact with ID:', id);
@@ -303,19 +284,14 @@ export async function DELETE(request: NextRequest) {
       }, { status: 400 });
     }
 
-    // Get OAuth tokens from cookies
-    const accessToken = request.cookies.get('google_access_token')?.value;
-    const refreshToken = request.cookies.get('google_refresh_token')?.value;
+    // Get Google authentication
+    const googleTokens = getGoogleAuth(request);
     
-    console.log('DELETE /api/sheets/contacts: OAuth tokens - accessToken exists:', !!accessToken, 'refreshToken exists:', !!refreshToken);
-    
-    if (!accessToken) {
-      throw new Error('Google authentication required');
-    }
+    console.log('DELETE /api/sheets/contacts: OAuth tokens - accessToken exists:', !!googleTokens.access_token, 'refreshToken exists:', !!googleTokens.refresh_token);
 
     const sheets = await getGoogleSheetsClient({
-      access_token: accessToken,
-      refresh_token: refreshToken
+      access_token: googleTokens.access_token,
+      refresh_token: googleTokens.refresh_token
     });
     console.log('DELETE /api/sheets/contacts: Google Sheets client created successfully');
     
@@ -431,7 +407,6 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({
         success: true,
         message: 'Contact deleted successfully',
-        userId: user.id,
         timestamp: new Date().toISOString()
       });
 
@@ -459,7 +434,6 @@ export async function DELETE(request: NextRequest) {
         return NextResponse.json({
           success: true,
           message: 'Contact cleared successfully (row preserved)',
-          userId: user.id,
           timestamp: new Date().toISOString()
         });
         

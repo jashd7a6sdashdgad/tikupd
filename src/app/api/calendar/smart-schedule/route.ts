@@ -1,21 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifyToken, COOKIE_OPTIONS } from '@/lib/auth';
 import { smartCalendar, VoiceSchedulingRequest } from '@/lib/smartCalendar';
 import { getAuthenticatedClient, GoogleCalendar } from '@/lib/google';
 
 // Enhanced Smart Calendar API with Voice Scheduling and Conflict Detection
 export async function POST(request: NextRequest) {
   try {
-    // Verify user authentication
-    const token = request.cookies.get(COOKIE_OPTIONS.name)?.value;
-    if (!token) {
-      return NextResponse.json(
-        { success: false, message: 'Authentication required' },
-        { status: 401 }
-      );
-    }
-    
-    verifyToken(token);
     
     const body = await request.json();
     const { voiceInput, eventData, action } = body;
@@ -426,15 +415,6 @@ async function generateMeetingPreparation(eventData: any, request: NextRequest):
 // GET endpoint for retrieving smart calendar data
 export async function GET(request: NextRequest) {
   try {
-    const token = request.cookies.get(COOKIE_OPTIONS.name)?.value;
-    if (!token) {
-      return NextResponse.json(
-        { success: false, message: 'Authentication required' },
-        { status: 401 }
-      );
-    }
-    
-    verifyToken(token);
     
     const { searchParams } = new URL(request.url);
     const action = searchParams.get('action');

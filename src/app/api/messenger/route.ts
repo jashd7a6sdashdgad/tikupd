@@ -9,48 +9,6 @@ const MESSENGER_USER_ACCESS_TOKEN = process.env.FACEBOOK_USER_TOKEN;
 
 export async function GET(request: NextRequest) {
   try {
-    let user: any = null;
-    let authType = 'cookie';
-
-    // Try cookie-based auth first
-    const cookieToken = request.cookies.get(COOKIE_OPTIONS.name)?.value;
-    
-    if (cookieToken) {
-      try {
-        user = verifyToken(cookieToken);
-        authType = 'cookie';
-      } catch (cookieError) {
-        console.log('Cookie auth failed, trying Bearer token...');
-      }
-    }
-
-    // If no cookie auth, try Bearer token (your JWT)
-    if (!user) {
-      const authHeader = request.headers.get('authorization');
-      
-      if (!authHeader || !authHeader.startsWith('Bearer ')) {
-        return NextResponse.json({ success: false, message: 'Authentication required' }, { status: 401 });
-      }
-
-      const bearerToken = authHeader.replace('Bearer ', '');
-      
-      try {
-        const decoded = jwt.verify(bearerToken, process.env.JWT_SECRET || 'punz') as any;
-        user = {
-          id: decoded.userId || '1',
-          username: decoded.username || 'website-user',
-          email: decoded.email
-        };
-        authType = 'jwt';
-        console.log('✅ JWT auth successful for Messenger API');
-      } catch (jwtError) {
-        return NextResponse.json({ 
-          success: false, 
-          message: 'Invalid authentication token',
-          error: 'JWT_INVALID'
-        }, { status: 401 });
-      }
-    }
     
     if (!MESSENGER_USER_ACCESS_TOKEN) {
       return NextResponse.json({ 
@@ -100,7 +58,6 @@ export async function GET(request: NextRequest) {
         success: true,
         data,
         message: `Messenger ${action} retrieved successfully`,
-        userId: user.id,
         timestamp: new Date().toISOString()
       });
 
@@ -109,7 +66,6 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({
         success: false,
         message: error.message || 'Failed to fetch Messenger data',
-        userId: user.id,
         timestamp: new Date().toISOString()
       }, { status: 500 });
     }
@@ -125,12 +81,6 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const token = request.cookies.get(COOKIE_OPTIONS.name)?.value;
-    if (!token) {
-      return NextResponse.json({ success: false, message: 'Authentication required' }, { status: 401 });
-    }
-    
-    const user = verifyToken(token);
     
     if (!MESSENGER_USER_ACCESS_TOKEN) {
       return NextResponse.json({ 
@@ -177,7 +127,6 @@ export async function POST(request: NextRequest) {
         success: true,
         data,
         message: `Messenger ${action} completed successfully`,
-        userId: user.id,
         timestamp: new Date().toISOString()
       });
 
@@ -186,7 +135,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({
         success: false,
         message: error.message || 'Failed to perform Messenger action',
-        userId: user.id,
         timestamp: new Date().toISOString()
       }, { status: 500 });
     }

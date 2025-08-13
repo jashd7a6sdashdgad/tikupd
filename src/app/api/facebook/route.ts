@@ -56,17 +56,6 @@ export async function POST(request: NextRequest) {
     console.log('🔍 FACEBOOK_USER_ACCESS_TOKEN length:', FACEBOOK_USER_ACCESS_TOKEN?.length || 0);
     console.log('🔍 Account Type: User Account');
     
-    // Verify user authentication
-    const token = request.cookies.get(COOKIE_OPTIONS.name)?.value;
-    if (!token) {
-      return NextResponse.json(
-        { success: false, message: 'Authentication required' },
-        { status: 401 }
-      );
-    }
-    
-    const user = verifyToken(token);
-    
     if (!FACEBOOK_USER_ACCESS_TOKEN) {
       const tokenMask = FACEBOOK_USER_ACCESS_TOKEN ? 
         `${FACEBOOK_USER_ACCESS_TOKEN.substring(0, 6)}...${FACEBOOK_USER_ACCESS_TOKEN.substring(FACEBOOK_USER_ACCESS_TOKEN.length - 4)}` : 
@@ -338,7 +327,6 @@ export async function POST(request: NextRequest) {
         success: true,
         data: facebookResult,
         message: `Token validation successful. User: ${facebookResult?.name || 'Unknown'}`,
-        userId: user.id,
         timestamp: new Date().toISOString()
       });
     }
@@ -347,7 +335,6 @@ export async function POST(request: NextRequest) {
       success: true,
       data: facebookResult,
       message: `${body.action} completed successfully`,
-      userId: user.id,
       timestamp: new Date().toISOString()
     });
     

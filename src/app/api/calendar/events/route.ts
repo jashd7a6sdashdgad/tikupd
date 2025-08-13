@@ -1,88 +1,42 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthenticatedClient, GoogleCalendar } from '@/lib/google';
 import { verifyToken, COOKIE_OPTIONS } from '@/lib/auth';
-import { validateApiToken, hasPermission } from '@/lib/api/auth/tokenValidation';
-import jwt from 'jsonwebtoken';
 import { parseNaturalLanguageDate, parseNaturalLanguageTime } from '@/lib/utils';
 import { smartCalendar } from '@/lib/smartCalendar';
 import { locationServices } from '@/lib/locationServices';
 
-// Helper function to get Google auth from cookies
+// Helper function to get Google auth from cookies or env
 function getGoogleAuth(request: NextRequest) {
+  // Try cookies first
   const accessToken = request.cookies.get('google_access_token')?.value;
   const rawRefreshToken = request.cookies.get('google_refresh_token')?.value;
   const refreshToken = rawRefreshToken ? decodeURIComponent(rawRefreshToken) : undefined;
   
-  if (!accessToken) {
-    throw new Error('Google authentication required');
+  if (accessToken) {
+    return {
+      access_token: accessToken,
+      refresh_token: refreshToken
+    };
   }
   
-  return {
-    access_token: accessToken,
-    refresh_token: refreshToken
-  };
+  // Fallback to environment variables
+  const envAccessToken = process.env.GOOGLE_ACCESS_TOKEN;
+  const envRefreshToken = process.env.GOOGLE_REFRESH_TOKEN;
+  
+  if (envAccessToken) {
+    return {
+      access_token: envAccessToken,
+      refresh_token: envRefreshToken
+    };
+  }
+  
+  throw new Error('Google authentication required');
 }
 
 export async function GET(request: NextRequest) {
-  let validToken: any = null;
-  let authType = 'unknown';
-  
   try {
-    // Get the Authorization header
-    const authHeader = request.headers.get('authorization');
-    
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return NextResponse.json(
-        { error: 'Authorization header required. Use format: Bearer YOUR_TOKEN' },
-        { status: 401 }
-      );
-    }
-
-    const token = authHeader.replace('Bearer ', '');
-
-    // Try to validate as website JWT first
-    try {
-      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'punz') as any;
-      validToken = {
-        id: decoded.userId || '1',
-        name: decoded.username || 'website-user',
-        permissions: ['*'],
-        email: decoded.email,
-        type: 'website-jwt'
-      };
-      authType = 'website-jwt';
-    } catch (jwtError: any) {
-      // Try to validate as API token
-      const validation = await validateApiToken(authHeader);
-      
-      if (!validation.isValid || !validation.token) {
-        return NextResponse.json(
-          { 
-            success: false,
-            error: 'Invalid token. Please check your API token or JWT.' 
-          },
-          { status: 401 }
-        );
-      }
-      
-      validToken = validation.token;
-      authType = 'api-token';
-      
-      // Check permissions for API tokens
-      if (!hasPermission(validToken, 'read:calendar')) {
-        return NextResponse.json(
-          { 
-            success: false,
-            error: 'Insufficient permissions. Token requires read:calendar permission' 
-          },
-          { status: 403 }
-        );
-      }
-    }
-    
     // Get Google authentication
     const googleTokens = getGoogleAuth(request);
-    const calendar = new GoogleCalendar(googleTokens.access_token);
     
     // Get query parameters
     const { searchParams } = new URL(request.url);
@@ -90,7 +44,7 @@ export async function GET(request: NextRequest) {
     const paramTimeMax = searchParams.get('timeMax');
     const maxResults = parseInt(searchParams.get('maxResults') || '10');
     
-    // List events - direct API call to avoid TypeScript issues
+    // List events - direct API call
     const now = new Date();
     const timeMin = paramTimeMin || now.toISOString();
     const timeMax = paramTimeMax || new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString();
@@ -118,13 +72,7 @@ export async function GET(request: NextRequest) {
         events: events,
         total: events.length
       },
-      message: 'Calendar events retrieved successfully',
-      authType,
-      token: {
-        name: validToken.name,
-        permissions: validToken.permissions,
-        type: validToken.type
-      }
+      message: 'Calendar events retrieved successfully'
     });
     
   } catch (error: any) {

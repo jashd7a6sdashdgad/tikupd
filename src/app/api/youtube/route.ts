@@ -1,24 +1,34 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyToken, COOKIE_OPTIONS } from '@/lib/auth';
-import { validateApiToken, hasPermission } from '@/lib/api/auth/tokenValidation';
-import jwt from 'jsonwebtoken';
 import { getAuthenticatedClient, YouTube } from '@/lib/google';
 import { google } from 'googleapis';
 
-// Helper function to get Google auth from cookies
+// Helper function to get Google auth from cookies or env
 function getGoogleAuth(request: NextRequest) {
+  // Try cookies first
   const accessToken = request.cookies.get('google_access_token')?.value;
   const rawRefreshToken = request.cookies.get('google_refresh_token')?.value;
   const refreshToken = rawRefreshToken ? decodeURIComponent(rawRefreshToken) : undefined;
   
-  if (!accessToken) {
-    throw new Error('Google authentication required. Please authenticate with Google first.');
+  if (accessToken) {
+    return {
+      access_token: accessToken,
+      refresh_token: refreshToken
+    };
   }
   
-  return {
-    access_token: accessToken,
-    refresh_token: refreshToken
-  };
+  // Fallback to environment variables
+  const envAccessToken = process.env.GOOGLE_ACCESS_TOKEN;
+  const envRefreshToken = process.env.GOOGLE_REFRESH_TOKEN;
+  
+  if (envAccessToken) {
+    return {
+      access_token: envAccessToken,
+      refresh_token: envRefreshToken
+    };
+  }
+  
+  throw new Error('Google authentication required. Please authenticate with Google first.');
 }
 
 // Helper function to check if YouTube API key is invalid
@@ -45,62 +55,7 @@ function isYouTubeOAuthInvalid(errorMessage: string): boolean {
 }
 
 export async function GET(request: NextRequest) {
-  let validToken: any = null;
-  let authType = 'unknown';
-  
   try {
-    // Get the Authorization header
-    const authHeader = request.headers.get('authorization');
-    
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return NextResponse.json(
-        { error: 'Authorization header required. Use format: Bearer YOUR_TOKEN' },
-        { status: 401 }
-      );
-    }
-
-    const token = authHeader.replace('Bearer ', '');
-
-    // Try to validate as website JWT first
-    try {
-      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'punz') as any;
-      validToken = {
-        id: decoded.userId || '1',
-        name: decoded.username || 'website-user',
-        permissions: ['*'],
-        email: decoded.email,
-        type: 'website-jwt'
-      };
-      authType = 'website-jwt';
-    } catch (jwtError: any) {
-      // Try to validate as API token
-      const validation = await validateApiToken(authHeader);
-      
-      if (!validation.isValid || !validation.token) {
-        return NextResponse.json(
-          { 
-            success: false,
-            error: 'Invalid token. Please check your API token or JWT.' 
-          },
-          { status: 401 }
-        );
-      }
-      
-      validToken = validation.token;
-      authType = 'api-token';
-      
-      // Check permissions for API tokens
-      if (!hasPermission(validToken, 'read:youtube')) {
-        return NextResponse.json(
-          { 
-            success: false,
-            error: 'Insufficient permissions. Token requires read:youtube permission' 
-          },
-          { status: 403 }
-        );
-      }
-    }
-    
     // Get Google authentication
     let googleTokens;
     try {
@@ -186,12 +141,6 @@ export async function GET(request: NextRequest) {
         success: true,
         data,
         message: `YouTube ${action} retrieved successfully`,
-        authType,
-        token: {
-          name: validToken.name,
-          permissions: validToken.permissions,
-          type: validToken.type
-        },
         timestamp: new Date().toISOString()
       });
 
@@ -208,7 +157,7 @@ export async function GET(request: NextRequest) {
           message: `YouTube OAuth authentication failed: ${errorMessage}. Please re-authenticate with Google.`,
           error: 'YOUTUBE_OAUTH_INVALID',
           help: 'Re-authenticate via /api/google/auth to refresh your tokens',
-          details: { errorMessage, authType }
+          details: { errorMessage }
         }, { status: 401 });
       }
       
@@ -219,7 +168,7 @@ export async function GET(request: NextRequest) {
           message: `YouTube API quota exceeded: ${errorMessage}. Please check your quota usage in Google Cloud Console.`,
           error: 'YOUTUBE_QUOTA_EXCEEDED',
           help: 'Check quota usage in Google Cloud Console',
-          details: { errorMessage, authType }
+          details: { errorMessage }
         }, { status: 429 });
       }
       
@@ -227,7 +176,6 @@ export async function GET(request: NextRequest) {
         success: false,
         message: error.message || 'Failed to fetch YouTube data',
         error: 'YOUTUBE_API_ERROR',
-        authType,
         timestamp: new Date().toISOString()
       }, { status: 500 });
     }
