@@ -29,14 +29,21 @@ import {
   Key,
   Briefcase
 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, ComponentType } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useSettings } from '@/contexts/SettingsContext';
 import { useTranslation } from '@/lib/translations';
 import { VoiceNavigationSystem } from '@/components/VoiceNavigationSystem';
 import { Button } from '@/components/ui/button';
 
-const getNavigation = (t: (key: string) => string) => [
+interface NavigationItem {
+  key: string;
+  name: string;
+  href: string;
+  icon: ComponentType<any>;
+}
+
+const getNavigation = (t: (key: string) => string): NavigationItem[] => [
   {
     key: 'dashboard',
     name: t('dashboard'),
@@ -77,12 +84,6 @@ const getNavigation = (t: (key: string) => string) => [
     key: 'email',
     name: t('email'),
     href: '/email',
-    icon: Mail
-  },
-  {
-    key: 'gmail-setup',
-    name: 'Gmail Setup',
-    href: '/gmail-setup',
     icon: Mail
   },
   {
@@ -244,12 +245,12 @@ export function Navigation() {
             <ul role="list" className="flex flex-1 flex-col gap-y-7">
               <li>
                 <ul role="list" className="-mx-2 space-y-2">
-                  {navigation.map((item) => {
+                  {navigation.map((item: NavigationItem) => {
                     const isActive = pathname === item.href;
                     return (
-                      <li key={item.name}>
+                      <li key={item.key}>
                         <Link
-                          href={item.href}
+                          href={item.href as any}
                           className={cn(
                             'group flex gap-x-4 rounded-2xl p-4 text-sm leading-6 font-semibold transition-all duration-500 ease-out relative overflow-hidden',
                             isActive
@@ -421,12 +422,12 @@ export function Navigation() {
               
               <nav className="mt-6">
                 <ul role="list" className="space-y-1">
-                  {navigation.map((item) => {
+                  {navigation.map((item: NavigationItem) => {
                     const isActive = pathname === item.href;
                     return (
-                      <li key={item.name}>
+                      <li key={item.key}>
                         <Link
-                          href={item.href}
+                          href={item.href as any}
                           onClick={() => setIsMobileMenuOpen(false)}
                           className={cn(
                             'group flex gap-x-3 rounded-xl p-3 text-sm leading-6 font-semibold transition-all duration-300 ease-in-out relative overflow-hidden',

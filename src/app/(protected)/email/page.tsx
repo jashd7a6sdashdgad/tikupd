@@ -93,9 +93,16 @@ export default function EmailPage() {
       const query = searchQuery ? `?q=${encodeURIComponent(searchQuery)}` : '';
       const response = await fetch(`/api/gmail/messages${query}`);
       const data = await response.json();
+      if (!response.ok) {
+        if (response.status === 401) {
+          setMessages([]);
+          setSmartMessages([]);
+          return;
+        }
+      }
       
       if (data.success) {
-        const rawMessages = data.data || [];
+        const rawMessages = Array.isArray(data.data) ? data.data : [];
         if (rawMessages.length === 0) {
           console.log('📧 No emails found in your Gmail inbox');
         }
@@ -122,6 +129,10 @@ export default function EmailPage() {
   const fetchUnreadCount = async () => {
     try {
       const response = await fetch('/api/gmail/unread-count');
+      if (response.status === 401) {
+        setUnreadCount(0);
+        return;
+      }
       const data = await response.json();
       
       if (data.success) {
@@ -672,18 +683,11 @@ export default function EmailPage() {
             ) : (
               <div className="text-center py-12">
                 <Mail className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-                <p className="text-black">Connect your Gmail account</p>
+                <p className="text-black">No emails to display</p>
                 <p className="text-sm text-black mt-2">
-                  {searchQuery ? 'Please connect your Gmail account to search emails' : 'Connect your Gmail account to view your real emails'}
+                  {searchQuery ? 'Try adjusting your search.' : 'You can still use templates to compose emails.'}
                 </p>
                 <div className="flex gap-3 justify-center mt-6">
-                  <Button 
-                    onClick={() => window.open('/api/auth/google', '_self')}
-                    className="bg-red-600 hover:bg-red-700 text-white"
-                  >
-                    <Mail className="h-4 w-4 mr-2" />
-                    Connect Gmail Account
-                  </Button>
                   <Button 
                     onClick={() => setShowTemplates(true)}
                     variant="outline"
@@ -692,9 +696,6 @@ export default function EmailPage() {
                     Browse Email Templates
                   </Button>
                 </div>
-                <p className="text-xs text-gray-500 mt-4">
-                  We'll request permission to read and send emails on your behalf
-                </p>
               </div>
             )}
           </CardContent>

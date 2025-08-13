@@ -90,7 +90,13 @@ class SyncManager {
     if (!this.userId || !this.isOnline) return;
 
     try {
-      const wsUrl = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:3001';
+      const isProd = typeof window !== 'undefined' && window.location.hostname !== 'localhost';
+      const fallbackDisabled = isProd ? '' : 'ws://localhost:3001';
+      const wsUrl = process.env.NEXT_PUBLIC_WS_URL || fallbackDisabled;
+      if (!wsUrl) {
+        // Do not attempt to connect if no WS URL is configured in production
+        return;
+      }
       this.ws = new WebSocket(`${wsUrl}/sync?userId=${this.userId}&deviceId=${this.deviceId}`);
 
       this.ws.onopen = () => {
