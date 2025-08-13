@@ -22,6 +22,7 @@ import { useVoiceInput } from '@/hooks/useVoiceInput';
 export default function CalendarPage() {
   const { language } = useSettings();
   const { t } = useTranslation(language);
+  const [componentError, setComponentError] = useState<string | null>(null);
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
@@ -61,6 +62,7 @@ export default function CalendarPage() {
   const fetchEvents = async () => {
     setLoading(true);
     setAuthError(false);
+    setComponentError(null);
     try {
       const response = await fetch('/api/calendar/events');
       const data = await response.json();
@@ -68,9 +70,16 @@ export default function CalendarPage() {
       if (data.success) {
         // Handle both array and object with events property
         if (Array.isArray(data.data)) {
-          setEvents(data.data);
+          // Validate event structure before setting
+          const validEvents = data.data.filter(event => 
+            event && typeof event === 'object' && event.summary
+          );
+          setEvents(validEvents);
         } else if (data.data && Array.isArray(data.data.events)) {
-          setEvents(data.data.events);
+          const validEvents = data.data.events.filter(event => 
+            event && typeof event === 'object' && event.summary
+          );
+          setEvents(validEvents);
         } else {
           setEvents([]);
         }
@@ -85,6 +94,7 @@ export default function CalendarPage() {
       }
     } catch (error) {
       console.error('Error fetching events:', error);
+      setComponentError(`Failed to load calendar events: ${error instanceof Error ? error.message : 'Unknown error'}`);
       // Set empty events array on error to prevent crashes
       setEvents([]);
     } finally {
@@ -384,6 +394,50 @@ export default function CalendarPage() {
       })
       .slice(0, 10);
   };
+
+  // Error boundary for the component
+  if (componentError) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 p-4 lg:p-8">
+        <div className="max-w-4xl mx-auto">
+          <Card className="border-red-200 bg-red-50">
+            <CardHeader>
+              <CardTitle className="text-red-700">Calendar Error</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-red-600 mb-4">
+                An error occurred while loading the calendar: {componentError}
+              </p>
+              <div className="flex gap-2">
+                <Button 
+                  onClick={() => {
+                    setComponentError(null);
+                    setEvents([]);
+                    fetchEvents();
+                  }}
+                  className="bg-red-600 hover:bg-red-700 text-white"
+                >
+                  Try Again
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={() => window.location.href = '/dashboard'}
+                >
+                  Go to Dashboard
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={() => window.location.reload()}
+                >
+                  Reload Page
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 p-4 lg:p-8">
@@ -740,13 +794,14 @@ export default function CalendarPage() {
                 </div>
               ) : getUpcomingEvents().length > 0 ? (
                 <div className="space-y-3">
-                  {getUpcomingEvents().map((event) => {
-                    const datetime = formatDateTime(event.start.dateTime);
+                  {getUpcomingEvents().map((event, index) => {
+                    if (!event) return null;
+                    const datetime = formatDateTime(event?.start?.dateTime);
                     return (
-                      <div key={event.id} className="p-4 bg-muted rounded-lg">
+                      <div key={event.id || `upcoming-event-${index}`} className="p-4 bg-muted rounded-lg">
                         <div className="flex justify-between items-start">
                           <div className="flex-1">
-                            <h4 className="font-medium text-black">{event.summary}</h4>
+                            <h4 className="font-medium text-black">{event.summary || 'Untitled Event'}</h4>
                             {event.description && (
                               <p className="text-sm text-black mt-1">{event.description}</p>
                             )}
@@ -766,7 +821,7 @@ export default function CalendarPage() {
                               variant="ghost" 
                               size="sm"
                               onClick={() => startEdit(event)}
-                              disabled={showCreateForm}
+                              disabled={showCreateForm || !event?.start?.dateTime}
                             >
                               <Edit className="h-4 w-4" />
                             </Button>
@@ -774,6 +829,7 @@ export default function CalendarPage() {
                               variant="ghost" 
                               size="sm"
                               onClick={() => event.id && deleteEvent(event.id)}
+                              disabled={!event.id}
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>
@@ -781,7 +837,7 @@ export default function CalendarPage() {
                         </div>
                       </div>
                     );
-                  })}
+                  }).filter(Boolean)}
                 </div>
               ) : (
                 <p className="text-black text-center py-8">{t('events')}</p>
