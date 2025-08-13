@@ -65,9 +65,9 @@ export async function GET(request: NextRequest) {
     const refreshToken = rawRefreshToken ? decodeURIComponent(rawRefreshToken) : undefined;
 
     // Fetch data from various APIs
-    let expensesData = null;
-    let calendarData = null;
-    let gmailData = null;
+    let expensesData: any = null;
+    let calendarData: any = null;
+    let gmailData: any = null;
 
     // Fetch expenses data
     try {
@@ -75,7 +75,7 @@ export async function GET(request: NextRequest) {
         const expensesResponse = await fetch(`${new URL(request.url).origin}/api/expenses`, {
           headers: {
             'Authorization': `Bearer ${token}`,
-            'Cookie': `google_access_token=${accessToken}; google_refresh_token=${rawRefreshToken}`
+            'Cookie': `google_access_token=${accessToken}${rawRefreshToken ? `; google_refresh_token=${rawRefreshToken}` : ''}`
           }
         });
         if (expensesResponse.ok) {
@@ -93,7 +93,7 @@ export async function GET(request: NextRequest) {
         const calendarResponse = await fetch(`${new URL(request.url).origin}/api/calendar/events`, {
           headers: {
             'Authorization': `Bearer ${token}`,
-            'Cookie': `google_access_token=${accessToken}; google_refresh_token=${rawRefreshToken}`
+            'Cookie': `google_access_token=${accessToken}${rawRefreshToken ? `; google_refresh_token=${rawRefreshToken}` : ''}`
           }
         });
         if (calendarResponse.ok) {
@@ -111,7 +111,7 @@ export async function GET(request: NextRequest) {
         const gmailResponse = await fetch(`${new URL(request.url).origin}/api/gmail/messages`, {
           headers: {
             'Authorization': `Bearer ${token}`,
-            'Cookie': `google_access_token=${accessToken}; google_refresh_token=${rawRefreshToken}`
+            'Cookie': `google_access_token=${accessToken}${rawRefreshToken ? `; google_refresh_token=${rawRefreshToken}` : ''}`
           }
         });
         if (gmailResponse.ok) {
