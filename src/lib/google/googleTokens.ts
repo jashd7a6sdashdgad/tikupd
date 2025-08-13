@@ -4,7 +4,9 @@ export async function getGoogleAccessToken() {
   try {
     const cookieStore = await cookies();
     let accessToken = cookieStore.get('google_access_token')?.value;
-    const refreshToken = cookieStore.get('google_refresh_token')?.value;
+    const rawRefreshToken = cookieStore.get('google_refresh_token')?.value;
+    // Decode URL-encoded refresh token
+    const refreshToken = rawRefreshToken ? decodeURIComponent(rawRefreshToken) : null;
 
     console.log('🔍 Checking Google tokens:', { 
       hasAccessToken: !!accessToken, 
