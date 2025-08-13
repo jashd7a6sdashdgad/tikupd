@@ -103,18 +103,33 @@ export async function GET(request: NextRequest) {
 
         console.log('🔄 Fetching data directly from Google APIs using OAuth2...');
 
-        // Fetch data directly from Google APIs (no internal API calls)
+        // Fetch data directly from Google APIs using direct fetch calls
         const [calendarResults, emailResults, expensesResults] = await Promise.all([
           // Calendar events
           (async () => {
             try {
-              const calendar = new GoogleCalendar(auth);
-              const events = await calendar.listEvents(
-                new Date().toISOString(), 
-                undefined, 
-                50
+              const now = new Date();
+              const timeMin = now.toISOString();
+              const timeMax = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString();
+              
+              const response = await fetch(
+                `https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${timeMin}&timeMax=${timeMax}&maxResults=50&singleEvents=true&orderBy=startTime`,
+                {
+                  headers: {
+                    'Authorization': `Bearer ${googleTokens.access_token}`,
+                    'Content-Type': 'application/json',
+                  },
+                }
               );
-              return { success: true, data: events };
+              
+              if (response.ok) {
+                const data = await response.json();
+                return { success: true, data: data.items || [] };
+              } else {
+                const errorText = await response.text();
+                console.error('Calendar API error:', response.status, errorText);
+                return { success: false, data: [], error: `Calendar API error: ${response.status}` };
+              }
             } catch (error) {
               console.error('Calendar fetch error:', error);
               return { success: false, data: [], error: error instanceof Error ? error.message : 'Calendar error' };
@@ -124,9 +139,24 @@ export async function GET(request: NextRequest) {
           // Gmail messages  
           (async () => {
             try {
-              const gmail = new Gmail(auth);
-              const messages = await gmail.listMessages('', 50);
-              return { success: true, data: messages };
+              const response = await fetch(
+                `https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=50`,
+                {
+                  headers: {
+                    'Authorization': `Bearer ${googleTokens.access_token}`,
+                    'Content-Type': 'application/json',
+                  },
+                }
+              );
+              
+              if (response.ok) {
+                const data = await response.json();
+                return { success: true, data: data.messages || [] };
+              } else {
+                const errorText = await response.text();
+                console.error('Gmail API error:', response.status, errorText);
+                return { success: false, data: [], error: `Gmail API error: ${response.status}` };
+              }
             } catch (error) {
               console.error('Gmail fetch error:', error);
               return { success: false, data: [], error: error instanceof Error ? error.message : 'Gmail error' };
@@ -136,10 +166,27 @@ export async function GET(request: NextRequest) {
           // Google Sheets (expenses)
           (async () => {
             try {
-              const sheets = new GoogleSheets(auth);
-              const spreadsheetId = process.env.EXPENSES_SPREADSHEET_ID || process.env.GOOGLE_SHEETS_ID || '';
-              const expenses = await sheets.getValues(spreadsheetId, 'Expenses!A:Z');
-              return { success: true, data: expenses };
+              const spreadsheetId = process.env.EXPENSES_SPREADSHEET_ID || '1d2OgyNgTKSX-ACVkdWjarBp6WHh1mDvtflOrUO1dCNk';
+              const range = 'Expenses!A:H';
+              
+              const response = await fetch(
+                `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${range}`,
+                {
+                  headers: {
+                    'Authorization': `Bearer ${googleTokens.access_token}`,
+                    'Content-Type': 'application/json',
+                  },
+                }
+              );
+              
+              if (response.ok) {
+                const data = await response.json();
+                return { success: true, data: data.values || [] };
+              } else {
+                const errorText = await response.text();
+                console.error('Sheets API error:', response.status, errorText);
+                return { success: false, data: [], error: `Sheets API error: ${response.status}` };
+              }
             } catch (error) {
               console.error('Sheets fetch error:', error);
               return { success: false, data: [], error: error instanceof Error ? error.message : 'Sheets error' };
@@ -151,23 +198,65 @@ export async function GET(request: NextRequest) {
         emailData = emailResults;
         expensesData = expensesResults;
 
-        // For contacts and diary, try the same spreadsheet with different sheet names
+        console.log('📊 API Results:', {
+          calendar: { success: calendarData.success, count: calendarData.data?.length || 0 },
+          email: { success: emailData.success, count: emailData.data?.length || 0 },  
+          expenses: { success: expensesData.success, count: expensesData.data?.length || 0 }
+        });
+
+        // For contacts and diary, use direct Google Sheets API calls
         try {
-          const sheets = new GoogleSheets(auth);
-          const spreadsheetId = process.env.CONTACTS_SPREADSHEET_ID || process.env.GOOGLE_SHEETS_ID || '';
-          const contacts = await sheets.getValues(spreadsheetId, 'Contacts!A:Z');
-          contactsData = { success: true, data: contacts };
+          const contactsSpreadsheetId = process.env.CONTACTS_SPREADSHEET_ID || process.env.GOOGLE_SHEETS_ID || '1d2OgyNgTKSX-ACVkdWjarBp6WHh1mDvtflOrUO1dCNk';
+          const contactsRange = 'Contacts!A:Z';
+          
+          const contactsResponse = await fetch(
+            `https://sheets.googleapis.com/v4/spreadsheets/${contactsSpreadsheetId}/values/${contactsRange}`,
+            {
+              headers: {
+                'Authorization': `Bearer ${googleTokens.access_token}`,
+                'Content-Type': 'application/json',
+              },
+            }
+          );
+          
+          if (contactsResponse.ok) {
+            const contactsResult = await contactsResponse.json();
+            contactsData = { success: true, data: contactsResult.values || [] };
+          } else {
+            const errorText = await contactsResponse.text();
+            console.error('Contacts API error:', contactsResponse.status, errorText);
+            contactsData = { success: false, data: [], error: `Contacts API error: ${contactsResponse.status}` };
+          }
         } catch (error) {
           console.error('Contacts fetch error:', error);
+          contactsData = { success: false, data: [], error: error instanceof Error ? error.message : 'Contacts error' };
         }
 
         try {
-          const sheets = new GoogleSheets(auth);
-          const spreadsheetId = process.env.DIARY_SPREADSHEET_ID || process.env.GOOGLE_SHEETS_ID || '';
-          const diary = await sheets.getValues(spreadsheetId, 'Diary!A:Z');
-          diaryData = { success: true, data: diary };
+          const diarySpreadsheetId = process.env.DIARY_SPREADSHEET_ID || process.env.GOOGLE_SHEETS_ID || '1d2OgyNgTKSX-ACVkdWjarBp6WHh1mDvtflOrUO1dCNk';
+          const diaryRange = 'Diary!A:Z';
+          
+          const diaryResponse = await fetch(
+            `https://sheets.googleapis.com/v4/spreadsheets/${diarySpreadsheetId}/values/${diaryRange}`,
+            {
+              headers: {
+                'Authorization': `Bearer ${googleTokens.access_token}`,
+                'Content-Type': 'application/json',
+              },
+            }
+          );
+          
+          if (diaryResponse.ok) {
+            const diaryResult = await diaryResponse.json();
+            diaryData = { success: true, data: diaryResult.values || [] };
+          } else {
+            const errorText = await diaryResponse.text();
+            console.error('Diary API error:', diaryResponse.status, errorText);
+            diaryData = { success: false, data: [], error: `Diary API error: ${diaryResponse.status}` };
+          }
         } catch (error) {
           console.error('Diary fetch error:', error);
+          diaryData = { success: false, data: [], error: error instanceof Error ? error.message : 'Diary error' };
         }
 
       } catch (error) {
