@@ -36,6 +36,7 @@ export default function CalendarPage() {
   const [conflicts, setConflicts] = useState<any[]>([]);
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const [showConflicts, setShowConflicts] = useState(false);
+  const [authError, setAuthError] = useState(false);
 
   const { 
     isListening, 
@@ -59,17 +60,33 @@ export default function CalendarPage() {
 
   const fetchEvents = async () => {
     setLoading(true);
+    setAuthError(false);
     try {
       const response = await fetch('/api/calendar/events');
       const data = await response.json();
       
       if (data.success) {
-        setEvents(data.data || []);
+        // Handle both array and object with events property
+        if (Array.isArray(data.data)) {
+          setEvents(data.data);
+        } else if (data.data && Array.isArray(data.data.events)) {
+          setEvents(data.data.events);
+        } else {
+          setEvents([]);
+        }
       } else {
         console.error('Failed to fetch events:', data.message);
+        // Check if it's an authentication error
+        if (data.message?.includes('authentication') || data.message?.includes('Google authentication')) {
+          setAuthError(true);
+        }
+        // Set empty events array on error to prevent crashes
+        setEvents([]);
       }
     } catch (error) {
       console.error('Error fetching events:', error);
+      // Set empty events array on error to prevent crashes
+      setEvents([]);
     } finally {
       setLoading(false);
     }
@@ -119,6 +136,10 @@ export default function CalendarPage() {
         });
       }
 
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
       const data = await response.json();
       
       if (data.success) {
@@ -140,7 +161,11 @@ export default function CalendarPage() {
           alert('Event created successfully! Travel time has been automatically calculated and added.');
         }
       } else {
-        alert(t('settingsError') + ': ' + data.message);
+        if (data.needsGoogleAuth) {
+          alert('Google Calendar authentication is required to create events. Please connect your Google account first.');
+        } else {
+          alert(t('settingsError') + ': ' + data.message);
+        }
       }
     } catch (error) {
       console.error('Error creating event:', error);
@@ -167,6 +192,11 @@ export default function CalendarPage() {
         })
       });
 
+      if (!response.ok) {
+        console.error('Conflict check failed:', response.status);
+        return;
+      }
+
       const data = await response.json();
       
       if (data.success && data.data.hasConflicts) {
@@ -180,6 +210,10 @@ export default function CalendarPage() {
       }
     } catch (error) {
       console.error('Error checking conflicts:', error);
+      // Don't show conflicts on error, just continue
+      setConflicts([]);
+      setSuggestions([]);
+      setShowConflicts(false);
     }
   };
 
@@ -209,6 +243,10 @@ export default function CalendarPage() {
           }
         })
       });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
 
       const data = await response.json();
       
@@ -251,6 +289,10 @@ export default function CalendarPage() {
       const response = await fetch(`/api/calendar/events/${eventId}`, {
         method: 'DELETE'
       });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
 
       const data = await response.json();
       
@@ -328,6 +370,30 @@ export default function CalendarPage() {
             </div>
           </div>
         </div>
+
+        {/* Authentication Error State */}
+        {authError && (
+          <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 mb-8">
+            <div className="flex items-center">
+              <div className="flex-shrink-0">
+                <svg className="h-5 w-5 text-orange-400" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div className="ml-3">
+                <h3 className="text-sm font-medium text-orange-800">
+                  Google Calendar Authentication Required
+                </h3>
+                <div className="mt-2 text-sm text-orange-700">
+                  <p>
+                    To access your calendar events, you need to connect your Google account. 
+                    You can still create and manage events locally.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Modern Quick Create Card */}

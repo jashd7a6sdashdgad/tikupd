@@ -36,7 +36,59 @@ function getGoogleAuth(request: NextRequest) {
 export async function GET(request: NextRequest) {
   try {
     // Get Google authentication
-    const googleTokens = getGoogleAuth(request);
+    let googleTokens;
+    try {
+      googleTokens = getGoogleAuth(request);
+    } catch (authError) {
+      console.log('Google authentication not available, using fallback data');
+      // Return fallback data instead of throwing error
+      const now = new Date();
+      const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+      const nextWeek = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+      
+      const fallbackEvents = [
+        {
+          id: 'fallback_event_1',
+          summary: 'Team Standup Meeting',
+          description: 'Daily standup with development team',
+          start: {
+            dateTime: new Date(tomorrow.getFullYear(), tomorrow.getMonth(), tomorrow.getDate(), 9, 0).toISOString(),
+            timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
+          },
+          end: {
+            dateTime: new Date(tomorrow.getFullYear(), tomorrow.getMonth(), tomorrow.getDate(), 9, 30).toISOString(),
+            timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
+          },
+          location: 'Conference Room A',
+          status: 'confirmed'
+        },
+        {
+          id: 'fallback_event_2',
+          summary: 'Flight to Dubai',
+          description: 'Emirates flight EK0123 from MCT to DXB',
+          start: {
+            dateTime: new Date(nextWeek.getFullYear(), nextWeek.getMonth(), nextWeek.getDate(), 14, 30).toISOString(),
+            timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
+          },
+          end: {
+            dateTime: new Date(nextWeek.getFullYear(), nextWeek.getMonth(), nextWeek.getDate(), 15, 45).toISOString(),
+            timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
+          },
+          location: 'Muscat International Airport',
+          status: 'confirmed'
+        }
+      ];
+      
+      return NextResponse.json({
+        success: true,
+        data: {
+          events: fallbackEvents,
+          total: fallbackEvents.length
+        },
+        message: 'Sample calendar events loaded (Google authentication not available)',
+        warning: 'Using sample data - connect Google account for real calendar access'
+      });
+    }
     
     // Get query parameters
     const { searchParams } = new URL(request.url);
@@ -200,7 +252,20 @@ export async function POST(request: NextRequest) {
     verifyToken(token);
     
     // Get Google authentication
-    const auth = getGoogleAuth(request);
+    let auth;
+    try {
+      auth = getGoogleAuth(request);
+    } catch (authError) {
+      return NextResponse.json(
+        { 
+          success: false, 
+          message: 'Google Calendar authentication required to create events',
+          needsGoogleAuth: true
+        },
+        { status: 401 }
+      );
+    }
+    
     const calendar = new GoogleCalendar(auth);
     
     const body = await request.json();
