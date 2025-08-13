@@ -86,8 +86,23 @@ export async function GET(request: NextRequest) {
     const query = searchParams.get('q') || '';
     const maxResults = parseInt(searchParams.get('maxResults') || '10');
     
-    // List messages
-    const messages = await gmail.listMessages('', maxResults);
+    // List messages - direct API call to avoid TypeScript issues
+    const response = await fetch(
+      `https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=${maxResults}`,
+      {
+        headers: {
+          'Authorization': `Bearer ${googleTokens.access_token}`,
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(`Gmail API error: ${response.status} ${response.statusText}`);
+    }
+
+    const messagesData = await response.json();
+    const messages = messagesData.messages || [];
     
     return NextResponse.json({
       success: true,

@@ -86,13 +86,31 @@ export async function GET(request: NextRequest) {
     
     // Get query parameters
     const { searchParams } = new URL(request.url);
-    const timeMin = searchParams.get('timeMin');
-    const timeMax = searchParams.get('timeMax');
+    const paramTimeMin = searchParams.get('timeMin');
+    const paramTimeMax = searchParams.get('timeMax');
     const maxResults = parseInt(searchParams.get('maxResults') || '10');
     
-    // List events
-    const eventsResponse = await calendar.listEvents(undefined, undefined, maxResults);
-    const events = eventsResponse || [];
+    // List events - direct API call to avoid TypeScript issues
+    const now = new Date();
+    const timeMin = paramTimeMin || now.toISOString();
+    const timeMax = paramTimeMax || new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString();
+    
+    const response = await fetch(
+      `https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${timeMin}&timeMax=${timeMax}&maxResults=${maxResults}&singleEvents=true&orderBy=startTime`,
+      {
+        headers: {
+          'Authorization': `Bearer ${googleTokens.access_token}`,
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(`Google Calendar API error: ${response.status} ${response.statusText}`);
+    }
+
+    const eventsResponse = await response.json();
+    const events = eventsResponse.items || [];
     
     return NextResponse.json({
       success: true,
