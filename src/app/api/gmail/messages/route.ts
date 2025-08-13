@@ -1,8 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAuthenticatedClient, Gmail } from '@/lib/google';
+import { Gmail } from '@/lib/google';
 import { verifyToken, COOKIE_OPTIONS } from '@/lib/auth';
 import { validateApiToken, hasPermission } from '@/lib/api/auth/tokenValidation';
 import jwt from 'jsonwebtoken';
+
+async function refreshAccessToken(refreshToken: string) {
+  const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      client_id: process.env.GOOGLE_CLIENT_ID!,
+      client_secret: process.env.GOOGLE_CLIENT_SECRET!,
+      refresh_token: refreshToken,
+      grant_type: 'refresh_token'
+    }),
+    cache: 'no-store'
+  });
+  if (!tokenResponse.ok) throw new Error('Failed to refresh token');
+  return tokenResponse.json() as Promise<{ access_token: string; expires_in?: number }>;
+}
 
 // Helper function to get Google auth from cookies
 function getGoogleAuth(request: NextRequest) {
@@ -94,8 +110,23 @@ export async function GET(request: NextRequest) {
       authType = 'google-oauth';
     }
     
-    // Get Google authentication
-    const googleTokens = getGoogleAuth(request);
+    // Get Google authentication, with refresh fallback
+    let googleTokens: { access_token: string; refresh_token?: string } | null = null;
+    try {
+      googleTokens = getGoogleAuth(request);
+    } catch {}
+    const refreshToken = request.cookies.get('google_refresh_token')?.value
+      ? decodeURIComponent(request.cookies.get('google_refresh_token')!.value)
+      : undefined;
+    if (!googleTokens?.access_token && refreshToken) {
+      try {
+        const refreshed = await refreshAccessToken(refreshToken);
+        googleTokens = { access_token: refreshed.access_token, refresh_token: refreshToken };
+      } catch {}
+    }
+    if (!googleTokens?.access_token) {
+      return NextResponse.json({ success: false, message: 'Google authentication required' }, { status: 401 });
+    }
     
     // Get query parameters
     const { searchParams } = new URL(request.url);
@@ -124,10 +155,7 @@ export async function GET(request: NextRequest) {
     
     return NextResponse.json({
       success: true,
-      data: {
-        messages: messages,
-        total: messages.length
-      },
+      data: messages,
       message: 'Gmail messages retrieved successfully',
       authType,
       token: {
