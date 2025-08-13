@@ -1,36 +1,99 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthenticatedClient, Gmail } from '@/lib/google';
+import { verifyToken, COOKIE_OPTIONS } from '@/lib/auth';
+import { validateApiToken, hasPermission } from '@/lib/api/auth/tokenValidation';
+import jwt from 'jsonwebtoken';
 
-// Helper function to get Google auth from cookies or env
+// Helper function to get Google auth from cookies
 function getGoogleAuth(request: NextRequest) {
-  // Try cookies first
   const accessToken = request.cookies.get('google_access_token')?.value;
   const rawRefreshToken = request.cookies.get('google_refresh_token')?.value;
   const refreshToken = rawRefreshToken ? decodeURIComponent(rawRefreshToken) : undefined;
   
-  if (accessToken) {
-    return {
-      access_token: accessToken,
-      refresh_token: refreshToken
-    };
+  if (!accessToken) {
+    throw new Error('Google authentication required');
   }
   
-  // Fallback to environment variables
-  const envAccessToken = process.env.GOOGLE_ACCESS_TOKEN;
-  const envRefreshToken = process.env.GOOGLE_REFRESH_TOKEN;
-  
-  if (envAccessToken) {
-    return {
-      access_token: envAccessToken,
-      refresh_token: envRefreshToken
-    };
-  }
-  
-  throw new Error('Google authentication required');
+  return {
+    access_token: accessToken,
+    refresh_token: refreshToken
+  };
 }
 
 export async function GET(request: NextRequest) {
+  let validToken: any = null;
+  let authType = 'unknown';
+  
   try {
+    // Check if we have Google OAuth tokens in cookies (for protected pages)
+    const hasGoogleTokens = request.cookies.get('google_access_token')?.value;
+    
+    // Get the Authorization header (for API tokens)
+    const authHeader = request.headers.get('authorization');
+    
+    // If no Google tokens and no auth header, require authentication
+    if (!hasGoogleTokens && (!authHeader || !authHeader.startsWith('Bearer '))) {
+      return NextResponse.json(
+        { error: 'Authentication required. Either Google OAuth cookies or Authorization header needed.' },
+        { status: 401 }
+      );
+    }
+
+    // If we have an auth header, validate it
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const token = authHeader.replace('Bearer ', '');
+
+      // Try to validate as website JWT first
+      try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'punz') as any;
+        validToken = {
+          id: decoded.userId || '1',
+          name: decoded.username || 'website-user',
+          permissions: ['*'],
+          email: decoded.email,
+          type: 'website-jwt'
+        };
+        authType = 'website-jwt';
+      } catch (jwtError: any) {
+        // Try to validate as API token
+        const validation = await validateApiToken(authHeader);
+        
+        if (!validation.isValid || !validation.token) {
+          return NextResponse.json(
+            { 
+              success: false,
+              error: 'Invalid token. Please check your API token or JWT.' 
+            },
+            { status: 401 }
+          );
+        }
+        
+        validToken = validation.token;
+        authType = 'api-token';
+        
+        // Check permissions for API tokens
+        if (!hasPermission(validToken, 'read:gmail')) {
+          return NextResponse.json(
+            { 
+              success: false,
+              error: 'Insufficient permissions. Token requires read:gmail permission' 
+            },
+            { status: 403 }
+          );
+        }
+      }
+    } else {
+      // Using Google OAuth cookies (protected page)
+      validToken = {
+        id: '1',
+        name: 'google-oauth-user',
+        permissions: ['*'],
+        email: 'user@example.com',
+        type: 'google-oauth'
+      };
+      authType = 'google-oauth';
+    }
+    
     // Get Google authentication
     const googleTokens = getGoogleAuth(request);
     
@@ -39,7 +102,7 @@ export async function GET(request: NextRequest) {
     const query = searchParams.get('q') || '';
     const maxResults = parseInt(searchParams.get('maxResults') || '10');
     
-    // List messages - direct API call
+    // List messages - direct API call to avoid TypeScript issues
     const response = await fetch(
       `https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=${maxResults}`,
       {
@@ -63,7 +126,13 @@ export async function GET(request: NextRequest) {
         messages: messages,
         total: messages.length
       },
-      message: 'Gmail messages retrieved successfully'
+      message: 'Gmail messages retrieved successfully',
+      authType,
+      token: {
+        name: validToken.name,
+        permissions: validToken.permissions,
+        type: validToken.type
+      }
     });
     
   } catch (error: any) {
@@ -80,9 +149,78 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  let validToken: any = null;
+  
   try {
+    // Check if we have Google OAuth tokens in cookies (for protected pages)
+    const hasGoogleTokens = request.cookies.get('google_access_token')?.value;
+    
+    // Get the Authorization header (for API tokens)
+    const authHeader = request.headers.get('authorization');
+    
+    // If no Google tokens and no auth header, require authentication
+    if (!hasGoogleTokens && (!authHeader || !authHeader.startsWith('Bearer '))) {
+      return NextResponse.json(
+        { error: 'Authentication required. Either Google OAuth cookies or Authorization header needed.' },
+        { status: 401 }
+      );
+    }
+
+    // If we have an auth header, validate it
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const token = authHeader.replace('Bearer ', '');
+
+      // Try to validate as website JWT first
+      try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'punz') as any;
+        validToken = {
+          id: decoded.userId || '1',
+          name: decoded.username || 'website-user',
+          permissions: ['*'],
+          email: decoded.email,
+          type: 'website-jwt'
+        };
+      } catch (jwtError: any) {
+        // Try to validate as API token
+        const validation = await validateApiToken(authHeader);
+        
+        if (!validation.isValid || !validation.token) {
+          return NextResponse.json(
+            { 
+              success: false,
+              error: 'Invalid token. Please check your API token or JWT.' 
+            },
+            { status: 401 }
+          );
+        }
+        
+        validToken = validation.token;
+        
+        // Check permissions for API tokens
+        if (!hasPermission(validToken, 'write:gmail')) {
+          return NextResponse.json(
+            { 
+              success: false,
+              error: 'Insufficient permissions. Token requires write:gmail permission' 
+            },
+            { status: 403 }
+          );
+        }
+      }
+    } else {
+      // Using Google OAuth cookies (protected page)
+      validToken = {
+        id: '1',
+        name: 'google-oauth-user',
+        permissions: ['*'],
+        email: 'user@example.com',
+        type: 'google-oauth'
+      };
+    }
+    
     // Get Google authentication
     const googleTokens = getGoogleAuth(request);
+    const gmail = new Gmail(googleTokens.access_token);
     
     const body = await request.json();
     const { to, subject, message, html } = body;
@@ -97,7 +235,12 @@ export async function POST(request: NextRequest) {
     // Send email (Note: Gmail class would need sendMessage method)
     return NextResponse.json({
       success: true,
-      message: 'Email sending not yet implemented - Gmail API integration needed'
+      message: 'Email sending not yet implemented - Gmail API integration needed',
+      token: {
+        name: validToken.name,
+        permissions: validToken.permissions,
+        type: validToken.type
+      }
     });
     
   } catch (error: any) {
@@ -114,9 +257,78 @@ export async function POST(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
+  let validToken: any = null;
+  
   try {
+    // Check if we have Google OAuth tokens in cookies (for protected pages)
+    const hasGoogleTokens = request.cookies.get('google_access_token')?.value;
+    
+    // Get the Authorization header (for API tokens)
+    const authHeader = request.headers.get('authorization');
+    
+    // If no Google tokens and no auth header, require authentication
+    if (!hasGoogleTokens && (!authHeader || !authHeader.startsWith('Bearer '))) {
+      return NextResponse.json(
+        { error: 'Authentication required. Either Google OAuth cookies or Authorization header needed.' },
+        { status: 401 }
+      );
+    }
+
+    // If we have an auth header, validate it
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const token = authHeader.replace('Bearer ', '');
+
+      // Try to validate as website JWT first
+      try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'punz') as any;
+        validToken = {
+          id: decoded.userId || '1',
+          name: decoded.username || 'website-user',
+          permissions: ['*'],
+          email: decoded.email,
+          type: 'website-jwt'
+        };
+      } catch (jwtError: any) {
+        // Try to validate as API token
+        const validation = await validateApiToken(authHeader);
+        
+        if (!validation.isValid || !validation.token) {
+          return NextResponse.json(
+            { 
+              success: false,
+              error: 'Invalid token. Please check your API token or JWT.' 
+            },
+            { status: 401 }
+          );
+        }
+        
+        validToken = validation.token;
+        
+        // Check permissions for API tokens
+        if (!hasPermission(validToken, 'delete:gmail')) {
+          return NextResponse.json(
+            { 
+              success: false,
+              error: 'Insufficient permissions. Token requires delete:gmail permission' 
+            },
+            { status: 403 }
+          );
+        }
+      }
+    } else {
+      // Using Google OAuth cookies (protected page)
+      validToken = {
+        id: '1',
+        name: 'google-oauth-user',
+        permissions: ['*'],
+        email: 'user@example.com',
+        type: 'google-oauth'
+      };
+    }
+    
     // Get Google authentication
     const googleTokens = getGoogleAuth(request);
+    const gmail = new Gmail(googleTokens.access_token);
     
     const body = await request.json();
     const { id } = body;
@@ -131,7 +343,12 @@ export async function DELETE(request: NextRequest) {
     // Delete message (Note: Gmail class would need deleteMessage method)
     return NextResponse.json({
       success: true,
-      message: 'Message deletion not yet implemented - Gmail API integration needed'
+      message: 'Message deletion not yet implemented - Gmail API integration needed',
+      token: {
+        name: validToken.name,
+        permissions: validToken.permissions,
+        type: validToken.type
+      }
     });
     
   } catch (error: any) {

@@ -567,23 +567,177 @@ export default function TravelCompanionPage() {
           <TabsContent value="transport">
             <Card className="bg-white/70 backdrop-blur-xl border-2 border-white/30 rounded-3xl shadow-xl">
               <CardHeader>
-                <CardTitle className="text-2xl text-gray-800">Transportation Tracking</CardTitle>
+                <div className="flex justify-between items-center">
+                  <CardTitle className="text-2xl text-gray-800">Transportation Tracking</CardTitle>
+                  <Button className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-black font-bold">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Transport
+                  </Button>
+                </div>
               </CardHeader>
-              <CardContent>
-                <p className="text-gray-600">Transport tracking features coming soon...</p>
+              <CardContent className="space-y-4">
+                {selectedItinerary?.transportation?.map((transport) => {
+                  const TransportIcon = transportIcons[transport.type];
+                  return (
+                    <div key={transport.id} className="p-6 bg-gradient-to-r from-white/80 to-white/60 rounded-2xl border border-white/40 shadow-sm">
+                      <div className="flex justify-between items-start mb-4">
+                        <div className="flex items-center gap-4">
+                          <div className="p-3 bg-gradient-to-br from-green-100 to-emerald-100 rounded-2xl">
+                            <TransportIcon className="h-6 w-6 text-green-600" />
+                          </div>
+                          <div>
+                            <h3 className="font-bold text-lg text-gray-800">{transport.provider}</h3>
+                            <p className="text-gray-600">{transport.from} → {transport.to}</p>
+                          </div>
+                        </div>
+                        <Badge className={`${transport.status === 'booked' ? 'bg-blue-100 text-blue-800' : 
+                                          transport.status === 'checked-in' ? 'bg-green-100 text-green-800' :
+                                          transport.status === 'delayed' ? 'bg-yellow-100 text-yellow-800' :
+                                          transport.status === 'cancelled' ? 'bg-red-100 text-red-800' :
+                                          'bg-gray-100 text-gray-800'}`}>
+                          {transport.status}
+                        </Badge>
+                      </div>
+                      
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                        <div>
+                          <p className="text-gray-500 font-medium">Departure</p>
+                          <p className="font-bold text-gray-800">{transport.departure.toLocaleDateString()}</p>
+                          <p className="text-gray-600">{transport.departure.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</p>
+                        </div>
+                        <div>
+                          <p className="text-gray-500 font-medium">Arrival</p>
+                          <p className="font-bold text-gray-800">{transport.arrival.toLocaleDateString()}</p>
+                          <p className="text-gray-600">{transport.arrival.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</p>
+                        </div>
+                        <div>
+                          <p className="text-gray-500 font-medium">Cost</p>
+                          <p className="font-bold text-gray-800">{currencySymbols[transport.currency]}{transport.cost}</p>
+                        </div>
+                        <div>
+                          <p className="text-gray-500 font-medium">Reference</p>
+                          <p className="font-bold text-gray-800">{transport.bookingReference}</p>
+                          {transport.seat && <p className="text-gray-600">Seat: {transport.seat}</p>}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+                
+                {(!selectedItinerary?.transportation || selectedItinerary.transportation.length === 0) && (
+                  <div className="text-center py-8">
+                    <Plane className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                    <p className="text-gray-500">No transportation bookings yet</p>
+                    <p className="text-sm text-gray-400">Add your flights, trains, or other transport</p>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
 
           <TabsContent value="expenses">
-            <Card className="bg-white/70 backdrop-blur-xl border-2 border-white/30 rounded-3xl shadow-xl">
-              <CardHeader>
-                <CardTitle className="text-2xl text-gray-800">Expense Management</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-gray-600">Multi-currency expense tracking coming soon...</p>
-              </CardContent>
-            </Card>
+            <div className="space-y-6">
+              {/* Expense Summary */}
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <Card className="bg-gradient-to-br from-purple-50 to-pink-50 border-2 border-purple-200 rounded-3xl shadow-xl">
+                  <CardContent className="p-6 text-center">
+                    <Wallet className="h-8 w-8 text-purple-600 mx-auto mb-2" />
+                    <p className="text-2xl font-bold text-purple-800">{currencySymbols[baseCurrency]}{getTotalExpenses(selectedItinerary?.id || '').toFixed(2)}</p>
+                    <p className="text-sm text-purple-600">Total Spent</p>
+                  </CardContent>
+                </Card>
+                
+                <Card className="bg-gradient-to-br from-blue-50 to-cyan-50 border-2 border-blue-200 rounded-3xl shadow-xl">
+                  <CardContent className="p-6 text-center">
+                    <Calculator className="h-8 w-8 text-blue-600 mx-auto mb-2" />
+                    <p className="text-2xl font-bold text-blue-800">{selectedItinerary ? currencySymbols[selectedItinerary.currency] + (selectedItinerary.budget - getTotalExpenses(selectedItinerary.id)).toFixed(2) : 'N/A'}</p>
+                    <p className="text-sm text-blue-600">Remaining</p>
+                  </CardContent>
+                </Card>
+                
+                <Card className="bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-200 rounded-3xl shadow-xl">
+                  <CardContent className="p-6 text-center">
+                    <CreditCard className="h-8 w-8 text-green-600 mx-auto mb-2" />
+                    <p className="text-2xl font-bold text-green-800">{expenses.filter(e => e.itineraryId === selectedItinerary?.id).length}</p>
+                    <p className="text-sm text-green-600">Transactions</p>
+                  </CardContent>
+                </Card>
+                
+                <Card className="bg-gradient-to-br from-orange-50 to-red-50 border-2 border-orange-200 rounded-3xl shadow-xl">
+                  <CardContent className="p-6 text-center">
+                    <Banknote className="h-8 w-8 text-orange-600 mx-auto mb-2" />
+                    <p className="text-2xl font-bold text-orange-800">{selectedItinerary ? Math.round((getTotalExpenses(selectedItinerary.id) / selectedItinerary.budget) * 100) : 0}%</p>
+                    <p className="text-sm text-orange-600">Budget Used</p>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Expense List */}
+              <Card className="bg-white/70 backdrop-blur-xl border-2 border-white/30 rounded-3xl shadow-xl">
+                <CardHeader>
+                  <div className="flex justify-between items-center">
+                    <CardTitle className="text-2xl text-gray-800">Expense Management</CardTitle>
+                    <Button className="bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-black font-bold">
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Expense
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {expenses.filter(exp => exp.itineraryId === selectedItinerary?.id).map((expense) => (
+                    <div key={expense.id} className="p-6 bg-gradient-to-r from-white/80 to-white/60 rounded-2xl border border-white/40 shadow-sm">
+                      <div className="flex justify-between items-start mb-4">
+                        <div className="flex items-center gap-4">
+                          <div className={`p-3 rounded-2xl ${categoryColors[expense.category]}`}>
+                            {expense.category === 'accommodation' && <Hotel className="h-6 w-6" />}
+                            {expense.category === 'transport' && <Car className="h-6 w-6" />}
+                            {expense.category === 'food' && <Utensils className="h-6 w-6" />}
+                            {expense.category === 'activities' && <Camera className="h-6 w-6" />}
+                            {expense.category === 'shopping' && <ShoppingBag className="h-6 w-6" />}
+                            {expense.category === 'other' && <DollarSign className="h-6 w-6" />}
+                          </div>
+                          <div>
+                            <h3 className="font-bold text-lg text-gray-800">{expense.description}</h3>
+                            <p className="text-gray-600">{expense.location}</p>
+                          </div>
+                        </div>
+                        <Badge variant="outline" className={categoryColors[expense.category]}>
+                          {expense.category}
+                        </Badge>
+                      </div>
+                      
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                        <div>
+                          <p className="text-gray-500 font-medium">Amount</p>
+                          <p className="font-bold text-gray-800">{currencySymbols[expense.currency]}{expense.amount}</p>
+                          <p className="text-gray-600 text-xs">≈ {currencySymbols[expense.baseCurrency]}{expense.convertedAmount.toFixed(2)}</p>
+                        </div>
+                        <div>
+                          <p className="text-gray-500 font-medium">Date</p>
+                          <p className="font-bold text-gray-800">{expense.date.toLocaleDateString()}</p>
+                        </div>
+                        <div>
+                          <p className="text-gray-500 font-medium">Payment</p>
+                          <p className="font-bold text-gray-800 capitalize">{expense.paymentMethod}</p>
+                        </div>
+                        <div>
+                          <p className="text-gray-500 font-medium">Receipt</p>
+                          <p className="text-gray-600">{expense.receipt ? 'Available' : 'Not saved'}</p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  
+                  {expenses.filter(exp => exp.itineraryId === selectedItinerary?.id).length === 0 && (
+                    <div className="text-center py-8">
+                      <Wallet className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                      <p className="text-gray-500">No expenses recorded yet</p>
+                      <p className="text-sm text-gray-400">Start tracking your travel expenses</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
 
           <TabsContent value="documents">
