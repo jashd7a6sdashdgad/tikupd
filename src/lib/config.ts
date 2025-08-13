@@ -4,6 +4,7 @@
  */
 
 import socialConfig from '@/config/social.json';
+import businessConfig from '@/config/business.json';
 
 export interface BusinessConfig {
   name: string;
@@ -12,6 +13,9 @@ export interface BusinessConfig {
   phone: string;
   location: string;
   description: string;
+  currency: string;
+  timezone: string;
+  fiscalYearStart: string;
 }
 
 export interface SocialPlatform {
@@ -32,21 +36,7 @@ export interface SocialConfig {
   templates: Record<string, string>;
 }
 
-/**
- * Get business configuration with environment variable overrides
- */
-export function getBusinessConfig(): BusinessConfig {
-  const config = socialConfig.business;
-  
-  return {
-    name: process.env.BUSINESS_NAME || config.name,
-    domain: process.env.BUSINESS_DOMAIN || config.domain,
-    email: process.env.BUSINESS_EMAIL || config.email,
-    phone: process.env.BUSINESS_PHONE || config.phone,
-    location: process.env.BUSINESS_LOCATION || config.location,
-    description: process.env.BUSINESS_DESCRIPTION || config.description
-  };
-}
+
 
 /**
  * Get social media configuration with environment variable overrides
@@ -96,6 +86,66 @@ export function getFullSocialConfig(): SocialConfig {
     social: getSocialConfig(),
     templates: getBioTemplates()
   };
+}
+
+/**
+ * Get complete business configuration
+ */
+export function getFullBusinessConfig() {
+  return {
+    business: getBusinessConfig(),
+    defaults: getBusinessDefaults(),
+    statuses: getBusinessStatuses(),
+    priorities: getBusinessPriorities(),
+    currencies: getBusinessCurrencies()
+  };
+}
+
+/**
+ * Get business configuration with environment variable overrides
+ */
+export function getBusinessConfig(): BusinessConfig {
+  const config = businessConfig.business;
+  
+  return {
+    name: process.env.BUSINESS_NAME || config.name,
+    domain: process.env.BUSINESS_DOMAIN || config.domain,
+    email: process.env.BUSINESS_EMAIL || config.email,
+    phone: process.env.BUSINESS_PHONE || config.phone,
+    location: process.env.BUSINESS_LOCATION || config.location,
+    description: process.env.BUSINESS_DESCRIPTION || config.description,
+    currency: process.env.BUSINESS_CURRENCY || config.currency,
+    timezone: process.env.BUSINESS_TIMEZONE || config.timezone,
+    fiscalYearStart: process.env.BUSINESS_FISCAL_YEAR_START || config.fiscalYearStart
+  };
+}
+
+/**
+ * Get business defaults configuration
+ */
+export function getBusinessDefaults() {
+  return businessConfig.defaults;
+}
+
+/**
+ * Get business statuses configuration
+ */
+export function getBusinessStatuses() {
+  return businessConfig.statuses;
+}
+
+/**
+ * Get business priorities configuration
+ */
+export function getBusinessPriorities() {
+  return businessConfig.priorities;
+}
+
+/**
+ * Get business currencies configuration
+ */
+export function getBusinessCurrencies() {
+  return businessConfig.currencies;
 }
 
 /**

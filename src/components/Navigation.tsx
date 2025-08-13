@@ -128,12 +128,6 @@ const getNavigation = (t: (key: string) => string) => [
     icon: Stethoscope
   },
   {
-    key: 'social-media',
-    name: 'Social Media',
-    href: '/social-media',
-    icon: Share2
-  },
-  {
     key: 'facebook',
     name: t('facebook'),
     href: '/facebook',

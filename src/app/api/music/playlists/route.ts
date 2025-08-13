@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifyToken, COOKIE_OPTIONS } from '@/lib/auth';
 import { secureTokenStorage, ApiToken } from '@/lib/storage/secureJsonStorage';
 import crypto from 'crypto';
 
@@ -99,19 +98,13 @@ interface PlaylistRequest {
 
 export async function POST(request: NextRequest) {
   try {
-    const token = request.cookies.get(COOKIE_OPTIONS.name)?.value;
-    if (!token) {
-      return NextResponse.json({ success: false, message: 'Authentication required' }, { status: 401 });
-    }
-    
-    const user = verifyToken(token);
     const body: PlaylistRequest = await request.json();
     
     if (!body.action) {
       return NextResponse.json({ success: false, message: 'Action is required' }, { status: 400 });
     }
 
-    const playlistsKey = `playlists_${user.id}`;
+    const playlistsKey = `playlists_1`;
 
     let playlists: Playlist[] = [];
     try {
@@ -140,7 +133,7 @@ export async function POST(request: NextRequest) {
           isPublic: body.isPublic || false,
           createdAt: new Date(),
           updatedAt: new Date(),
-          userId: user.id,
+          userId: '1',
           tags: body.tags || [],
           totalDuration: 0
         };
@@ -160,7 +153,7 @@ export async function POST(request: NextRequest) {
           );
         }
 
-        const playlistIndex = playlists.findIndex(p => p.id === body.playlistId && p.userId === user.id);
+        const playlistIndex = playlists.findIndex(p => p.id === body.playlistId && p.userId === '1');
         if (playlistIndex === -1) {
           return NextResponse.json(
             { success: false, message: 'Playlist not found' },
@@ -195,7 +188,7 @@ export async function POST(request: NextRequest) {
           );
         }
 
-        const deleteIndex = playlists.findIndex(p => p.id === body.playlistId && p.userId === user.id);
+        const deleteIndex = playlists.findIndex(p => p.id === body.playlistId && p.userId === '1');
         if (deleteIndex === -1) {
           return NextResponse.json(
             { success: false, message: 'Playlist not found' },
@@ -221,7 +214,7 @@ export async function POST(request: NextRequest) {
           );
         }
 
-        const addToIndex = playlists.findIndex(p => p.id === body.playlistId && p.userId === user.id);
+        const addToIndex = playlists.findIndex(p => p.id === body.playlistId && p.userId === '1');
         if (addToIndex === -1) {
           return NextResponse.json(
             { success: false, message: 'Playlist not found' },
@@ -243,7 +236,7 @@ export async function POST(request: NextRequest) {
         const newSong: PlaylistSong = {
           ...body.song,
           addedAt: new Date(),
-          addedBy: user.id
+          addedBy: '1'
         };
 
         playlists[addToIndex].songs.push(newSong);
@@ -267,7 +260,7 @@ export async function POST(request: NextRequest) {
           );
         }
 
-        const removeFromIndex = playlists.findIndex(p => p.id === body.playlistId && p.userId === user.id);
+        const removeFromIndex = playlists.findIndex(p => p.id === body.playlistId && p.userId === '1');
         if (removeFromIndex === -1) {
           return NextResponse.json(
             { success: false, message: 'Playlist not found' },
@@ -321,14 +314,14 @@ export async function POST(request: NextRequest) {
           ...originalPlaylist,
           id: `playlist_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
           name: `${originalPlaylist.name} (Copy)`,
-          userId: user.id,
+          userId: '1',
           isPublic: false,
           createdAt: new Date(),
           updatedAt: new Date(),
           songs: originalPlaylist.songs.map(song => ({
             ...song,
             addedAt: new Date(),
-            addedBy: user.id
+            addedBy: '1'
           }))
         };
 
@@ -346,7 +339,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ success: false, message: 'Invalid action' }, { status: 400 });
     }
 
-    return NextResponse.json({ success: true, data: result, userId: user.id, timestamp: new Date().toISOString() });
+    return NextResponse.json({ success: true, data: result, userId: '1', timestamp: new Date().toISOString() });
 
   } catch (error: any) {
     console.error('Playlist API error:', error);
@@ -356,17 +349,11 @@ export async function POST(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
-    const token = request.cookies.get(COOKIE_OPTIONS.name)?.value;
-    if (!token) {
-      return NextResponse.json({ success: false, message: 'Authentication required' }, { status: 401 });
-    }
-    
-    const user = verifyToken(token);
     const { searchParams } = new URL(request.url);
     const playlistId = searchParams.get('id');
     const includePublic = searchParams.get('include_public') === 'true';
 
-    const playlistsKey = `playlists_${user.id}`;
+    const playlistsKey = `playlists_1`;
 
     let userPlaylists: Playlist[] = [];
     try {
@@ -395,7 +382,7 @@ export async function GET(request: NextRequest) {
       result = { playlists: allPlaylists, total: allPlaylists.length, userPlaylists: userPlaylists.length, publicPlaylists: 0 };
     }
 
-    return NextResponse.json({ success: true, data: result, userId: user.id, timestamp: new Date().toISOString() });
+    return NextResponse.json({ success: true, data: result, userId: '1', timestamp: new Date().toISOString() });
 
   } catch (error: any) {
     console.error('Playlist GET API error:', error);

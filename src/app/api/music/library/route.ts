@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifyToken, COOKIE_OPTIONS } from '@/lib/auth';
 import { secureTokenStorage, ApiToken } from '@/lib/storage/secureJsonStorage';
 import crypto from 'crypto';
 
@@ -106,19 +105,13 @@ interface LibraryRequest {
 
 export async function POST(request: NextRequest) {
   try {
-    const token = request.cookies.get(COOKIE_OPTIONS.name)?.value;
-    if (!token) {
-      return NextResponse.json({ success: false, message: 'Authentication required' }, { status: 401 });
-    }
-    
-    const user = verifyToken(token);
     const body: LibraryRequest = await request.json();
     
     if (!body.action) {
       return NextResponse.json({ success: false, message: 'Action is required' }, { status: 400 });
     }
 
-    const libraryKey = `music_library_${user.id}`;
+    const libraryKey = `music_library_1`;
 
     let library: LibrarySong[] = [];
     try {
@@ -312,7 +305,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ success: false, message: 'Invalid action' }, { status: 400 });
     }
 
-    return NextResponse.json({ success: true, data: result, userId: user.id, timestamp: new Date().toISOString() });
+    return NextResponse.json({ success: true, data: result, userId: '1', timestamp: new Date().toISOString() });
 
   } catch (error: any) {
     console.error('Music Library API error:', error);
@@ -322,18 +315,12 @@ export async function POST(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
-    const token = request.cookies.get(COOKIE_OPTIONS.name)?.value;
-    if (!token) {
-      return NextResponse.json({ success: false, message: 'Authentication required' }, { status: 401 });
-    }
-    
-    const user = verifyToken(token);
     const { searchParams } = new URL(request.url);
     const action = searchParams.get('action') || 'get_all';
     const limit = parseInt(searchParams.get('limit') || '50');
     const offset = parseInt(searchParams.get('offset') || '0');
 
-    const libraryKey = `music_library_${user.id}`;
+    const libraryKey = `music_library_1`;
 
     let library: LibrarySong[] = [];
     try {
@@ -367,7 +354,7 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ success: false, message: 'Invalid action' }, { status: 400 });
     }
 
-    return NextResponse.json({ success: true, data: result, userId: user.id, timestamp: new Date().toISOString() });
+    return NextResponse.json({ success: true, data: result, userId: '1', timestamp: new Date().toISOString() });
 
   } catch (error: any) {
     console.error('Music Library GET API error:', error);

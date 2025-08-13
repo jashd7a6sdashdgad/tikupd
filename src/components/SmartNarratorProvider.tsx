@@ -147,7 +147,6 @@ export function SmartNarratorProvider({ children }: SmartNarratorProviderProps) 
   const getPageNameFromPath = (path: string): string => {
     const pageMappings: Record<string, string> = {
       '/dashboard': 'dashboard',
-      '/social-media': 'social media',
       '/email': 'email',
       '/calendar': 'calendar',
       '/expenses': 'expenses',

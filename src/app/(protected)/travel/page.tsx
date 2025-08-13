@@ -186,7 +186,7 @@ export default function TravelCompanionPage() {
       startDate: new Date('2024-12-15'),
       endDate: new Date('2024-12-20'),
       budget: 2000,
-      currency: 'OMR',
+      currency: process.env.TRAVEL_DEFAULT_CURRENCY || 'OMR',
       status: 'planning',
       activities: [
         {
@@ -227,7 +227,7 @@ export default function TravelCompanionPage() {
           provider: 'Emirates',
           bookingReference: 'EK123456',
           cost: 300,
-          currency: 'OMR',
+          currency: process.env.TRAVEL_DEFAULT_CURRENCY || 'OMR',
           status: 'booked',
           seat: '12A'
         }
@@ -246,7 +246,7 @@ export default function TravelCompanionPage() {
         amount: 120,
         currency: 'USD',
         convertedAmount: 46.2,
-        baseCurrency: 'OMR',
+        baseCurrency: process.env.TRAVEL_DEFAULT_CURRENCY || 'OMR',
         description: 'Hotel booking - 2 nights',
         date: new Date(),
         location: 'Dubai Marina',

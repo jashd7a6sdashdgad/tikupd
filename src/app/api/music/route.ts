@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifyToken, COOKIE_OPTIONS } from '@/lib/auth';
 
 // Environment variables with fallbacks
 const SPOTIFY_CLIENT_ID = process.env.SPOTIFY_CLIENT_ID || 'a3b9645329a2412ea6ce17794952958e';

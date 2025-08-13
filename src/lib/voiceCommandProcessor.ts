@@ -117,20 +117,6 @@ export class VoiceCommandProcessor {
         description: 'Resume narrator speech'
       },
 
-      // Social media commands
-      {
-        pattern: /^(post|share|update).*(facebook|instagram|twitter|social)/i,
-        action: 'social_media',
-        handler: (_matches, _transcript) => ({
-          action: 'social_media',
-          response: 'I can help you with social media management. Let me open the social media section for you.',
-          confidence: 0.8,
-          shouldSpeak: true,
-          data: { destination: 'social-media' }
-        }),
-        examples: ['Post on Facebook', 'Share on Instagram', 'Update social media'],
-        description: 'Handle social media actions'
-      },
 
       // Email commands
       {

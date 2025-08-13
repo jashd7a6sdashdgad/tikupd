@@ -1,65 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifyToken, COOKIE_OPTIONS } from '@/lib/auth';
-import { validateApiToken, hasPermission } from '@/lib/api/auth/tokenValidation';
-import jwt from 'jsonwebtoken';
 import { n8nMCPService } from '@/lib/n8nMCP';
 
 export async function GET(request: NextRequest) {
-  let validToken: any = null;
-  let authType = 'unknown';
-  
   try {
-    // Get the Authorization header
-    const authHeader = request.headers.get('authorization');
-    
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return NextResponse.json(
-        { error: 'Authorization header required. Use format: Bearer YOUR_TOKEN' },
-        { status: 401 }
-      );
-    }
-
-    const token = authHeader.replace('Bearer ', '');
-
-    // Try to validate as website JWT first
-    try {
-      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'punz') as any;
-      validToken = {
-        id: decoded.userId || '1',
-        name: decoded.username || 'website-user',
-        permissions: ['*'],
-        email: decoded.email,
-        type: 'website-jwt'
-      };
-      authType = 'website-jwt';
-    } catch (jwtError: any) {
-      // Try to validate as API token
-      const validation = await validateApiToken(authHeader);
-      
-      if (!validation.isValid || !validation.token) {
-        return NextResponse.json(
-          { 
-            success: false,
-            error: 'Invalid token. Please check your API token or JWT.' 
-          },
-          { status: 401 }
-        );
-      }
-      
-      validToken = validation.token;
-      authType = 'api-token';
-      
-      // Check permissions for API tokens
-      if (!hasPermission(validToken, 'read:workflows')) {
-        return NextResponse.json(
-          { 
-            success: false,
-            error: 'Insufficient permissions. Token requires read:workflows permission' 
-          },
-          { status: 403 }
-        );
-      }
-    }
     const { searchParams } = new URL(request.url);
     const action = searchParams.get('action');
 
@@ -70,13 +13,7 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({
           success: true,
           data: templates,
-          message: 'Workflow templates retrieved successfully',
-          authType,
-          token: {
-            name: validToken.name,
-            permissions: validToken.permissions,
-            type: validToken.type
-          }
+          message: 'Workflow templates retrieved successfully'
         });
 
       case 'list':
@@ -84,13 +21,7 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({
           success: true,
           data: [], // TODO: Implement database storage for user workflows
-          message: 'User workflows retrieved successfully',
-          authType,
-          token: {
-            name: validToken.name,
-            permissions: validToken.permissions,
-            type: validToken.type
-          }
+          message: 'User workflows retrieved successfully'
         });
 
       default:
@@ -114,16 +45,6 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    // Verify authentication
-    const token = request.cookies.get(COOKIE_OPTIONS.name)?.value;
-    if (!token) {
-      return NextResponse.json(
-        { success: false, message: 'Authentication required' },
-        { status: 401 }
-      );
-    }
-    
-    const user = verifyToken(token);
     const body = await request.json();
     const { action } = body;
 
@@ -138,10 +59,10 @@ export async function POST(request: NextRequest) {
           );
         }
 
-        console.log(`🔧 Generating workflow for user ${user.id}: "${description}"`);
+        console.log(`🔧 Generating workflow: "${description}"`);
         const generatedWorkflow = await n8nMCPService.generateWorkflow(description, {
-          userId: user.id,
-          userName: (user as any).name || 'User',
+          userId: '1',
+          userName: 'User',
           ...context
         });
 
@@ -198,7 +119,7 @@ export async function POST(request: NextRequest) {
 
         console.log(`🎤 Executing workflow via voice: "${voiceCommand}"`);
         const executionResult = await n8nMCPService.executeWorkflowByVoice(voiceCommand, {
-          userId: user.id,
+          userId: '1',
           triggerType: 'voice',
           data: body.data,
           conditions: conditions

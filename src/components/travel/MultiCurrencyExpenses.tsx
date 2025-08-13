@@ -109,7 +109,10 @@ interface MultiCurrencyExpensesProps {
   baseCurrency?: string;
 }
 
-export function MultiCurrencyExpenses({ itineraryId, baseCurrency = 'OMR' }: MultiCurrencyExpensesProps) {
+export function MultiCurrencyExpenses({ itineraryId, baseCurrency }: MultiCurrencyExpensesProps) {
+  // Provide default value for baseCurrency
+  const defaultBaseCurrency = baseCurrency || 'OMR';
+  
   const [expenses, setExpenses] = useState<TravelExpense[]>([]);
   const [currencies, setCurrencies] = useState<CurrencyRate[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
@@ -124,7 +127,7 @@ export function MultiCurrencyExpenses({ itineraryId, baseCurrency = 'OMR' }: Mul
   const [formData, setFormData] = useState({
     category: 'other' as TravelExpense['category'],
     amount: '',
-    currency: baseCurrency,
+    currency: defaultBaseCurrency,
     description: '',
     location: '',
     paymentMethod: 'card' as TravelExpense['paymentMethod'],
@@ -134,8 +137,9 @@ export function MultiCurrencyExpenses({ itineraryId, baseCurrency = 'OMR' }: Mul
 
   useEffect(() => {
     // Initialize with sample currencies
+    const defaultCurrency = baseCurrency || process.env.TRAVEL_DEFAULT_CURRENCY || 'OMR';
     const sampleCurrencies: CurrencyRate[] = [
-      { code: 'OMR', name: 'Omani Rial', symbol: 'ر.ع.', rate: 1, flag: '🇴🇲' },
+      { code: defaultCurrency, name: defaultCurrency === 'OMR' ? 'Omani Rial' : defaultCurrency, symbol: defaultCurrency === 'OMR' ? 'ر.ع.' : defaultCurrency, rate: 1, flag: defaultCurrency === 'OMR' ? '🇴🇲' : '🌍' },
       { code: 'USD', name: 'US Dollar', symbol: '$', rate: 0.385, flag: '🇺🇸' },
       { code: 'EUR', name: 'Euro', symbol: '€', rate: 0.357, flag: '🇪🇺' },
       { code: 'GBP', name: 'British Pound', symbol: '£', rate: 0.312, flag: '🇬🇧' },
@@ -270,9 +274,9 @@ export function MultiCurrencyExpenses({ itineraryId, baseCurrency = 'OMR' }: Mul
       itineraryId: itineraryId || '1',
       category: formData.category,
       amount: parseFloat(formData.amount),
-      currency: formData.currency,
-      convertedAmount: convertCurrency(parseFloat(formData.amount), formData.currency, baseCurrency),
-      baseCurrency,
+      currency: formData.currency || defaultBaseCurrency,
+      convertedAmount: convertCurrency(parseFloat(formData.amount), formData.currency || defaultBaseCurrency, defaultBaseCurrency),
+      baseCurrency: defaultBaseCurrency,
       exchangeRate: currencies.find(c => c.code === formData.currency)?.rate || 1,
       description: formData.description,
       date: new Date(),
@@ -292,7 +296,7 @@ export function MultiCurrencyExpenses({ itineraryId, baseCurrency = 'OMR' }: Mul
     setFormData({
       category: 'other',
       amount: '',
-      currency: baseCurrency,
+      currency: defaultBaseCurrency,
       description: '',
       location: '',
       paymentMethod: 'card',
@@ -415,7 +419,7 @@ export function MultiCurrencyExpenses({ itineraryId, baseCurrency = 'OMR' }: Mul
               <div>
                 <p className="text-sm text-green-600 font-medium">Total Spent</p>
                 <p className="text-2xl font-bold text-green-800">
-                  {getCurrencySymbol(baseCurrency)}{getTotalSpent().toFixed(2)}
+                  {getCurrencySymbol(defaultBaseCurrency)}{getTotalSpent().toFixed(2)}
                 </p>
               </div>
               <div className="p-3 bg-green-200 rounded-xl">
@@ -461,7 +465,7 @@ export function MultiCurrencyExpenses({ itineraryId, baseCurrency = 'OMR' }: Mul
               <div>
                 <p className="text-sm text-orange-600 font-medium">Avg/Day</p>
                 <p className="text-2xl font-bold text-orange-800">
-                  {getCurrencySymbol(baseCurrency)}{expenses.length > 0 ? (getTotalSpent() / Math.max(new Set(expenses.map(e => e.date.toDateString())).size, 1)).toFixed(2) : '0.00'}
+                  {getCurrencySymbol(defaultBaseCurrency)}{expenses.length > 0 ? (getTotalSpent() / Math.max(new Set(expenses.map(e => e.date.toDateString())).size, 1)).toFixed(2) : '0.00'}
                 </p>
               </div>
               <div className="p-3 bg-orange-200 rounded-xl">
@@ -520,9 +524,9 @@ export function MultiCurrencyExpenses({ itineraryId, baseCurrency = 'OMR' }: Mul
                       <p className="font-bold text-lg text-gray-800">
                         {getCurrencySymbol(expense.currency)}{expense.amount.toFixed(2)}
                       </p>
-                      {expense.currency !== baseCurrency && (
+                      {expense.currency !== defaultBaseCurrency && (
                         <p className="text-sm text-gray-600">
-                          ≈ {getCurrencySymbol(baseCurrency)}{expense.convertedAmount.toFixed(2)}
+                          ≈ {getCurrencySymbol(defaultBaseCurrency)}{expense.convertedAmount.toFixed(2)}
                         </p>
                       )}
                     </div>

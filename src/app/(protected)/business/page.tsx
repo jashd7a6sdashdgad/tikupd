@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { useSettings } from '@/contexts/SettingsContext';
 import { useTranslation } from '@/lib/translations';
+import { getBusinessConfig, getBusinessDefaults, getBusinessStatuses, getBusinessPriorities, getBusinessCurrencies } from '@/lib/config';
 import { 
   Briefcase, 
   Plus, 
@@ -155,100 +156,29 @@ export default function BusinessPage() {
     try {
       setLoading(true);
       
-      // Mock business data - replace with actual API calls
-      const mockMetrics: BusinessMetrics = {
-        revenue: { total: 125000, thisMonth: 15000, lastMonth: 12000, growth: 25 },
-        expenses: { total: 45000, thisMonth: 5500, lastMonth: 5000, growth: 10 },
-        profit: { total: 80000, thisMonth: 9500, lastMonth: 7000, margin: 64 },
-        clients: { total: 25, active: 18, new: 3, retention: 85 }
-      };
+      // Get business configuration
+      const businessDefaults = getBusinessDefaults();
       
-      const mockClients: Client[] = [
-        {
-          id: '1',
-          name: 'Ahmed Al-Rashid',
-          email: 'ahmed@company.om',
-          phone: '+968 9123 4567',
-          company: 'Al-Rashid Trading LLC',
-          status: 'active',
-          totalValue: 25000,
-          lastContact: new Date().toISOString(),
-          projects: 3,
-          notes: 'Long-term client, prefers email communication'
-        },
-        {
-          id: '2',
-          name: 'Fatima Al-Zahra',
-          email: 'fatima@tech-solutions.om',
-          company: 'Tech Solutions Oman',
-          status: 'active',
-          totalValue: 18500,
-          lastContact: new Date(Date.now() - 86400000).toISOString(),
-          projects: 2
-        }
-      ];
+      // Use configured defaults instead of hardcoded values
+      const mockMetrics: BusinessMetrics = businessDefaults.metrics;
       
-      const mockProjects: Project[] = [
-        {
-          id: '1',
-          name: 'E-commerce Platform Development',
-          clientId: '1',
-          clientName: 'Al-Rashid Trading LLC',
-          status: 'active',
-          startDate: '2024-01-15',
-          endDate: '2024-06-15',
-          budget: 15000,
-          spent: 8500,
-          progress: 65,
-          priority: 'high',
-          description: 'Custom e-commerce platform with Arabic language support'
-        },
-        {
-          id: '2',
-          name: 'Mobile App UI/UX Design',
-          clientId: '2',
-          clientName: 'Tech Solutions Oman',
-          status: 'planning',
-          startDate: '2024-03-01',
-          budget: 8000,
-          spent: 1200,
-          progress: 15,
-          priority: 'medium',
-          description: 'Modern mobile app design for iOS and Android'
-        }
-      ];
+      // Use configured sample data
+      const mockClients: Client[] = businessDefaults.sampleClients.map(client => ({
+        ...client,
+        status: client.status as 'active' | 'inactive' | 'prospect',
+        lastContact: new Date(client.lastContact).toISOString()
+      }));
       
-      const mockInvoices: Invoice[] = [
-        {
-          id: '1',
-          number: 'INV-2024-001',
-          clientId: '1',
-          clientName: 'Al-Rashid Trading LLC',
-          amount: 5000,
-          currency: 'OMR',
-          status: 'paid',
-          issueDate: '2024-01-15',
-          dueDate: '2024-02-15',
-          paidDate: '2024-02-10',
-          items: [
-            { description: 'Website Development - Phase 1', quantity: 1, rate: 5000, amount: 5000 }
-          ]
-        },
-        {
-          id: '2',
-          number: 'INV-2024-002',
-          clientId: '2',
-          clientName: 'Tech Solutions Oman',
-          amount: 3500,
-          currency: 'OMR',
-          status: 'sent',
-          issueDate: '2024-02-01',
-          dueDate: '2024-03-01',
-          items: [
-            { description: 'UI/UX Design Services', quantity: 35, rate: 100, amount: 3500 }
-          ]
-        }
-      ];
+      const mockProjects: Project[] = businessDefaults.sampleProjects.map(project => ({
+        ...project,
+        status: project.status as 'planning' | 'active' | 'on-hold' | 'completed' | 'cancelled',
+        priority: project.priority as 'high' | 'medium' | 'low'
+      }));
+      
+      const mockInvoices: Invoice[] = businessDefaults.sampleInvoices.map(invoice => ({
+        ...invoice,
+        status: invoice.status as 'draft' | 'sent' | 'paid' | 'overdue' | 'cancelled'
+      }));
       
       setMetrics(mockMetrics);
       setClients(mockClients);
@@ -285,10 +215,12 @@ export default function BusinessPage() {
     }
   };
 
-  const formatCurrency = (amount: number, currency: string = 'OMR') => {
+  const formatCurrency = (amount: number, currency?: string) => {
+    const businessConfig = getBusinessConfig();
+    const defaultCurrency = currency || businessConfig.currency;
     return new Intl.NumberFormat('en-OM', {
       style: 'currency',
-      currency: currency
+      currency: defaultCurrency
     }).format(amount);
   };
 
@@ -308,7 +240,7 @@ export default function BusinessPage() {
               </div>
               <div>
                 <h1 className="text-5xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent mb-2">
-                  Business Management
+                  {getBusinessConfig().name} Management
                 </h1>
                 <p className="text-gray-600 font-medium text-lg">
                   Manage your clients, projects, and financials

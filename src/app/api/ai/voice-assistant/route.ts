@@ -166,7 +166,6 @@ async function processSimpleCommand(message: string, language: string): Promise<
       'instagram': '/instagram',
       'photos': '/photos',
       'tracking': '/tracking',
-      'social media': '/social-media',
       'messenger': '/messenger',
       'weather': '/weather',
       'web scraper': '/web-scraper',
@@ -249,18 +248,15 @@ async function processSimpleCommand(message: string, language: string): Promise<
     response = language === 'ar' ? 'دعني أعرض عليك معلومات الطقس الحالية' : 'Let me show you the current weather information';
     action = { navigate: '/weather' };
   }
-  // Social media commands
-  else if (lowerMessage.includes('facebook') || lowerMessage.includes('youtube') || lowerMessage.includes('social')) {
-    if (lowerMessage.includes('facebook')) {
-      response = language === 'ar' ? 'فتح أدوات إدارة فيسبوك' : 'Opening Facebook management tools';
-      action = { navigate: '/facebook' };
-    } else if (lowerMessage.includes('youtube')) {
-      response = language === 'ar' ? 'فتح تحليلات وإدارة يوتيوب' : 'Opening YouTube analytics and management';
-      action = { navigate: '/youtube' };
-    } else {
-      response = language === 'ar' ? 'فتح نظرة عامة على وسائل التواصل الاجتماعي' : 'Opening social media overview';
-      action = { navigate: '/social-media' };
-    }
+  // Facebook commands
+  else if (lowerMessage.includes('facebook')) {
+    response = language === 'ar' ? 'فتح أدوات إدارة فيسبوك' : 'Opening Facebook management tools';
+    action = { navigate: '/facebook' };
+  }
+  // YouTube commands
+  else if (lowerMessage.includes('youtube')) {
+    response = language === 'ar' ? 'فتح تحليلات وإدارة يوتيوب' : 'Opening YouTube analytics and management';
+    action = { navigate: '/youtube' };
   }
   // Help commands
   else if (lowerMessage.includes('help') || lowerMessage.includes('what can you do')) {

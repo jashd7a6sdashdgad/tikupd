@@ -220,19 +220,24 @@ export class ExpenseIntelligence {
   }
 
   private initializeBudgetLimits(): void {
-    // Default budget limits in OMR
-    this.budgetLimits = {
-      Food: 300,
-      Transportation: 150,
-      Shopping: 200,
-      Utilities: 100,
-      Entertainment: 100,
-      Medical: 150,
-      Business: 250,
-      Travel: 500,
-      Education: 200,
-      General: 100,
-    };
+    // Get budget limits from configuration or use defaults
+    const businessConfig: Record<string, number> = process.env.NODE_ENV === 'production' ? 
+      {} : // In production, these would come from API/database
+      {
+        // Default budget limits in OMR - can be overridden via environment variables
+        Food: parseInt(process.env.BUDGET_FOOD || '300'),
+        Transportation: parseInt(process.env.BUDGET_TRANSPORTATION || '150'),
+        Shopping: parseInt(process.env.BUDGET_SHOPPING || '200'),
+        Utilities: parseInt(process.env.BUDGET_UTILITIES || '100'),
+        Entertainment: parseInt(process.env.BUDGET_ENTERTAINMENT || '100'),
+        Medical: parseInt(process.env.BUDGET_MEDICAL || '150'),
+        Business: parseInt(process.env.BUDGET_BUSINESS || '250'),
+        Travel: parseInt(process.env.BUDGET_TRAVEL || '500'),
+        Education: parseInt(process.env.BUDGET_EDUCATION || '200'),
+        General: parseInt(process.env.BUDGET_GENERAL || '100'),
+      };
+    
+    this.budgetLimits = businessConfig;
   }
 
   // Main classification method

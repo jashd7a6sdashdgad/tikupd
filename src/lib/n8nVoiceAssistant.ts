@@ -81,15 +81,6 @@ class N8NVoiceAssistant {
   - Calendar sharing options
 - **Voice Commands**: "Check calendar", "Schedule meeting", "What's my schedule?", "Add appointment"
 
-### 📱 SOCIAL MEDIA (/social-media)
-- **Location**: Social platforms hub
-- **Features**:
-  - Facebook integration
-  - Instagram management
-  - Post scheduling and publishing
-  - Social media analytics
-  - Content calendar
-- **Voice Commands**: "Post on Facebook", "Check social media", "Share content"
 
 ### 📞 CONTACTS (/contacts)
 - **Location**: Address book and contact management

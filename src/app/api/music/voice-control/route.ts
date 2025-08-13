@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifyToken, COOKIE_OPTIONS } from '@/lib/auth';
 // Simple storage interface for music data
 interface SimpleStorage {
   getToken(key: string): Promise<string | null>;
@@ -239,16 +238,6 @@ class VoiceMusicParser {
 
 export async function POST(request: NextRequest) {
   try {
-    // Verify user authentication
-    const token = request.cookies.get(COOKIE_OPTIONS.name)?.value;
-    if (!token) {
-      return NextResponse.json(
-        { success: false, message: 'Authentication required' },
-        { status: 401 }
-      );
-    }
-    
-    const user = verifyToken(token);
     const body: VoiceCommand = await request.json();
     
     console.log('Voice Music Control request:', body);
@@ -296,7 +285,7 @@ export async function POST(request: NextRequest) {
         }
 
         // Execute the parsed command
-        result = await executeVoiceCommand(commandToExecute, body.context, user.id);
+        result = await executeVoiceCommand(commandToExecute, body.context, '1');
         break;
 
       default:
@@ -309,7 +298,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       data: result,
-      userId: user.id,
+      userId: '1',
       timestamp: new Date().toISOString()
     });
 

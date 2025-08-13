@@ -1,0 +1,142 @@
+{
+  "business": {
+    "name": "Mahboob Agents",
+    "domain": "mahboobagents.fun",
+    "email": "contact@mahboobagents.fun",
+    "phone": "+968 9506 0007",
+    "location": "Muscat, Oman",
+    "description": "AI-powered personal assistant and business solutions",
+    "currency": "OMR",
+    "timezone": "Asia/Muscat",
+    "fiscalYearStart": "01-01"
+  },
+  "defaults": {
+    "metrics": {
+      "revenue": {
+        "total": 0,
+        "thisMonth": 0,
+        "lastMonth": 0,
+        "growth": 0
+      },
+      "expenses": {
+        "total": 0,
+        "thisMonth": 0,
+        "lastMonth": 0,
+        "growth": 0
+      },
+      "profit": {
+        "total": 0,
+        "thisMonth": 0,
+        "lastMonth": 0,
+        "margin": 0
+      },
+      "clients": {
+        "total": 0,
+        "active": 0,
+        "new": 0,
+        "retention": 0
+      }
+    },
+    "sampleClients": [
+      {
+        "id": "1",
+        "name": "Ahmed Al-Rashid",
+        "email": "ahmed@company.om",
+        "phone": "+968 9123 4567",
+        "company": "Al-Rashid Trading LLC",
+        "status": "active",
+        "totalValue": 25000,
+        "lastContact": "2024-01-15T00:00:00.000Z",
+        "projects": 3,
+        "notes": "Long-term client, prefers email communication"
+      },
+      {
+        "id": "2",
+        "name": "Fatima Al-Zahra",
+        "email": "fatima@tech-solutions.om",
+        "company": "Tech Solutions Oman",
+        "status": "active",
+        "totalValue": 18500,
+        "lastContact": "2024-01-14T00:00:00.000Z",
+        "projects": 2
+      }
+    ],
+    "sampleProjects": [
+      {
+        "id": "1",
+        "name": "E-commerce Platform Development",
+        "clientId": "1",
+        "clientName": "Al-Rashid Trading LLC",
+        "status": "active",
+        "startDate": "2024-01-15",
+        "endDate": "2024-06-15",
+        "budget": 15000,
+        "spent": 8500,
+        "progress": 65,
+        "priority": "high",
+        "description": "Custom e-commerce platform with Arabic language support"
+      },
+      {
+        "id": "2",
+        "name": "Mobile App UI/UX Design",
+        "clientId": "2",
+        "clientName": "Tech Solutions Oman",
+        "status": "planning",
+        "startDate": "2024-03-01",
+        "budget": 8000,
+        "spent": 1200,
+        "progress": 15,
+        "priority": "medium",
+        "description": "Modern mobile app design for iOS and Android"
+      }
+    ],
+    "sampleInvoices": [
+      {
+        "id": "1",
+        "number": "INV-2024-001",
+        "clientId": "1",
+        "clientName": "Al-Rashid Trading LLC",
+        "amount": 5000,
+        "currency": "OMR",
+        "status": "paid",
+        "issueDate": "2024-01-15",
+        "dueDate": "2024-02-15",
+        "paidDate": "2024-02-10",
+        "items": [
+          {
+            "description": "Website Development - Phase 1",
+            "quantity": 1,
+            "rate": 5000,
+            "amount": 5000
+          }
+        ]
+      },
+      {
+        "id": "2",
+        "number": "INV-2024-002",
+        "clientId": "2",
+        "clientName": "Tech Solutions Oman",
+        "amount": 3500,
+        "currency": "OMR",
+        "status": "sent",
+        "issueDate": "2024-02-01",
+        "dueDate": "2024-03-01",
+        "items": [
+          {
+            "description": "UI/UX Design Services",
+            "quantity": 35,
+            "rate": 100,
+            "amount": 3500
+          }
+        ]
+      }
+    ]
+  },
+  "statuses": {
+    "client": ["active", "inactive", "prospect", "lead"],
+    "project": ["planning", "active", "on-hold", "completed", "cancelled"],
+    "invoice": ["draft", "sent", "paid", "overdue", "cancelled"]
+  },
+  "priorities": ["low", "medium", "high", "urgent"],
+  "currencies": ["OMR", "USD", "EUR", "GBP", "AED"]
+}

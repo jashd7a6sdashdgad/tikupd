@@ -2,15 +2,17 @@ import { NextRequest, NextResponse } from 'next/server';
 import { verifyToken, COOKIE_OPTIONS } from '@/lib/auth';
 import { getGoogleSheetsClient, Gmail, getAuthenticatedClient } from '@/lib/google';
 
-// Omani bank email addresses
-const OMANI_BANKS = [
-  'noreply@bankdhofar.com',
-  'alerts@bankmuscat.com',
-  'noreply@bankmuscat.com',
-  'alerts@ahlibank.om',
-  'noreply@ahlibank.om',
-  'banking@ahlibank.om',
-];
+// Get bank email addresses from configuration or use defaults
+const OMANI_BANKS = process.env.OMANI_BANK_EMAILS ? 
+  process.env.OMANI_BANK_EMAILS.split(',') : 
+  [
+    'noreply@bankdhofar.com',
+    'alerts@bankmuscat.com',
+    'noreply@bankmuscat.com',
+    'alerts@ahlibank.om',
+    'noreply@ahlibank.om',
+    'banking@ahlibank.om',
+  ];
 
 interface BankTransaction {
   date: string;

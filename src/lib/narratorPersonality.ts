@@ -266,11 +266,6 @@ export class NarratorPersonality {
         "Your dashboard is loaded and ready! I can see all your important information is up to date.",
         "Perfect! Your personal hub is all set up. What would you like to explore first?"
       ],
-      'social-media': [
-        "Welcome to your social media headquarters! This is where all your social magic happens.",
-        "Social media central! I can help you manage, analyze, and optimize your social presence.",
-        "Your social media dashboard is looking fantastic! Ready to boost your online presence?"
-      ],
       email: [
         "Email time! Let's get your communications organized and efficient.",
         "Your inbox awaits! I'm here to help you stay on top of all your messages.",

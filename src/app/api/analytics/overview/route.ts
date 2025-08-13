@@ -17,7 +17,6 @@ export async function GET(request: NextRequest) {
         { page: '/dashboard', views: 1234, percentage: 15.2 },
         { page: '/expenses', views: 987, percentage: 12.1 },
         { page: '/calendar', views: 756, percentage: 9.3 },
-        { page: '/social-media', views: 654, percentage: 8.0 },
         { page: '/contacts', views: 543, percentage: 6.7 }
       ],
       trafficSources: [

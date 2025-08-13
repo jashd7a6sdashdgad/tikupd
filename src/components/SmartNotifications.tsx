@@ -274,17 +274,6 @@ export default function SmartNotifications({ dashboardData, className = '' }: Sm
       priority: 55
     });
 
-    // Social media check
-    newNotifications.push({
-      id: 'social-reminder',
-      type: 'info',
-      title: '📱 Social Media Update',
-      message: 'Check your social media activity and recent messages',
-      timestamp: now,
-      action: { text: 'Social Media', path: '/social-media' },
-      category: 'social',
-      priority: 50
-    });
 
     // Photo memories
     newNotifications.push({

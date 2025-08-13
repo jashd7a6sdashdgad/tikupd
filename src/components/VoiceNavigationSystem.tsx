@@ -253,13 +253,6 @@ export const VoiceNavigationSystem: React.FC<VoiceNavigationSystemProps> = ({
       category: 'navigation'
     },
     {
-      pattern: ['social media', 'social'],
-      action: () => router.push('/social-media'),
-      description: 'Open Social Media',
-      icon: <Command className="h-4 w-4" />,
-      category: 'navigation'
-    },
-    {
       pattern: ['web scraper', 'scraper', 'web crawl'],
       action: () => router.push('/web-scraper'),
       description: 'Open Web Scraper',
