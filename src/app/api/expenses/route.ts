@@ -100,7 +100,8 @@ export async function GET(request: NextRequest) {
       
       // Source 1: Check cookies (from browser OAuth flow)
       accessToken = request.cookies?.get('google_access_token')?.value;
-      refreshToken = request.cookies?.get('google_refresh_token')?.value;
+      const rawRefreshToken = request.cookies?.get('google_refresh_token')?.value;
+      refreshToken = rawRefreshToken ? decodeURIComponent(rawRefreshToken) : undefined;
       console.log('🍪 Cookie tokens - Access:', accessToken ? 'FOUND' : 'NOT FOUND', 'Refresh:', refreshToken ? 'FOUND' : 'NOT FOUND');
       
       // Source 2: Check environment variables (system-wide tokens)
