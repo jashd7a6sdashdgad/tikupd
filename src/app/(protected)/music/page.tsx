@@ -64,6 +64,8 @@ interface Playlist {
   imageUrl: string;
   isPublic: boolean;
   createdAt: Date;
+  spotifyUrl?: string;
+  trackCount?: number;
 }
 
 export default function MusicPage() {
@@ -205,11 +207,41 @@ export default function MusicPage() {
         setAllSongs(libraryData.data.songs || []);
       }
       
-      // Load user playlists
-      const playlistsResponse = await fetch('/api/music/playlists');
-      if (playlistsResponse.ok) {
-        const playlistsData = await playlistsResponse.json();
-        setPlaylists(playlistsData.data.playlists || []);
+      // Try to load Spotify playlists first (if user is connected)
+      try {
+        const spotifyPlaylistsResponse = await fetch('/api/music', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'get_playlists' })
+        });
+        
+        if (spotifyPlaylistsResponse.ok) {
+          const spotifyData = await spotifyPlaylistsResponse.json();
+          if (spotifyData.success && spotifyData.data.playlists?.length > 0) {
+            // Convert Spotify playlists to our format
+            const spotifyPlaylists = spotifyData.data.playlists.map((playlist: any) => ({
+              id: playlist.id,
+              name: playlist.name,
+              description: playlist.description || '',
+              imageUrl: playlist.imageUrl || '',
+              songs: [], // We'll load songs on demand
+              isPublic: playlist.isPublic || false,
+              createdAt: new Date(),
+              trackCount: playlist.trackCount || 0,
+              spotifyUrl: playlist.spotifyUrl
+            }));
+            setPlaylists(spotifyPlaylists);
+            setSpotifyConnected(true);
+          } else {
+            // Fall back to local playlists
+            await loadLocalPlaylists();
+          }
+        } else {
+          await loadLocalPlaylists();
+        }
+      } catch (spotifyError) {
+        console.log('Spotify playlists not available, loading local playlists');
+        await loadLocalPlaylists();
       }
       
       // If no songs in library, show sample songs
@@ -224,6 +256,19 @@ export default function MusicPage() {
       setPlaylists(samplePlaylists);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const loadLocalPlaylists = async () => {
+    try {
+      const playlistsResponse = await fetch('/api/music/playlists');
+      if (playlistsResponse.ok) {
+        const playlistsData = await playlistsResponse.json();
+        setPlaylists(playlistsData.data.playlists || []);
+      }
+    } catch (error) {
+      console.error('Error loading local playlists:', error);
+      setPlaylists(samplePlaylists);
     }
   };
 
@@ -547,7 +592,12 @@ export default function MusicPage() {
         
         <h3 className="font-semibold text-gray-900 truncate mb-1">{playlist.name}</h3>
         <p className="text-sm text-gray-600 truncate mb-2">{playlist.description}</p>
-        <p className="text-xs text-gray-500">{playlist.songs.length} songs</p>
+        <div className="flex items-center justify-between">
+          <p className="text-xs text-gray-500">{playlist.songs?.length || playlist.trackCount || 0} songs</p>
+          {playlist.spotifyUrl && (
+            <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">Spotify</span>
+          )}
+        </div>
       </div>
     </ModernCard>
   );
@@ -578,8 +628,14 @@ export default function MusicPage() {
                     </div>
                     <div className="flex items-center gap-2">
                       <div className="w-2 h-2 rounded-full bg-purple-500"></div>
-                      <span className="text-sm text-gray-500">{playlists.length} playlists</span>
+                      <span className="text-sm text-gray-500">{playlists.length} playlists {spotifyConnected ? '(Spotify)' : '(Local)'}</span>
                     </div>
+                    {spotifyConnected && (
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                        <span className="text-sm text-green-600 font-medium">Spotify Connected</span>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -642,6 +698,21 @@ export default function MusicPage() {
             </div>
           </ModernCard>
         )}
+
+        {/* Playback Notice */}
+        <ModernCard gradient="none" blur="lg" className="p-4 bg-blue-50 border border-blue-200">
+          <div className="flex items-start gap-3">
+            <Music2 className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
+            <div>
+              <h3 className="text-sm font-medium text-blue-800">Music Playback Information</h3>
+              <p className="text-xs text-blue-700 mt-1">
+                • Only 30-second previews are available for direct playback<br/>
+                • Full songs require opening in Spotify or YouTube<br/>
+                • Connect your Spotify account to see your real playlists
+              </p>
+            </div>
+          </div>
+        </ModernCard>
 
         {/* Controls Bar */}
         <ModernCard gradient="none" blur="lg" className="p-6">

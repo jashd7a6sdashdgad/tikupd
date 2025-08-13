@@ -27,7 +27,8 @@ import {
   Palette,
   Compass,
   Key,
-  Briefcase
+  Briefcase,
+  Music
 } from 'lucide-react';
 import { useState, ComponentType } from 'react';
 import { useAuth } from '@/hooks/useAuth';
@@ -127,6 +128,12 @@ const getNavigation = (t: (key: string) => string): NavigationItem[] => [
     name: t('youtube'),
     href: '/youtube',
     icon: Youtube
+  },
+  {
+    key: 'music',
+    name: t('music') || 'Music',
+    href: '/music',
+    icon: Music
   },
   {
     key: 'weather',

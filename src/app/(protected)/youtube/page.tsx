@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { useSettings } from '@/contexts/SettingsContext';
 import { useTranslation } from '@/lib/translations';
-import { Youtube, Play, Eye, ThumbsUp, MessageSquare, Upload, BarChart3, ExternalLink, Settings, TrendingUp } from 'lucide-react';
+import { Youtube, Play, Eye, ThumbsUp, MessageSquare, Upload, BarChart3, ExternalLink, Settings, TrendingUp, Video, Users, Clock, Calendar } from 'lucide-react';
 
 interface YouTubeVideo {
   id: string;
@@ -17,190 +17,240 @@ interface YouTubeVideo {
   like_count: number;
   comment_count: number;
   duration: string;
+  url: string;
+}
+
+interface YouTubeAuth {
+  access_token: string;
+  refresh_token: string;
+  expires_at: number;
+  scope: string;
+}
+
+interface ChannelData {
+  id: string;
+  title: string;
+  description: string;
+  thumbnail: string;
+  subscriberCount: number;
+  videoCount: number;
+  viewCount: number;
+  customUrl?: string;
 }
 
 export default function YouTubePage() {
   const { language } = useSettings();
   const { t } = useTranslation(language);
   const [videos, setVideos] = useState<YouTubeVideo[]>([]);
-  const [channelStats, setChannelStats] = useState({
-    subscribers: 0,
-    totalViews: 0,
-    totalVideos: 0,
-    avgViewDuration: 0
-  });
+  const [channelData, setChannelData] = useState<ChannelData | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [connectionStatus, setConnectionStatus] = useState<'unknown' | 'connected' | 'error' | 'config_missing'>('unknown');
+  const [authUrl, setAuthUrl] = useState<string | null>(null);
+  const [recentActivity, setRecentActivity] = useState<any[]>([]);
+  const [channelStats, setChannelStats] = useState({ subscribers: 0, totalVideos: 0 });
 
-  // Function to watch video on YouTube
-  const watchVideo = (videoId: string) => {
-    const youtubeUrl = `https://www.youtube.com/watch?v=${videoId}`;
-    window.open(youtubeUrl, '_blank', 'noopener,noreferrer');
-  };
-
+  // Check authentication status on load
   useEffect(() => {
-    fetchYouTubeData();
+    checkAuthStatus();
   }, []);
 
-  const fetchYouTubeData = async () => {
+  const checkAuthStatus = async () => {
+    try {
+      const response = await fetch('/api/youtube/auth/status');
+      const data = await response.json();
+      
+      if (data.authenticated) {
+        setIsConnected(true);
+        await loadYouTubeData();
+      } else {
+        setIsConnected(false);
+        const authResponse = await fetch('/api/youtube/auth/url');
+        const authData = await authResponse.json();
+        if (authData.url) {
+          setAuthUrl(authData.url);
+        }
+      }
+    } catch (error) {
+      console.error('Auth check failed:', error);
+      setError('Failed to check authentication status');
+    }
+  };
+
+  const loadYouTubeData = async () => {
     setIsLoading(true);
     setError(null);
     
     try {
-      const response = await fetch('/api/youtube?action=channel_stats');
-      const data = await response.json();
+      // Load channel info
+      const channelResponse = await fetch('/api/youtube/channel');
+      const channelData = await channelResponse.json();
       
-      if (data.success) {
-        setIsConnected(true);
-        setConnectionStatus('connected');
-        setError(null);
-        
-        if (data.data) {
-          setChannelStats({
-            subscribers: data.data.subscriberCount || 0,
-            totalViews: data.data.viewCount || 0,
-            totalVideos: data.data.videoCount || 0,
-            avgViewDuration: 4.2 // This would need to be calculated from analytics
-          });
-        }
-        
-        // Fetch recent videos
-        const videosResponse = await fetch('/api/youtube?action=videos');
-        if (videosResponse.ok) {
-          const videosData = await videosResponse.json();
-          if (videosData.success && videosData.data) {
-            setVideos(videosData.data.map((video: any) => ({
-              id: video.videoId,
-              title: video.title,
-              description: video.description,
-              thumbnail: video.thumbnails?.maxres?.url || 
-                        video.thumbnails?.standard?.url || 
-                        video.thumbnails?.high?.url || 
-                        video.thumbnails?.medium?.url || 
-                        video.thumbnails?.default?.url || '',
-              published_at: video.publishedAt,
-              view_count: 0, // Would need additional API call for stats
-              like_count: 0,
-              comment_count: 0,
-              duration: '0:00'
-            })));
-          }
-        }
-      } else {
-        setIsConnected(false);
-        setError(data.message);
-        
-        if (data.message?.includes('not configured') || data.message?.includes('API key')) {
-          setConnectionStatus('config_missing');
-        } else {
-          setConnectionStatus('error');
-        }
-        
-        // Use mock data as fallback
+      if (channelData.success) {
+        setChannelData(channelData.data);
         setChannelStats({
-          subscribers: 25400,
-          totalViews: 1250000,
-          totalVideos: 89,
-          avgViewDuration: 4.2
+          subscribers: channelData.data.subscriberCount || 0,
+          totalVideos: channelData.data.videoCount || 0
         });
-        
-        setVideos([]);
       }
+      
+      // Load recent videos
+      const videosResponse = await fetch('/api/youtube/videos');
+      const videosData = await videosResponse.json();
+      
+      if (videosData.success) {
+        setVideos(videosData.data.map((video: any) => ({
+          id: video.id.videoId || video.id,
+          title: video.snippet.title,
+          description: video.snippet.description,
+          thumbnail: video.snippet.thumbnails?.high?.url || video.snippet.thumbnails?.medium?.url || '',
+          published_at: video.snippet.publishedAt,
+          view_count: video.statistics?.viewCount || 0,
+          like_count: video.statistics?.likeCount || 0,
+          comment_count: video.statistics?.commentCount || 0,
+          duration: video.contentDetails?.duration || 'PT0S',
+          url: `https://www.youtube.com/watch?v=${video.id.videoId || video.id}`
+        })));
+      }
+      
+      // Load recent activity/analytics
+      const activityResponse = await fetch('/api/youtube/analytics');
+      const activityData = await activityResponse.json();
+      
+      if (activityData.success) {
+        setRecentActivity(activityData.data || []);
+      }
+      
     } catch (error: any) {
-      console.error('Error fetching YouTube data:', error);
-      setIsConnected(false);
-      setError(error.message || 'Failed to connect to YouTube');
-      setConnectionStatus('error');
-      
-      // No fallback - service must be configured
-      setChannelStats({
-        subscribers: 0,
-        totalViews: 0,
-        totalVideos: 0,
-        avgViewDuration: 0
-      });
-      
-      setVideos([]);
+      console.error('Error loading YouTube data:', error);
+      setError(error.message || 'Failed to load YouTube data');
     } finally {
       setIsLoading(false);
     }
   };
 
-  const connectYouTube = async () => {
-    setIsLoading(true);
-    try {
-      const response = await fetch('/api/youtube?action=connect');
-      const data = await response.json();
+  const initiateYouTubeAuth = () => {
+    if (authUrl) {
+      window.open(authUrl, '_blank', 'width=600,height=600');
       
-      if (data.success) {
-        setIsConnected(true);
-        await fetchYouTubeData();
-      } else {
-        alert(t('settingsError') + ': ' + data.message);
-      }
-    } catch (error) {
-      console.error('Error connecting to YouTube:', error);
-      alert(t('settingsError'));
-    } finally {
-      setIsLoading(false);
+      // Listen for auth completion
+      const checkAuth = setInterval(() => {
+        checkAuthStatus().then(() => {
+          if (isConnected) {
+            clearInterval(checkAuth);
+          }
+        });
+      }, 2000);
+      
+      // Clean up after 2 minutes
+      setTimeout(() => {
+        clearInterval(checkAuth);
+      }, 120000);
     }
+  };
+  
+  const disconnectYouTube = async () => {
+    try {
+      await fetch('/api/youtube/auth/revoke', { method: 'POST' });
+      setIsConnected(false);
+      setChannelData(null);
+      setVideos([]);
+      setRecentActivity([]);
+      await checkAuthStatus();
+    } catch (error) {
+      console.error('Error disconnecting:', error);
+    }
+  };
+  
+  const formatDuration = (duration: string) => {
+    const match = duration.match(/PT(\d+H)?(\d+M)?(\d+S)?/);
+    if (!match) return '0:00';
+    
+    const hours = (match[1] || '').replace('H', '');
+    const minutes = (match[2] || '').replace('M', '');
+    const seconds = (match[3] || '').replace('S', '');
+    
+    if (hours) {
+      return `${hours}:${minutes.padStart(2, '0')}:${seconds.padStart(2, '0')}`;
+    }
+    return `${minutes || '0'}:${seconds.padStart(2, '0')}`;
+  };
+  
+  const formatNumber = (num: number | string) => {
+    const n = typeof num === 'string' ? parseInt(num) : num;
+    if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M';
+    if (n >= 1000) return (n / 1000).toFixed(1) + 'K';
+    return n.toString();
+  };
+
+  const watchVideo = (videoId: string) => {
+    window.open(`https://www.youtube.com/watch?v=${videoId}`, '_blank');
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 p-4 lg:p-8">
       <div className="max-w-7xl mx-auto">
         {/* Modern Header Card */}
-        <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/20 p-6 mb-8 hover:shadow-3xl transition-all duration-300">
-          <div className="flex items-center gap-4">
-            <div className="p-3 bg-gradient-to-br from-red-500 to-red-600 rounded-2xl shadow-lg">
-              <Youtube className="h-8 w-8 text-black font-bold" />
-            </div>
-            <div>
-              <h1 className="text-4xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
-                YouTube Analytics
-              </h1>
-              <p className="text-gray-600 font-medium mt-1">Track your channel performance and manage content</p>
-            </div>
-          </div>
-        </div>
-        {/* Header */}
-        <div className="flex justify-between items-center mb-8">
-          <div>
-            <h1 className="text-3xl font-bold text-black flex items-center">
-              <Youtube className="h-8 w-8 mr-3 text-red-600" />
-              {t('youtubeTitle')}
-            </h1>
-            <p className="text-black mt-2">{t('profileDescription')}</p>
-          </div>
-          
-          <Button onClick={connectYouTube} disabled={isLoading}>
-            <Youtube className="h-4 w-4 mr-2" />
-            {isLoading ? t('loading') : isConnected ? t('refresh') : t('youtubeTitle')}
-          </Button>
-        </div>
-
-        {/* Connection Status Banner */}
-        {connectionStatus === 'config_missing' && (
-          <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <svg className="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                </svg>
+        <div className="bg-white/90 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/20 p-8 mb-8 hover:shadow-3xl transition-all duration-300">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="p-4 bg-gradient-to-br from-red-500 via-red-600 to-red-700 rounded-2xl shadow-lg">
+                <Youtube className="h-10 w-10 text-white" />
               </div>
-              <div className="ml-3">
-                <p className="text-sm text-yellow-800">
-                  <strong>{t('settings')}:</strong> {t('profileDescription')}
+              <div>
+                <h1 className="text-4xl font-bold bg-gradient-to-r from-red-600 via-red-700 to-red-800 bg-clip-text text-transparent">
+                  YouTube Studio
+                </h1>
+                <p className="text-gray-600 font-medium mt-1">
+                  {isConnected && channelData 
+                    ? `Managing ${channelData.title}` 
+                    : 'Connect your YouTube channel via OAuth2'
+                  }
                 </p>
               </div>
             </div>
+            
+            {/* Auth Button */}
+            <div className="flex items-center gap-3">
+              {isConnected ? (
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2 bg-green-100 text-green-800 px-4 py-2 rounded-full font-medium">
+                    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                    Connected
+                  </div>
+                  <Button 
+                    onClick={() => loadYouTubeData()} 
+                    disabled={isLoading}
+                    className="bg-blue-600 hover:bg-blue-700"
+                  >
+                    <BarChart3 className="h-4 w-4 mr-2" />
+                    {isLoading ? 'Loading...' : 'Refresh'}
+                  </Button>
+                  <Button 
+                    onClick={disconnectYouTube} 
+                    variant="outline"
+                    className="border-red-200 text-red-600 hover:bg-red-50"
+                  >
+                    Disconnect
+                  </Button>
+                </div>
+              ) : (
+                <Button 
+                  onClick={initiateYouTubeAuth} 
+                  disabled={!authUrl}
+                  className="bg-red-600 hover:bg-red-700 text-white px-6 py-3 text-lg font-semibold"
+                >
+                  <Youtube className="h-5 w-5 mr-2" />
+                  Connect with OAuth2
+                </Button>
+              )}
+            </div>
           </div>
-        )}
+        </div>
 
-        {connectionStatus === 'error' && error && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+        {/* Status Messages */}
+        {error && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-2xl">
             <div className="flex items-center">
               <div className="flex-shrink-0">
                 <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
@@ -209,24 +259,22 @@ export default function YouTubePage() {
               </div>
               <div className="ml-3">
                 <p className="text-sm text-red-800">
-                  <strong>{t('settingsError')}:</strong> {error}
+                  <strong>Error:</strong> {error}
                 </p>
               </div>
             </div>
           </div>
         )}
 
-        {connectionStatus === 'connected' && (
-          <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+        {!isConnected && !error && (
+          <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-2xl">
             <div className="flex items-center">
               <div className="flex-shrink-0">
-                <svg className="h-5 w-5 text-green-400" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                </svg>
+                <Youtube className="h-5 w-5 text-blue-500" />
               </div>
               <div className="ml-3">
-                <p className="text-sm text-green-800">
-                  <strong>{t('connected')}:</strong> {t('youtubeTitle')}
+                <p className="text-sm text-blue-800">
+                  <strong>Ready to Connect:</strong> Authenticate with your YouTube account using OAuth2 to access your channel data, videos, and analytics.
                 </p>
               </div>
             </div>
@@ -234,69 +282,88 @@ export default function YouTubePage() {
         )}
 
         {/* Channel Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <Card className="palette-card">
-            <CardContent className="p-6">
+        {isConnected && channelData && (
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div className="bg-white/90 backdrop-blur-xl rounded-3xl shadow-xl border border-white/20 p-6 hover:shadow-2xl transition-all duration-300">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-black">{t('contacts')}</p>
-                  <p className="text-2xl font-bold text-primary">{channelStats.subscribers.toLocaleString()}</p>
+                  <p className="text-sm font-medium text-gray-600 mb-1">Subscribers</p>
+                  <p className="text-3xl font-bold text-red-600">{formatNumber(channelData.subscriberCount)}</p>
+                  <p className="text-xs text-gray-500 mt-1">Total followers</p>
                 </div>
-                <Play className="h-8 w-8 text-red-600" />
+                <div className="p-3 bg-gradient-to-br from-red-500 to-red-600 rounded-2xl">
+                  <Users className="h-6 w-6 text-white" />
+                </div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
 
-          <Card className="palette-card">
-            <CardContent className="p-6">
+            <div className="bg-white/90 backdrop-blur-xl rounded-3xl shadow-xl border border-white/20 p-6 hover:shadow-2xl transition-all duration-300">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-black">{t('overview')}</p>
-                  <p className="text-2xl font-bold text-primary">{channelStats.totalViews.toLocaleString()}</p>
+                  <p className="text-sm font-medium text-gray-600 mb-1">Total Views</p>
+                  <p className="text-3xl font-bold text-blue-600">{formatNumber(channelData.viewCount)}</p>
+                  <p className="text-xs text-gray-500 mt-1">All-time views</p>
                 </div>
-                <Eye className="h-8 w-8 text-blue-600" />
+                <div className="p-3 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl">
+                  <Eye className="h-6 w-6 text-white" />
+                </div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
 
-          <Card className="palette-card">
-            <CardContent className="p-6">
+            <div className="bg-white/90 backdrop-blur-xl rounded-3xl shadow-xl border border-white/20 p-6 hover:shadow-2xl transition-all duration-300">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-black">{t('events')}</p>
-                  <p className="text-2xl font-bold text-primary">{channelStats.totalVideos}</p>
+                  <p className="text-sm font-medium text-gray-600 mb-1">Videos</p>
+                  <p className="text-3xl font-bold text-green-600">{channelData.videoCount}</p>
+                  <p className="text-xs text-gray-500 mt-1">Published content</p>
                 </div>
-                <Upload className="h-8 w-8 text-green-600" />
+                <div className="p-3 bg-gradient-to-br from-green-500 to-green-600 rounded-2xl">
+                  <Video className="h-6 w-6 text-white" />
+                </div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
 
-          <Card className="palette-card">
-            <CardContent className="p-6">
+            <div className="bg-white/90 backdrop-blur-xl rounded-3xl shadow-xl border border-white/20 p-6 hover:shadow-2xl transition-all duration-300">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-black">{t('analytics')}</p>
-                  <p className="text-2xl font-bold text-primary">{channelStats.avgViewDuration}m</p>
+                  <p className="text-sm font-medium text-gray-600 mb-1">Engagement</p>
+                  <p className="text-3xl font-bold text-purple-600">
+                    {channelData.viewCount > 0 ? 
+                      Math.round((channelData.subscriberCount / channelData.viewCount) * 10000) / 100 : 0}%
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">Subscriber rate</p>
                 </div>
-                <BarChart3 className="h-8 w-8 text-purple-600" />
+                <div className="p-3 bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl">
+                  <TrendingUp className="h-6 w-6 text-white" />
+                </div>
               </div>
-            </CardContent>
-          </Card>
-        </div>
+            </div>
+          </div>
+        )}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Recent Videos - Modern Grid Layout */}
           <div className="lg:col-span-2">
-            <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/20 p-6">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="p-3 bg-gradient-to-br from-red-500 to-red-600 rounded-2xl shadow-lg">
-                <Play className="h-6 w-6 text-white" />
+            <div className="bg-white/90 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/20 p-6">
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-3">
+                  <div className="p-3 bg-gradient-to-br from-red-500 to-red-600 rounded-2xl shadow-lg">
+                    <Play className="h-6 w-6 text-white" />
+                  </div>
+                  <div>
+                    <h2 className="text-2xl font-bold text-gray-800">Recent Videos</h2>
+                    <p className="text-gray-600">
+                      {isConnected ? 'Your latest YouTube content' : 'Connect to view your videos'}
+                    </p>
+                  </div>
+                </div>
+                
+                {isConnected && videos.length > 0 && (
+                  <div className="text-sm text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
+                    {videos.length} video{videos.length !== 1 ? 's' : ''}
+                  </div>
+                )}
               </div>
-              <div>
-                <h2 className="text-2xl font-bold text-gray-800">Recent Videos</h2>
-                <p className="text-gray-600">Your latest YouTube content</p>
-              </div>
-            </div>
 
             {videos.length === 0 ? (
               <div className="text-center py-12">

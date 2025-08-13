@@ -140,6 +140,65 @@ const currencySymbols: Record<string, string> = {
   USD: '$', EUR: '€', GBP: '£', JPY: '¥', OMR: 'ر.ع.', AED: 'د.إ', SAR: 'ر.س'
 };
 
+// Top 50 languages for translation
+const languages = [
+  { code: 'af', name: 'Afrikaans' },
+  { code: 'ar', name: 'Arabic' },
+  { code: 'bn', name: 'Bengali' },
+  { code: 'bg', name: 'Bulgarian' },
+  { code: 'ca', name: 'Catalan' },
+  { code: 'zh', name: 'Chinese (Simplified)' },
+  { code: 'zh-TW', name: 'Chinese (Traditional)' },
+  { code: 'hr', name: 'Croatian' },
+  { code: 'cs', name: 'Czech' },
+  { code: 'da', name: 'Danish' },
+  { code: 'nl', name: 'Dutch' },
+  { code: 'en', name: 'English' },
+  { code: 'et', name: 'Estonian' },
+  { code: 'fi', name: 'Finnish' },
+  { code: 'fr', name: 'French' },
+  { code: 'de', name: 'German' },
+  { code: 'el', name: 'Greek' },
+  { code: 'gu', name: 'Gujarati' },
+  { code: 'he', name: 'Hebrew' },
+  { code: 'hi', name: 'Hindi' },
+  { code: 'hu', name: 'Hungarian' },
+  { code: 'is', name: 'Icelandic' },
+  { code: 'id', name: 'Indonesian' },
+  { code: 'it', name: 'Italian' },
+  { code: 'ja', name: 'Japanese' },
+  { code: 'kn', name: 'Kannada' },
+  { code: 'ko', name: 'Korean' },
+  { code: 'lv', name: 'Latvian' },
+  { code: 'lt', name: 'Lithuanian' },
+  { code: 'mk', name: 'Macedonian' },
+  { code: 'ms', name: 'Malay' },
+  { code: 'ml', name: 'Malayalam' },
+  { code: 'mt', name: 'Maltese' },
+  { code: 'mr', name: 'Marathi' },
+  { code: 'no', name: 'Norwegian' },
+  { code: 'fa', name: 'Persian' },
+  { code: 'pl', name: 'Polish' },
+  { code: 'pt', name: 'Portuguese' },
+  { code: 'pa', name: 'Punjabi' },
+  { code: 'ro', name: 'Romanian' },
+  { code: 'ru', name: 'Russian' },
+  { code: 'sr', name: 'Serbian' },
+  { code: 'sk', name: 'Slovak' },
+  { code: 'sl', name: 'Slovenian' },
+  { code: 'es', name: 'Spanish' },
+  { code: 'sw', name: 'Swahili' },
+  { code: 'sv', name: 'Swedish' },
+  { code: 'ta', name: 'Tamil' },
+  { code: 'te', name: 'Telugu' },
+  { code: 'th', name: 'Thai' },
+  { code: 'tr', name: 'Turkish' },
+  { code: 'uk', name: 'Ukrainian' },
+  { code: 'ur', name: 'Urdu' },
+  { code: 'vi', name: 'Vietnamese' },
+  { code: 'cy', name: 'Welsh' }
+];
+
 const transportIcons = {
   flight: Plane,
   train: Train,
@@ -181,6 +240,17 @@ export default function TravelCompanionPage() {
   const [translateTo, setTranslateTo] = useState('ar');
   const [textToTranslate, setTextToTranslate] = useState('');
   const [translatedText, setTranslatedText] = useState('');
+  
+  // Document management states
+  const [showDocumentForm, setShowDocumentForm] = useState(false);
+  const [newDocument, setNewDocument] = useState({
+    type: 'passport',
+    name: '',
+    documentNumber: '',
+    expiryDate: '',
+    issuingCountry: '',
+    notes: ''
+  });
 
   // Initialize with sample data
   useEffect(() => {
@@ -296,15 +366,167 @@ export default function TravelCompanionPage() {
   };
 
   const translateText = async () => {
-    // Mock translation - in real implementation, use Google Translate API or similar
-    const translations: Record<string, string> = {
-      'Hello': 'مرحبا',
-      'Thank you': 'شكرا لك',
-      'Where is the airport?': 'أين المطار؟',
-      'How much does this cost?': 'كم يكلف هذا؟'
+    if (!textToTranslate.trim()) {
+      setTranslatedText('Please enter text to translate');
+      return;
+    }
+    
+    try {
+      // Mock translation with more comprehensive examples
+      const translations: Record<string, Record<string, string>> = {
+        'Hello': {
+          ar: 'مرحبا', es: 'Hola', fr: 'Bonjour', de: 'Hallo', it: 'Ciao', 
+          pt: 'Olá', ru: 'Привет', ja: 'こんにちは', ko: '안녕하세요', zh: '你好'
+        },
+        'Thank you': {
+          ar: 'شكرا لك', es: 'Gracias', fr: 'Merci', de: 'Danke', it: 'Grazie',
+          pt: 'Obrigado', ru: 'Спасибо', ja: 'ありがとう', ko: '감사합니다', zh: '谢谢'
+        },
+        'Where is the airport?': {
+          ar: 'أين المطار؟', es: '¿Dónde está el aeropuerto?', fr: 'Où est l\'aéroport?',
+          de: 'Wo ist der Flughafen?', it: 'Dov\'è l\'aeroporto?', pt: 'Onde fica o aeroporto?'
+        },
+        'How much does this cost?': {
+          ar: 'كم يكلف هذا؟', es: '¿Cuánto cuesta esto?', fr: 'Combien ça coûte?',
+          de: 'Wie viel kostet das?', it: 'Quanto costa?', pt: 'Quanto custa isto?'
+        },
+        'I need help': {
+          ar: 'أحتاج المساعدة', es: 'Necesito ayuda', fr: 'J\'ai besoin d\'aide',
+          de: 'Ich brauche Hilfe', it: 'Ho bisogno di aiuto', pt: 'Preciso de ajuda'
+        },
+        'Where is the hotel?': {
+          ar: 'أين الفندق؟', es: '¿Dónde está el hotel?', fr: 'Où est l\'hôtel?',
+          de: 'Wo ist das Hotel?', it: 'Dov\'è l\'hotel?', pt: 'Onde fica o hotel?'
+        }
+      };
+      
+      const result = translations[textToTranslate]?.[translateTo] || 
+                    `Translation from ${languages.find(l => l.code === translateFrom)?.name} to ${languages.find(l => l.code === translateTo)?.name} not available for "${textToTranslate}"`;
+      
+      setTranslatedText(result);
+    } catch (error) {
+      setTranslatedText('Translation failed. Please try again.');
+    }
+  };
+  
+  // Document management functions
+  const addDocument = () => {
+    if (!newDocument.name.trim()) return;
+    
+    const document: TravelDocument = {
+      id: Date.now().toString(),
+      type: newDocument.type as TravelDocument['type'],
+      name: newDocument.name,
+      documentNumber: newDocument.documentNumber,
+      expiryDate: newDocument.expiryDate ? new Date(newDocument.expiryDate) : undefined,
+      issuingCountry: newDocument.issuingCountry,
+      notes: newDocument.notes,
+      reminders: true
     };
     
-    setTranslatedText(translations[textToTranslate] || 'Translation not available');
+    setDocuments([...documents, document]);
+    setNewDocument({
+      type: 'passport',
+      name: '',
+      documentNumber: '',
+      expiryDate: '',
+      issuingCountry: '',
+      notes: ''
+    });
+    setShowDocumentForm(false);
+  };
+  
+  const deleteDocument = (id: string) => {
+    setDocuments(documents.filter(doc => doc.id !== id));
+  };
+  
+  // Activity and itinerary functions
+  const addNewTrip = () => {
+    const newTrip: TravelItinerary = {
+      id: Date.now().toString(),
+      destination: 'New Destination',
+      startDate: new Date(),
+      endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
+      activities: [],
+      budget: 1000,
+      currency: baseCurrency,
+      status: 'planning'
+    };
+    
+    setItineraries([...itineraries, newTrip]);
+    setSelectedItinerary(newTrip);
+  };
+  
+  const addNewActivity = () => {
+    if (!selectedItinerary) return;
+    
+    const newActivity: Activity = {
+      id: Date.now().toString(),
+      name: 'New Activity',
+      description: 'Activity description',
+      date: new Date(),
+      time: '12:00',
+      location: 'Location',
+      cost: 0,
+      currency: selectedItinerary.currency,
+      category: 'other',
+      priority: 'medium',
+      completed: false
+    };
+    
+    const updatedItinerary = {
+      ...selectedItinerary,
+      activities: [...(selectedItinerary.activities || []), newActivity]
+    };
+    
+    setItineraries(itineraries.map(it => it.id === selectedItinerary.id ? updatedItinerary : it));
+    setSelectedItinerary(updatedItinerary);
+  };
+  
+  const addNewTransport = () => {
+    if (!selectedItinerary) return;
+    
+    const newTransport: Transportation = {
+      id: Date.now().toString(),
+      type: 'flight',
+      from: 'Origin',
+      to: 'Destination',
+      departure: new Date(),
+      arrival: new Date(Date.now() + 2 * 60 * 60 * 1000), // 2 hours later
+      provider: 'Transport Provider',
+      bookingReference: 'REF123456',
+      cost: 0,
+      currency: selectedItinerary.currency,
+      status: 'booked'
+    };
+    
+    const updatedItinerary = {
+      ...selectedItinerary,
+      transportation: [...(selectedItinerary.transportation || []), newTransport]
+    };
+    
+    setItineraries(itineraries.map(it => it.id === selectedItinerary.id ? updatedItinerary : it));
+    setSelectedItinerary(updatedItinerary);
+  };
+  
+  const addNewExpense = () => {
+    if (!selectedItinerary) return;
+    
+    const newExpense: TravelExpense = {
+      id: Date.now().toString(),
+      itineraryId: selectedItinerary.id,
+      category: 'other',
+      amount: 0,
+      currency: selectedItinerary.currency,
+      convertedAmount: 0,
+      baseCurrency: baseCurrency,
+      description: 'New Expense',
+      date: new Date(),
+      location: selectedItinerary.destination,
+      paymentMethod: 'card'
+    };
+    
+    setExpenses([...expenses, newExpense]);
   };
 
   const convertCurrency = (amount: number, from: string, to: string): number => {
@@ -386,7 +608,10 @@ export default function TravelCompanionPage() {
                   <CardHeader>
                     <div className="flex justify-between items-center">
                       <CardTitle className="text-2xl text-gray-800">Your Itineraries</CardTitle>
-                      <Button className="bg-gradient-to-r from-blue-500 to-cyan-600 hover:from-blue-600 hover:to-cyan-700 text-black font-bold">
+                      <Button 
+                        onClick={addNewTrip}
+                        className="bg-gradient-to-r from-blue-500 to-cyan-600 hover:from-blue-600 hover:to-cyan-700 text-white font-bold"
+                      >
                         <Plus className="h-4 w-4 mr-2" />
                         New Trip
                       </Button>
@@ -437,7 +662,11 @@ export default function TravelCompanionPage() {
                     <CardHeader>
                       <div className="flex justify-between items-center">
                         <CardTitle className="text-xl text-gray-800">Activities - {selectedItinerary.destination}</CardTitle>
-                        <Button variant="outline" className="bg-white/60 hover:bg-white/80">
+                        <Button 
+                          onClick={addNewActivity}
+                          variant="outline" 
+                          className="bg-white/60 hover:bg-white/80"
+                        >
                           <Plus className="h-4 w-4 mr-2" />
                           Add Activity
                         </Button>
@@ -573,7 +802,10 @@ export default function TravelCompanionPage() {
               <CardHeader>
                 <div className="flex justify-between items-center">
                   <CardTitle className="text-2xl text-gray-800">Transportation Tracking</CardTitle>
-                  <Button className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-black font-bold">
+                  <Button 
+                    onClick={addNewTransport}
+                    className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-bold"
+                  >
                     <Plus className="h-4 w-4 mr-2" />
                     Add Transport
                   </Button>
@@ -681,7 +913,10 @@ export default function TravelCompanionPage() {
                 <CardHeader>
                   <div className="flex justify-between items-center">
                     <CardTitle className="text-2xl text-gray-800">Expense Management</CardTitle>
-                    <Button className="bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-black font-bold">
+                    <Button 
+                      onClick={addNewExpense}
+                      className="bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white font-bold"
+                    >
                       <Plus className="h-4 w-4 mr-2" />
                       Add Expense
                     </Button>
@@ -745,14 +980,206 @@ export default function TravelCompanionPage() {
           </TabsContent>
 
           <TabsContent value="documents">
-            <Card className="bg-white/70 backdrop-blur-xl border-2 border-white/30 rounded-3xl shadow-xl">
-              <CardHeader>
-                <CardTitle className="text-2xl text-gray-800">Travel Documents</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-gray-600">Document management system coming soon...</p>
-              </CardContent>
-            </Card>
+            <div className="space-y-6">
+              {/* Document Management */}
+              <Card className="bg-white/70 backdrop-blur-xl border-2 border-white/30 rounded-3xl shadow-xl">
+                <CardHeader>
+                  <div className="flex justify-between items-center">
+                    <CardTitle className="text-2xl text-gray-800">Travel Documents</CardTitle>
+                    <Button 
+                      onClick={() => setShowDocumentForm(!showDocumentForm)}
+                      className="bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white font-bold"
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Document
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {/* Add Document Form */}
+                  {showDocumentForm && (
+                    <div className="p-6 bg-gradient-to-r from-orange-50 to-red-50 rounded-2xl border border-orange-200 space-y-4">
+                      <h3 className="text-lg font-bold text-gray-800">Add New Document</h3>
+                      
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label>Document Type</Label>
+                          <Select value={newDocument.type} onValueChange={(value) => setNewDocument({...newDocument, type: value})}>
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="passport">Passport</SelectItem>
+                              <SelectItem value="visa">Visa</SelectItem>
+                              <SelectItem value="ticket">Ticket</SelectItem>
+                              <SelectItem value="insurance">Insurance</SelectItem>
+                              <SelectItem value="booking">Booking</SelectItem>
+                              <SelectItem value="other">Other</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        
+                        <div>
+                          <Label>Document Name</Label>
+                          <Input 
+                            value={newDocument.name}
+                            onChange={(e) => setNewDocument({...newDocument, name: e.target.value})}
+                            placeholder="e.g., US Passport"
+                          />
+                        </div>
+                      </div>
+                      
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label>Document Number</Label>
+                          <Input 
+                            value={newDocument.documentNumber}
+                            onChange={(e) => setNewDocument({...newDocument, documentNumber: e.target.value})}
+                            placeholder="Document number"
+                          />
+                        </div>
+                        
+                        <div>
+                          <Label>Issuing Country</Label>
+                          <Input 
+                            value={newDocument.issuingCountry}
+                            onChange={(e) => setNewDocument({...newDocument, issuingCountry: e.target.value})}
+                            placeholder="Country"
+                          />
+                        </div>
+                      </div>
+                      
+                      <div>
+                        <Label>Expiry Date</Label>
+                        <Input 
+                          type="date"
+                          value={newDocument.expiryDate}
+                          onChange={(e) => setNewDocument({...newDocument, expiryDate: e.target.value})}
+                        />
+                      </div>
+                      
+                      <div>
+                        <Label>Notes</Label>
+                        <Textarea 
+                          value={newDocument.notes}
+                          onChange={(e) => setNewDocument({...newDocument, notes: e.target.value})}
+                          placeholder="Additional notes..."
+                          rows={3}
+                        />
+                      </div>
+                      
+                      <div className="flex gap-3">
+                        <Button onClick={addDocument} className="bg-green-600 hover:bg-green-700 text-white">
+                          <Save className="h-4 w-4 mr-2" />
+                          Save Document
+                        </Button>
+                        <Button onClick={() => setShowDocumentForm(false)} variant="outline">
+                          <X className="h-4 w-4 mr-2" />
+                          Cancel
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Documents List */}
+                  <div className="space-y-4">
+                    {documents.map((document) => (
+                      <div key={document.id} className="p-6 bg-gradient-to-r from-white/80 to-white/60 rounded-2xl border border-white/40 shadow-sm">
+                        <div className="flex justify-between items-start mb-4">
+                          <div className="flex items-center gap-4">
+                            <div className="p-3 bg-gradient-to-br from-orange-100 to-red-100 rounded-2xl">
+                              {document.type === 'passport' && <FileCheck className="h-6 w-6 text-orange-600" />}
+                              {document.type === 'visa' && <FileText className="h-6 w-6 text-orange-600" />}
+                              {document.type === 'ticket' && <Ticket className="h-6 w-6 text-orange-600" />}
+                              {document.type === 'insurance' && <FileCheck className="h-6 w-6 text-orange-600" />}
+                              {document.type === 'booking' && <FileText className="h-6 w-6 text-orange-600" />}
+                              {document.type === 'other' && <FileText className="h-6 w-6 text-orange-600" />}
+                            </div>
+                            <div>
+                              <h3 className="font-bold text-lg text-gray-800">{document.name}</h3>
+                              <p className="text-gray-600 capitalize">{document.type}</p>
+                            </div>
+                          </div>
+                          
+                          <div className="flex gap-2">
+                            <Button size="sm" variant="outline" className="text-red-600 hover:bg-red-50">
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                            <Button 
+                              onClick={() => deleteDocument(document.id)}
+                              size="sm" 
+                              variant="outline" 
+                              className="text-red-600 hover:bg-red-50"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                        
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                          {document.documentNumber && (
+                            <div>
+                              <p className="text-gray-500 font-medium">Number</p>
+                              <p className="font-bold text-gray-800">{document.documentNumber}</p>
+                            </div>
+                          )}
+                          {document.issuingCountry && (
+                            <div>
+                              <p className="text-gray-500 font-medium">Issued by</p>
+                              <p className="font-bold text-gray-800">{document.issuingCountry}</p>
+                            </div>
+                          )}
+                          {document.expiryDate && (
+                            <div>
+                              <p className="text-gray-500 font-medium">Expires</p>
+                              <p className={`font-bold ${
+                                new Date(document.expiryDate) < new Date(Date.now() + 180 * 24 * 60 * 60 * 1000) 
+                                  ? 'text-red-600' : 'text-gray-800'
+                              }`}>
+                                {new Date(document.expiryDate).toLocaleDateString()}
+                              </p>
+                              {new Date(document.expiryDate) < new Date(Date.now() + 180 * 24 * 60 * 60 * 1000) && (
+                                <p className="text-xs text-red-600">Expires soon!</p>
+                              )}
+                            </div>
+                          )}
+                          <div>
+                            <p className="text-gray-500 font-medium">Status</p>
+                            <Badge className={`${
+                              document.expiryDate && new Date(document.expiryDate) < new Date() 
+                                ? 'bg-red-100 text-red-800' 
+                                : document.expiryDate && new Date(document.expiryDate) < new Date(Date.now() + 180 * 24 * 60 * 60 * 1000)
+                                  ? 'bg-yellow-100 text-yellow-800'
+                                  : 'bg-green-100 text-green-800'
+                            }`}>
+                              {document.expiryDate && new Date(document.expiryDate) < new Date() 
+                                ? 'Expired' 
+                                : document.expiryDate && new Date(document.expiryDate) < new Date(Date.now() + 180 * 24 * 60 * 60 * 1000)
+                                  ? 'Expiring Soon'
+                                  : 'Valid'}
+                            </Badge>
+                          </div>
+                        </div>
+                        
+                        {document.notes && (
+                          <div className="mt-4 p-3 bg-gray-50 rounded-lg">
+                            <p className="text-sm text-gray-700">{document.notes}</p>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                    
+                    {documents.length === 0 && (
+                      <div className="text-center py-8">
+                        <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                        <p className="text-gray-500">No documents added yet</p>
+                        <p className="text-sm text-gray-400">Add your travel documents for easy access</p>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
 
           <TabsContent value="translate">
@@ -769,10 +1196,9 @@ export default function TravelCompanionPage() {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="en">English</SelectItem>
-                        <SelectItem value="ar">Arabic</SelectItem>
-                        <SelectItem value="es">Spanish</SelectItem>
-                        <SelectItem value="fr">French</SelectItem>
+                        {languages.map((lang) => (
+                          <SelectItem key={lang.code} value={lang.code}>{lang.name}</SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>
@@ -783,10 +1209,9 @@ export default function TravelCompanionPage() {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="ar">Arabic</SelectItem>
-                        <SelectItem value="en">English</SelectItem>
-                        <SelectItem value="es">Spanish</SelectItem>
-                        <SelectItem value="fr">French</SelectItem>
+                        {languages.map((lang) => (
+                          <SelectItem key={lang.code} value={lang.code}>{lang.name}</SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>
@@ -799,10 +1224,64 @@ export default function TravelCompanionPage() {
                   className="min-h-[100px]"
                 />
                 
-                <Button onClick={translateText} className="w-full bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-black font-bold">
-                  <Languages className="h-4 w-4 mr-2" />
-                  Translate
-                </Button>
+                <div className="space-y-3">
+                  <Button onClick={translateText} className="w-full bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-bold">
+                    <Languages className="h-4 w-4 mr-2" />
+                    Translate
+                  </Button>
+                  
+                  {/* Common Travel Phrases */}
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button 
+                      onClick={() => setTextToTranslate('Hello')}
+                      variant="outline" 
+                      size="sm" 
+                      className="text-xs"
+                    >
+                      Hello
+                    </Button>
+                    <Button 
+                      onClick={() => setTextToTranslate('Thank you')}
+                      variant="outline" 
+                      size="sm" 
+                      className="text-xs"
+                    >
+                      Thank you
+                    </Button>
+                    <Button 
+                      onClick={() => setTextToTranslate('Where is the airport?')}
+                      variant="outline" 
+                      size="sm" 
+                      className="text-xs"
+                    >
+                      Airport?
+                    </Button>
+                    <Button 
+                      onClick={() => setTextToTranslate('How much does this cost?')}
+                      variant="outline" 
+                      size="sm" 
+                      className="text-xs"
+                    >
+                      How much?
+                    </Button>
+                    <Button 
+                      onClick={() => setTextToTranslate('I need help')}
+                      variant="outline" 
+                      size="sm" 
+                      className="text-xs"
+                    >
+                      Need help
+                    </Button>
+                    <Button 
+                      onClick={() => setTextToTranslate('Where is the hotel?')}
+                      variant="outline" 
+                      size="sm" 
+                      className="text-xs"
+                    >
+                      Hotel?
+                    </Button>
+                  </div>
+                </div>
                 
                 {translatedText && (
                   <div className="p-4 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl border border-indigo-200">

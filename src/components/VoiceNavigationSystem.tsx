@@ -32,7 +32,8 @@ import {
   MapPin,
   Music,
   Eye,
-  Globe
+  Globe,
+  Waves
 } from 'lucide-react';
 
 interface VoiceCommand {
@@ -498,186 +499,243 @@ export const VoiceNavigationSystem: React.FC<VoiceNavigationSystemProps> = ({
 
   if (compact) {
     return (
-      <div className={`flex items-center gap-2 ${className}`}>
+      <div className={`flex items-center gap-3 ${className}`}>
         <Button
           onClick={toggleListening}
           disabled={!isEnabled}
-          className={`p-2 ${isListening 
-            ? 'bg-red-500 hover:bg-red-600 text-white animate-pulse' 
-            : 'bg-blue-500 hover:bg-blue-600 text-white'
+          className={`flex items-center gap-3 px-6 py-4 text-base font-bold rounded-2xl transition-all duration-300 shadow-2xl border-0 ${
+            isListening
+              ? 'bg-gradient-to-r from-red-500 via-red-600 to-red-700 hover:from-red-600 hover:via-red-700 hover:to-red-800 text-white animate-pulse scale-110 shadow-red-500/50'
+              : 'bg-gradient-to-r from-blue-500 via-indigo-600 to-purple-700 hover:from-blue-600 hover:via-indigo-700 hover:to-purple-800 text-white hover:scale-105 shadow-blue-500/50'
           }`}
           title="Voice Navigation"
         >
-          {isListening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
-        </Button>
-        
-        {feedback && (
-          <span className="text-xs text-blue-600 font-medium animate-fade-in">
-            {feedback}
-          </span>
-        )}
-      </div>
-    );
-  }
-
-  // Compact mode - just show the voice control button
-  if (compact) {
-    return (
-      <div className={`flex items-center gap-2 ${className}`}>
-        <Button
-          onClick={toggleListening}
-          disabled={!isEnabled}
-          className={`flex items-center gap-2 rounded-2xl px-4 py-3 text-sm font-semibold transition-all duration-300 ${
-            isListening
-              ? 'bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white shadow-lg animate-pulse'
-              : 'bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white shadow-lg hover:shadow-xl transform hover:scale-105'
-          }`}
-        >
-          {isListening ? (
-            <MicOff className="h-5 w-5" />
-          ) : (
-            <Mic className="h-5 w-5" />
-          )}
+          {isListening ? <MicOff className="h-6 w-6" /> : <Mic className="h-6 w-6" />}
           {showLabel && (
-            <span className="hidden sm:inline">
-              {isListening ? 'Stop' : 'Voice'}
+            <span className="hidden sm:inline text-lg">
+              {isListening ? 'Stop Voice' : 'Voice Command'}
             </span>
           )}
         </Button>
         
         {isListening && (
-          <div className="flex items-center gap-1 text-red-600 animate-pulse text-xs">
-            <div className="w-2 h-2 bg-red-500 rounded-full animate-ping"></div>
-            <span className="hidden md:inline font-medium">Listening</span>
+          <div className="flex items-center gap-2 bg-red-100 px-4 py-2 rounded-full border-2 border-red-300 animate-pulse">
+            <div className="w-3 h-3 bg-red-500 rounded-full animate-ping"></div>
+            <span className="text-red-700 font-bold text-sm">LISTENING</span>
+          </div>
+        )}
+        
+        {feedback && !isListening && (
+          <div className="bg-blue-100 px-4 py-2 rounded-full border-2 border-blue-300 animate-fade-in">
+            <span className="text-blue-700 font-semibold text-sm">
+              {feedback}
+            </span>
           </div>
         )}
       </div>
     );
   }
 
+
   return (
-    <div className={`bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 border border-blue-200 rounded-xl p-6 shadow-lg backdrop-blur-sm ${className}`}>
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl shadow-lg">
-            <Navigation className="h-6 w-6 text-white" />
+    <div className={`bg-white/95 backdrop-blur-2xl border-2 border-gradient-to-r from-blue-200 via-indigo-200 to-purple-200 rounded-3xl p-8 shadow-2xl ${className}`}>
+      <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center gap-4">
+          <div className="p-4 bg-gradient-to-br from-blue-500 via-indigo-600 to-purple-700 rounded-2xl shadow-2xl">
+            <Navigation className="h-8 w-8 text-white" />
           </div>
           <div>
-            <h3 className="text-xl font-bold text-gray-800">Voice Navigation</h3>
-            <p className="text-sm text-gray-600">Navigate hands-free with voice commands</p>
+            <h3 className="text-3xl font-bold bg-gradient-to-r from-blue-600 via-indigo-700 to-purple-800 bg-clip-text text-transparent">
+              AI Voice Navigation
+            </h3>
+            <p className="text-lg text-gray-600 font-medium">Navigate hands-free with natural speech commands</p>
+            <div className="flex items-center gap-2 mt-2">
+              <div className={`w-3 h-3 rounded-full ${
+                isEnabled ? 'bg-green-500 animate-pulse' : 'bg-gray-400'
+              }`}></div>
+              <span className={`text-sm font-semibold ${
+                isEnabled ? 'text-green-600' : 'text-gray-500'
+              }`}>
+                {isEnabled ? 'System Active' : 'System Disabled'}
+              </span>
+            </div>
           </div>
         </div>
         
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           <Button
             onClick={() => setShowCommands(!showCommands)}
-            variant="outline"
-            size="sm"
-            className="text-gray-600"
+            className="bg-gradient-to-r from-gray-100 to-gray-200 hover:from-gray-200 hover:to-gray-300 text-gray-800 font-semibold px-6 py-3 rounded-xl border-2 border-gray-300 shadow-lg hover:shadow-xl transition-all duration-300"
           >
-            <Command className="h-4 w-4 mr-2" />
-            Commands
+            <Command className="h-5 w-5 mr-2" />
+            Show Commands
           </Button>
           
           <Button
             onClick={toggleEnabled}
-            variant="outline"
-            size="sm"
-            className={isEnabled ? 'text-blue-600' : 'text-gray-400'}
+            className={`px-6 py-3 rounded-xl font-semibold border-2 shadow-lg hover:shadow-xl transition-all duration-300 ${
+              isEnabled 
+                ? 'bg-gradient-to-r from-green-100 to-green-200 hover:from-green-200 hover:to-green-300 text-green-800 border-green-300'
+                : 'bg-gradient-to-r from-red-100 to-red-200 hover:from-red-200 hover:to-red-300 text-red-800 border-red-300'
+            }`}
           >
-            {isEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
+            {isEnabled ? (
+              <>
+                <Volume2 className="h-5 w-5 mr-2" />
+                Enabled
+              </>
+            ) : (
+              <>
+                <VolumeX className="h-5 w-5 mr-2" />
+                Disabled
+              </>
+            )}
           </Button>
         </div>
       </div>
 
-      <div className="flex items-center gap-4 mb-6">
+      <div className="flex flex-col sm:flex-row items-center gap-6 mb-8">
         <Button
           onClick={toggleListening}
           disabled={!isEnabled}
-          className={`px-8 py-4 text-lg font-semibold rounded-xl transition-all duration-300 ${
+          className={`flex items-center gap-4 px-12 py-6 text-xl font-bold rounded-2xl transition-all duration-500 border-0 shadow-2xl min-w-[280px] ${
             isListening
-              ? 'bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white shadow-lg animate-pulse'
-              : 'bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white shadow-lg hover:shadow-xl transform hover:scale-105'
+              ? 'bg-gradient-to-r from-red-500 via-red-600 to-red-700 hover:from-red-600 hover:via-red-700 hover:to-red-800 text-white animate-pulse scale-105 shadow-red-500/50'
+              : 'bg-gradient-to-r from-blue-500 via-indigo-600 to-purple-700 hover:from-blue-600 hover:via-indigo-700 hover:to-purple-800 text-white hover:scale-105 shadow-blue-500/50'
           }`}
         >
           {isListening ? (
             <>
-              <MicOff className="h-6 w-6 mr-3" />
+              <MicOff className="h-8 w-8" />
               Stop Listening
             </>
           ) : (
             <>
-              <Mic className="h-6 w-6 mr-3" />
-              Start Voice Navigation
+              <Mic className="h-8 w-8" />
+              Start Voice Command
             </>
           )}
         </Button>
         
         {isListening && (
-          <div className="flex items-center gap-2 text-red-600 animate-pulse">
-            <div className="w-3 h-3 bg-red-500 rounded-full animate-ping"></div>
-            <span className="font-medium">Listening...</span>
+          <div className="flex items-center gap-4 bg-gradient-to-r from-red-100 to-red-200 px-6 py-4 rounded-2xl border-2 border-red-300 shadow-xl animate-pulse">
+            <div className="relative">
+              <div className="w-4 h-4 bg-red-500 rounded-full animate-ping absolute"></div>
+              <div className="w-4 h-4 bg-red-600 rounded-full"></div>
+            </div>
+            <span className="font-bold text-red-700 text-lg">LISTENING FOR COMMANDS</span>
+            <div className="flex gap-1">
+              <div className="w-2 h-6 bg-red-500 rounded animate-pulse"></div>
+              <div className="w-2 h-8 bg-red-600 rounded animate-pulse" style={{animationDelay: '0.1s'}}></div>
+              <div className="w-2 h-4 bg-red-500 rounded animate-pulse" style={{animationDelay: '0.2s'}}></div>
+              <div className="w-2 h-7 bg-red-600 rounded animate-pulse" style={{animationDelay: '0.3s'}}></div>
+            </div>
           </div>
         )}
       </div>
 
       {feedback && (
-        <div className="mb-4 p-3 bg-blue-100 border border-blue-200 rounded-lg">
-          <p className="text-sm text-blue-800 font-medium">{feedback}</p>
+        <div className="mb-6 p-5 bg-gradient-to-r from-blue-100 to-indigo-100 border-2 border-blue-300 rounded-2xl shadow-lg">
+          <p className="text-lg text-blue-800 font-bold flex items-center gap-3">
+            <div className="w-3 h-3 bg-blue-500 rounded-full animate-pulse"></div>
+            {feedback}
+          </p>
         </div>
       )}
 
       {transcript && (
-        <div className="mb-4 p-3 bg-gray-100 border border-gray-200 rounded-lg">
-          <p className="text-sm text-gray-700">
-            <strong>Heard:</strong> "{transcript}"
+        <div className="mb-6 p-5 bg-gradient-to-r from-gray-100 to-gray-200 border-2 border-gray-300 rounded-2xl shadow-lg">
+          <p className="text-lg text-gray-800 font-semibold">
+            <strong className="text-gray-600">Heard:</strong> <span className="text-gray-900">"{transcript}"</span>
           </p>
         </div>
       )}
 
       {lastCommand && (
-        <div className="mb-4 p-3 bg-green-100 border border-green-200 rounded-lg">
-          <p className="text-sm text-green-800">
+        <div className="mb-6 p-5 bg-gradient-to-r from-green-100 to-emerald-100 border-2 border-green-300 rounded-2xl shadow-lg">
+          <p className="text-lg text-green-800 font-bold flex items-center gap-3">
+            <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
             <strong>Last Command:</strong> {lastCommand}
           </p>
         </div>
       )}
 
       {showCommands && (
-        <div className="mt-6 p-4 bg-white/80 backdrop-blur-sm border border-gray-200 rounded-xl">
-          <h4 className="font-semibold text-gray-800 mb-4">Available Voice Commands:</h4>
+        <div className="mt-8 p-6 bg-white/90 backdrop-blur-xl border-2 border-gray-300 rounded-3xl shadow-2xl">
+          <div className="flex items-center gap-4 mb-6">
+            <div className="p-3 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-xl shadow-lg">
+              <Command className="h-6 w-6 text-white" />
+            </div>
+            <h4 className="text-2xl font-bold text-gray-800">Available Voice Commands</h4>
+          </div>
           
           {['navigation', 'control'].map(category => (
-            <div key={category} className="mb-4">
-              <h5 className="text-sm font-medium text-gray-600 mb-2 capitalize">
+            <div key={category} className="mb-8">
+              <h5 className="text-xl font-bold text-gray-700 mb-4 capitalize flex items-center gap-3">
+                <div className="w-2 h-2 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full"></div>
                 {category} Commands
               </h5>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
                 {voiceCommands
                   .filter(cmd => cmd.category === category)
+                  .slice(0, 12) // Limit to first 12 for better display
                   .map((command, index) => (
-                    <div key={index} className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg">
-                      {command.icon}
-                      <div>
-                        <p className="text-sm font-medium text-gray-800">{command.description}</p>
-                        <p className="text-xs text-gray-500">
-                          Say: "{command.pattern[0]}"
+                    <div key={index} className="flex items-start gap-4 p-4 bg-gradient-to-r from-gray-50 to-white border border-gray-200 rounded-2xl hover:shadow-lg transition-all duration-300 hover:scale-102">
+                      <div className="p-2 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-lg">
+                        {command.icon}
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-base font-bold text-gray-800 mb-1">{command.description}</p>
+                        <p className="text-sm text-gray-600 font-medium">
+                          Say: <span className="text-blue-600 font-bold">"{command.pattern[0]}"</span>
                         </p>
                       </div>
                     </div>
                   ))}
               </div>
+              {voiceCommands.filter(cmd => cmd.category === category).length > 12 && (
+                <p className="text-sm text-gray-500 mt-4 text-center font-medium">
+                  ...and {voiceCommands.filter(cmd => cmd.category === category).length - 12} more commands
+                </p>
+              )}
             </div>
           ))}
           
-          <Button
-            onClick={() => setShowCommands(false)}
-            size="sm"
-            variant="outline"
-            className="mt-4"
-          >
-            Close Commands
-          </Button>
+          <div className="flex justify-center mt-6">
+            <Button
+              onClick={() => setShowCommands(false)}
+              className="bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white px-8 py-3 text-lg font-semibold rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300"
+            >
+              Close Commands
+            </Button>
+          </div>
+        </div>
+      )}
+      
+      {/* Quick Command Examples */}
+      {!showCommands && (
+        <div className="mt-6 p-6 bg-gradient-to-r from-indigo-50 to-purple-50 border-2 border-indigo-200 rounded-2xl">
+          <h4 className="text-lg font-bold text-indigo-800 mb-4">Quick Examples - Try saying:</h4>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+            <div className="bg-white/70 p-3 rounded-xl border border-indigo-200">
+              <p className="text-indigo-700 font-semibold">"Go home"</p>
+            </div>
+            <div className="bg-white/70 p-3 rounded-xl border border-indigo-200">
+              <p className="text-indigo-700 font-semibold">"Open calendar"</p>
+            </div>
+            <div className="bg-white/70 p-3 rounded-xl border border-indigo-200">
+              <p className="text-indigo-700 font-semibold">"Show expenses"</p>
+            </div>
+            <div className="bg-white/70 p-3 rounded-xl border border-indigo-200">
+              <p className="text-indigo-700 font-semibold">"Help"</p>
+            </div>
+            <div className="bg-white/70 p-3 rounded-xl border border-indigo-200">
+              <p className="text-indigo-700 font-semibold">"Play music"</p>
+            </div>
+            <div className="bg-white/70 p-3 rounded-xl border border-indigo-200">
+              <p className="text-indigo-700 font-semibold">"Go back"</p>
+            </div>
+          </div>
         </div>
       )}
     </div>

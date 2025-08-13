@@ -157,18 +157,24 @@ export function MusicPlayer({
     const audio = audioRef.current;
     if (!audio || !currentSong) return;
 
-    // Use preview URL if available, otherwise try to use YouTube or Spotify web player
+    // Clear any previous errors when switching songs
+    setPlaybackError(null);
+
+    // Use preview URL if available
     let audioSource = '';
     if (currentSong.previewUrl) {
       audioSource = currentSong.previewUrl;
     } else {
-      // For demo purposes, we'll use a placeholder
-      // In a real app, you'd integrate with proper streaming APIs
-      audioSource = ''; // No direct playback for full tracks without proper licensing
+      // No direct playback available - show appropriate message
+      setPlaybackError(`No preview available for "${currentSong.title}". ${currentSong.spotifyUrl ? 'Open in Spotify' : 'Open in YouTube'} for full playback.`);
+      return;
     }
 
     if (audioSource && audioSource !== audio.src) {
       audio.src = audioSource;
+      audio.load();
+    } else if (!audioSource) {
+      audio.removeAttribute('src');
       audio.load();
     }
   }, [currentSong]);
@@ -412,11 +418,36 @@ export function MusicPlayer({
 
         {/* Error Message */}
         {playbackError && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-            <p className="text-sm text-red-600">{playbackError}</p>
-            <p className="text-xs text-red-500 mt-1">
-              Try opening the song in {currentSong.spotifyUrl ? 'Spotify' : 'YouTube'} for full playback.
-            </p>
+          <div className="bg-orange-50 border border-orange-200 rounded-lg p-3">
+            <div className="flex items-start gap-3">
+              <Music2 className="h-5 w-5 text-orange-600 mt-0.5 flex-shrink-0" />
+              <div className="flex-1">
+                <p className="text-sm text-orange-700 font-medium">Preview Not Available</p>
+                <p className="text-xs text-orange-600 mt-1">{playbackError}</p>
+                <div className="flex gap-2 mt-2">
+                  {currentSong.spotifyUrl && (
+                    <Button
+                      size="sm"
+                      className="bg-green-600 hover:bg-green-700 text-white"
+                      onClick={() => openExternalLink(currentSong.spotifyUrl!)}
+                    >
+                      <Music2 className="h-3 w-3 mr-1" />
+                      Open in Spotify
+                    </Button>
+                  )}
+                  {currentSong.youtubeUrl && (
+                    <Button
+                      size="sm"
+                      className="bg-red-600 hover:bg-red-700 text-white"
+                      onClick={() => openExternalLink(currentSong.youtubeUrl!)}
+                    >
+                      <Video className="h-3 w-3 mr-1" />
+                      Open in YouTube
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </div>
           </div>
         )}
 

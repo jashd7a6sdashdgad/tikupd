@@ -6,7 +6,6 @@ import { AuthGuard } from '@/components/AuthGuard';
 import { useTheme } from '@/hooks/useTheme';
 import { ModernVoiceWidget } from '@/components/ui/ModernVoiceWidget';
 import { VoiceNavigationSystem } from '@/components/VoiceNavigationSystem';
-import { GestureControls } from '@/components/GestureControls';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 
 function ProtectedLayoutContent({ children }: { children: React.ReactNode }) {
@@ -29,13 +28,11 @@ function ProtectedLayoutContent({ children }: { children: React.ReactNode }) {
         {children}
       </main>
       
-      {/* Voice Navigation System - Compact floating widget */}
-      <div className="fixed bottom-4 left-4 z-50">
+      {/* Voice Navigation System - Modern floating widget */}
+      <div className="fixed bottom-6 left-6 z-50 lg:left-78">
         <VoiceNavigationSystem compact={true} />
       </div>
       
-      {/* Gesture Controls - Touch/swipe navigation */}
-      <GestureControls showIndicator={true} />
       
       {/* Global AI Voice Assistant */}
       <ModernVoiceWidget

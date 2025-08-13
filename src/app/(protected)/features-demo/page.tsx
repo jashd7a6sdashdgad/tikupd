@@ -50,20 +50,6 @@ export default function FeaturesDemoPage() {
         'Hide/show widgets as needed'
       ]
     },
-    {
-      id: 'gesture-controls',
-      title: 'Gesture Controls',
-      description: 'Touch and swipe shortcuts for mobile navigation',
-      icon: <Hand className="h-8 w-8" />,
-      color: 'from-orange-500 to-red-600',
-      status: 'Active',
-      commands: [
-        'Swipe right: Go back',
-        'Swipe left: Refresh page',
-        'Swipe up: Go to dashboard',
-        'Double tap: Refresh page'
-      ]
-    }
   ];
 
   const achievements = [
@@ -79,7 +65,7 @@ export default function FeaturesDemoPage() {
     },
     {
       title: 'Mobile Optimized',
-      description: 'Gesture controls provide native mobile app experience',
+      description: 'Responsive design provides excellent mobile experience',
       icon: <Rocket className="h-6 w-6 text-blue-500" />
     },
     {
@@ -244,14 +230,10 @@ export default function FeaturesDemoPage() {
                   Customize Widgets
                 </Button>
                 
-                <Button className="bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white">
-                  <Hand className="h-4 w-4 mr-2" />
-                  Gesture Controls
-                </Button>
               </div>
               
               <div className="mt-6 text-sm text-gray-500">
-                <p>💡 Simply say "Help" for voice commands or use touch gestures on mobile</p>
+                <p>💡 Simply say "Help" for voice commands or use the responsive mobile interface</p>
               </div>
             </div>
           </div>
