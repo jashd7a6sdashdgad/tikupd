@@ -120,19 +120,19 @@ export function SmartNarratorProvider({ children }: SmartNarratorProviderProps) 
       }
     };
 
-    // Listen for errors in the console (simplified error detection)
-    const originalConsoleError = console.error;
-    console.error = (...args) => {
-      originalConsoleError.apply(console, args);
-      
-      // Check if it's a network or API error
-      const errorMessage = args.join(' ').toLowerCase();
-      if (errorMessage.includes('fetch') || errorMessage.includes('network') || errorMessage.includes('api')) {
-        setTimeout(() => {
-          announceError("I encountered a connection issue, but I'm working on resolving it for you.");
-        }, 1000);
-      }
-    };
+    // Disabled automatic error announcements - user requested removal
+    // const originalConsoleError = console.error;
+    // console.error = (...args) => {
+    //   originalConsoleError.apply(console, args);
+    //   
+    //   // Check if it's a network or API error
+    //   const errorMessage = args.join(' ').toLowerCase();
+    //   if (errorMessage.includes('fetch') || errorMessage.includes('network') || errorMessage.includes('api')) {
+    //     setTimeout(() => {
+    //       announceError("I encountered a connection issue, but I'm working on resolving it for you.");
+    //     }, 1000);
+    //   }
+    // };
 
     document.addEventListener('submit', handleFormSubmit);
     document.addEventListener('click', handleButtonClick);
@@ -140,7 +140,7 @@ export function SmartNarratorProvider({ children }: SmartNarratorProviderProps) 
     return () => {
       document.removeEventListener('submit', handleFormSubmit);
       document.removeEventListener('click', handleButtonClick);
-      console.error = originalConsoleError;
+      // console.error = originalConsoleError; // Disabled
     };
   }, [isEnabled]);
 

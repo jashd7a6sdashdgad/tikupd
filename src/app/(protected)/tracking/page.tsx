@@ -20,7 +20,6 @@ import {
   Filter,
   Users,
   BookOpen,
-  Facebook,
   Youtube,
   Building2,
   Briefcase,
@@ -45,7 +44,6 @@ interface AnalyticsData {
     totalContacts: number;
   };
   social: {
-    facebookReach: string;
     youtubeViews: string;
   };
   trends: {
@@ -84,7 +82,6 @@ export default function TrackingPage() {
       totalContacts: 0
     },
     social: {
-      facebookReach: '0',
       youtubeViews: '0'
     },
     trends: {
@@ -226,7 +223,18 @@ export default function TrackingPage() {
     console.log('📊 Fetching analytics data from centralized API...');
     
     try {
-      const response = await fetch('/api/analytics/tracking');
+      // Get JWT token from cookies
+      const token = document.cookie
+        .split('; ')
+        .find(row => row.startsWith('auth-token='))
+        ?.split('=')[1];
+
+      const response = await fetch('/api/analytics/tracking', {
+        headers: {
+          'Authorization': token ? `Bearer ${token}` : '',
+          'Content-Type': 'application/json',
+        }
+      });
       const result = await response.json();
       
       if (result.success && result.data) {
@@ -277,7 +285,6 @@ export default function TrackingPage() {
           totalContacts: 0
         },
         social: {
-          facebookReach: '0',
           youtubeViews: '0'
         },
         trends: {
@@ -324,8 +331,6 @@ export default function TrackingPage() {
     
     return {
       // Social metrics based on actual engagement
-      facebookReach: analyticsData.overview.totalContacts > 0 ? 
-        `${Math.round(analyticsData.overview.totalContacts * 0.8)}` : '0',
       youtubeViews: analyticsData.overview.totalEvents > 0 ? 
         `${Math.round(analyticsData.overview.totalEvents * 12)}` : '0',
       
@@ -784,17 +789,6 @@ export default function TrackingPage() {
                 <div>
                   <h4 className="font-semibold text-black mb-3">{t('analytics')}</h4>
                   <div className="space-y-3">
-                    <div className="flex items-center justify-between p-2 bg-blue-50 rounded-lg">
-                      <div className="flex items-center">
-                        <Facebook className="h-4 w-4 mr-2 text-blue-600" />
-                        <span className="text-sm text-blue-800">{t('facebook')}</span>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-sm font-bold text-blue-700">{dynamicMetrics.facebookReach}</div>
-                        <div className="text-xs text-blue-600">{t('overview')}</div>
-                      </div>
-                    </div>
-                    
                     <div className="flex items-center justify-between p-2 bg-red-50 rounded-lg">
                       <div className="flex items-center">
                         <Youtube className="h-4 w-4 mr-2 text-red-600" />

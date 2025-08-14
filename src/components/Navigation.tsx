@@ -36,6 +36,7 @@ import { useSettings } from '@/contexts/SettingsContext';
 import { useTranslation } from '@/lib/translations';
 import { VoiceNavigationSystem } from '@/components/VoiceNavigationSystem';
 import { Button } from '@/components/ui/button';
+import { useMusic } from '@/contexts/MusicContext';
 
 interface NavigationItem {
   key: string;
@@ -184,6 +185,7 @@ export function Navigation() {
   const { logout } = useAuth();
   const { language, isRTL } = useSettings();
   const { t } = useTranslation(language);
+  const { isGlobalMusicEnabled, toggleGlobalMusic } = useMusic();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isConnectingGoogle, setIsConnectingGoogle] = useState(false);
   
@@ -297,6 +299,44 @@ export function Navigation() {
                       </svg>
                     )}
                     <span>{isConnectingGoogle ? t('connecting') : t('connectGoogle')}</span>
+                  </Button>
+                  
+                  {/* Global Music Toggle */}
+                  <Button
+                    onClick={toggleGlobalMusic}
+                    className={cn(
+                      'group flex w-full gap-x-4 rounded-2xl p-4 text-sm leading-6 font-semibold transition-all duration-500 ease-out relative overflow-hidden',
+                      isGlobalMusicEnabled
+                        ? 'bg-orange-100/90 backdrop-blur-lg text-orange-700 font-bold shadow-xl shadow-orange-500/20 border border-orange-200/50'
+                        : 'text-gray-700 hover:text-orange-700 hover:bg-orange-50/70 hover:backdrop-blur-lg hover:shadow-lg hover:shadow-orange-500/10 hover:border hover:border-orange-200/30 hover:scale-102 hover:transform hover:translate-x-2'
+                    )}
+                    variant="ghost"
+                  >
+                    <div className={cn(
+                      "p-2 rounded-xl transition-all duration-500",
+                      isGlobalMusicEnabled
+                        ? "bg-gradient-to-br from-orange-500 to-red-600 shadow-lg"
+                        : "bg-gray-100 group-hover:bg-gradient-to-br group-hover:from-orange-500 group-hover:to-red-600 group-hover:shadow-lg"
+                    )}>
+                      <Music className={cn(
+                        "h-5 w-5 shrink-0 transition-all duration-500",
+                        isGlobalMusicEnabled
+                          ? "text-white transform scale-110" 
+                          : "text-gray-600 group-hover:text-white group-hover:scale-110 group-hover:rotate-6"
+                      )} />
+                    </div>
+                    <span className="transition-all duration-500 group-hover:translate-x-1 flex-1">
+                      Hindi Music {isGlobalMusicEnabled ? 'ON' : 'OFF'}
+                    </span>
+                    {isGlobalMusicEnabled && (
+                      <div className="absolute inset-0 bg-gradient-to-r from-orange-500/10 to-transparent opacity-50 animate-pulse rounded-2xl"></div>
+                    )}
+                    <div className={cn(
+                      "w-1 h-8 rounded-full transition-all duration-500",
+                      isGlobalMusicEnabled
+                        ? "bg-gradient-to-b from-orange-500 to-red-600 shadow-lg" 
+                        : "bg-transparent group-hover:bg-gradient-to-b group-hover:from-orange-400 group-hover:to-red-500"
+                    )} />
                   </Button>
                   
                   <Link

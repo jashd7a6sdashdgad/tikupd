@@ -6,7 +6,9 @@ import { AuthGuard } from '@/components/AuthGuard';
 import { useTheme } from '@/hooks/useTheme';
 import { ModernVoiceWidget } from '@/components/ui/ModernVoiceWidget';
 import { VoiceNavigationSystem } from '@/components/VoiceNavigationSystem';
+import { GlobalHindiMusicPlayer } from '@/components/GlobalHindiMusicPlayer';
 import { ThemeProvider } from '@/contexts/ThemeContext';
+import { MusicProvider } from '@/contexts/MusicContext';
 
 function ProtectedLayoutContent({ children }: { children: React.ReactNode }) {
   useTheme(); // Apply saved theme settings
@@ -39,6 +41,9 @@ function ProtectedLayoutContent({ children }: { children: React.ReactNode }) {
         collapsed={isVoiceCollapsed}
         onToggleCollapse={() => setIsVoiceCollapsed(!isVoiceCollapsed)}
       />
+      
+      {/* Global Hindi Music Player */}
+      <GlobalHindiMusicPlayer />
     </div>
   );
 }
@@ -51,9 +56,11 @@ export default function ProtectedLayout({
   return (
     <AuthGuard>
       <ThemeProvider>
-        <ProtectedLayoutContent>
-          {children}
-        </ProtectedLayoutContent>
+        <MusicProvider>
+          <ProtectedLayoutContent>
+            {children}
+          </ProtectedLayoutContent>
+        </MusicProvider>
       </ThemeProvider>
     </AuthGuard>
   );
