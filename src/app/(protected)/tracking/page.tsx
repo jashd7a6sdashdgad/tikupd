@@ -100,26 +100,12 @@ interface AnalyticsData {
 }
 
 export default function TrackingPage() {
-  // Global error handler for the component
-  const handleError = (error: Error) => {
-    console.error('Tracking page error:', error);
-    setError(`Unexpected error: ${error.message}`);
-  };
-
-  // Add global error handler
-  if (typeof window !== 'undefined') {
-    window.addEventListener('error', (event) => {
-      handleError(new Error(event.error?.message || 'Unknown error'));
-    });
-    
-    window.addEventListener('unhandledrejection', (event) => {
-      handleError(new Error(event.reason?.message || 'Promise rejection'));
-    });
-  }
   const { language } = useSettings();
   const { t } = useTranslation(language);
   const [timeRange, setTimeRange] = useState('30d');
   const [bankAnalytics, setBankAnalytics] = useState<BankAnalyticsData | null>(null);
+  
+
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData>({
     overview: {
       totalEvents: 0,
@@ -150,7 +136,6 @@ export default function TrackingPage() {
     }
   });
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   
   // Calendar data state
   const [calendarData, setCalendarData] = useState<{
@@ -362,7 +347,6 @@ export default function TrackingPage() {
       }
     } catch (error) {
       console.error('❌ Error fetching REAL bank analytics:', error);
-      setError(`Bank analytics error: ${error instanceof Error ? error.message : 'Unknown error'}`);
       // Show network error instead of mock data
       setBankAnalytics({
         bankAnalysis: [],
@@ -417,7 +401,6 @@ export default function TrackingPage() {
       setLoading(false);
     } catch (error) {
       console.error('Error fetching analytics:', error);
-      setError(`Analytics error: ${error instanceof Error ? error.message : 'Unknown error'}`);
       
       // Try to fetch data from localStorage cache
       try {
@@ -481,11 +464,9 @@ export default function TrackingPage() {
         setCalendarData(result.data);
       } else {
         console.error('Calendar data fetch failed:', result.error);
-        setError(`Calendar data error: ${result.error || 'Unknown error'}`);
       }
     } catch (error) {
       console.error('Calendar data fetch error:', error);
-      setError(`Calendar data error: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setCalendarLoading(false);
     }
@@ -507,60 +488,32 @@ export default function TrackingPage() {
 
   // Dynamic calculations based on real user data
   const calculateDynamicMetrics = () => {
-    try {
-      // Safety checks for analyticsData
-      if (!analyticsData || !analyticsData.overview || !analyticsData.trends || !analyticsData.productivity) {
-        return {
-          youtubeViews: '0',
-          eventsGoalProgress: '0/10',
-          budgetProgress: '0/200 OMR',
-          contactsProgress: '0/15',
-          efficiencyScore: '0%',
-          userRating: '0.0',
-          overallScore: 0,
-          engagementRate: 0
-        };
-      }
-
-      const totalActivities = (analyticsData.overview.totalEvents || 0) + (analyticsData.overview.totalEmails || 0);
-      const avgDaily = totalActivities > 0 ? Math.round(totalActivities / 30) : 0; // Monthly average
+    const totalActivities = analyticsData.overview.totalEvents + analyticsData.overview.totalEmails;
+    const avgDaily = totalActivities > 0 ? Math.round(totalActivities / 30) : 0; // Monthly average
+    
+    return {
+      // Social metrics based on actual engagement
+      youtubeViews: analyticsData.overview.totalEvents > 0 ? 
+        `${Math.round(analyticsData.overview.totalEvents * 12)}` : '0',
       
-      return {
-        // Social metrics based on actual engagement
-        youtubeViews: (analyticsData.overview.totalEvents || 0) > 0 ? 
-          `${Math.round((analyticsData.overview.totalEvents || 0) * 12)}` : '0',
-        
-        // Goal progress based on current month's activity
-        eventsGoalProgress: `${analyticsData.trends.eventsThisMonth || 0}/${Math.max((analyticsData.trends.eventsThisMonth || 0) + 5, 10)}`,
-        budgetProgress: `${Math.round(analyticsData.trends.expensesThisMonth || 0)}/${Math.max(Math.round((analyticsData.trends.expensesThisMonth || 0) * 1.2), 200)} OMR`,
-        contactsProgress: `${analyticsData.overview.totalContacts || 0}/${Math.max((analyticsData.overview.totalContacts || 0) + 3, 15)}`,
-        
-        // Performance metrics based on actual data
-        efficiencyScore: (analyticsData.productivity.completionRate || 0) > 0 ? 
-          `${Math.round(analyticsData.productivity.completionRate || 0)}%` : 
-          `${Math.min(Math.round((totalActivities / Math.max(totalActivities, 10)) * 100), 100)}%`,
-        
-        userRating: totalActivities > 0 ? 
-          `${Math.min(4.0 + (totalActivities / 100), 5.0).toFixed(1)}` : '0.0',
-        
-        // Dynamic progress scores
-        overallScore: Math.min(Math.round((totalActivities / Math.max(totalActivities, 1)) * 85) + 10, 100),
-        engagementRate: (analyticsData.overview.totalEmails || 0) > 0 ? 
-          Math.min(Math.round(((analyticsData.overview.totalEvents || 0) / Math.max((analyticsData.overview.totalEmails || 0), 1)) * 100), 100) : 0
-      };
-    } catch (error) {
-      console.error('Error calculating dynamic metrics:', error);
-      return {
-        youtubeViews: '0',
-        eventsGoalProgress: '0/10',
-        budgetProgress: '0/200 OMR',
-        contactsProgress: '0/15',
-        efficiencyScore: '0%',
-        userRating: '0.0',
-        overallScore: 0,
-        engagementRate: 0
-      };
-    }
+      // Goal progress based on current month's activity
+      eventsGoalProgress: `${analyticsData.trends.eventsThisMonth}/${Math.max(analyticsData.trends.eventsThisMonth + 5, 10)}`,
+      budgetProgress: `${Math.round(analyticsData.trends.expensesThisMonth)}/${Math.max(Math.round(analyticsData.trends.expensesThisMonth * 1.2), 200)} OMR`,
+      contactsProgress: `${analyticsData.overview.totalContacts}/${Math.max(analyticsData.overview.totalContacts + 3, 15)}`,
+      
+      // Performance metrics based on actual data
+      efficiencyScore: analyticsData.productivity.completionRate > 0 ? 
+        `${Math.round(analyticsData.productivity.completionRate)}%` : 
+        `${Math.min(Math.round((totalActivities / Math.max(totalActivities, 10)) * 100), 100)}%`,
+      
+      userRating: totalActivities > 0 ? 
+        `${Math.min(4.0 + (totalActivities / 100), 5.0).toFixed(1)}` : '0.0',
+      
+      // Dynamic progress scores
+      overallScore: Math.min(Math.round((totalActivities / Math.max(totalActivities, 1)) * 85) + 10, 100),
+      engagementRate: analyticsData.overview.totalEmails > 0 ? 
+        Math.min(Math.round((analyticsData.overview.totalEvents / Math.max(analyticsData.overview.totalEmails, 1)) * 100), 100) : 0
+    };
   };
 
   // Get dynamic metrics
@@ -611,51 +564,6 @@ export default function TrackingPage() {
 
   // Enhanced glassmorphism effects like dashboard
   const cardHoverEffects = "hover:shadow-3xl hover:scale-[1.02] transition-all duration-500 transform";
-
-  // Error boundary - show error state if there's an error
-  if (error) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 p-4 lg:p-8">
-        <div className="max-w-4xl mx-auto">
-          <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-red-200 p-8">
-            <div className="flex items-center gap-4 mb-6">
-              <div className="p-3 bg-red-500 rounded-2xl">
-                <AlertCircle className="h-8 w-8 text-white" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold text-red-700">Something went wrong</h1>
-                <p className="text-red-600">An error occurred while loading the tracking data</p>
-              </div>
-            </div>
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-              <p className="text-red-800 font-medium">Error Details:</p>
-              <p className="text-red-700 text-sm mt-1">{error}</p>
-            </div>
-            <div className="flex gap-3">
-              <Button 
-                onClick={() => {
-                  setError(null);
-                  fetchAnalytics();
-                  fetchBankAnalytics();
-                  fetchCalendarData();
-                }}
-                className="bg-red-600 hover:bg-red-700 text-white"
-              >
-                <RefreshCw className="h-4 w-4 mr-2" />
-                Try Again
-              </Button>
-              <Button 
-                variant="outline" 
-                onClick={() => window.location.href = '/dashboard'}
-              >
-                Go to Dashboard
-              </Button>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 p-2 lg:p-4">
@@ -1787,7 +1695,7 @@ export default function TrackingPage() {
                     <CalendarDays className="h-4 w-4 text-blue-600" />
                     <span className="text-sm font-medium text-blue-800">Total Events</span>
                   </div>
-                  <p className="text-2xl font-bold text-blue-700">{calendarData?.statistics?.totalEvents || 0}</p>
+                  <p className="text-2xl font-bold text-blue-700">{calendarData.statistics.totalEvents}</p>
                 </div>
 
                 <div className="bg-purple-50 p-3 rounded-lg border border-purple-200">
@@ -1795,7 +1703,7 @@ export default function TrackingPage() {
                     <CheckSquare className="h-4 w-4 text-purple-600" />
                     <span className="text-sm font-medium text-purple-800">Pending Tasks</span>
                   </div>
-                  <p className="text-2xl font-bold text-purple-700">{calendarData?.statistics?.pendingTasks || 0}</p>
+                  <p className="text-2xl font-bold text-purple-700">{calendarData.statistics.pendingTasks}</p>
                 </div>
 
                 <div className="bg-pink-50 p-3 rounded-lg border border-pink-200">
@@ -1803,7 +1711,7 @@ export default function TrackingPage() {
                     <Gift className="h-4 w-4 text-pink-600" />
                     <span className="text-sm font-medium text-pink-800">Birthdays</span>
                   </div>
-                  <p className="text-2xl font-bold text-pink-700">{calendarData?.statistics?.upcomingBirthdays || 0}</p>
+                  <p className="text-2xl font-bold text-pink-700">{calendarData.statistics.upcomingBirthdays}</p>
                 </div>
 
                 <div className="bg-red-50 p-3 rounded-lg border border-red-200">
@@ -1811,7 +1719,7 @@ export default function TrackingPage() {
                     <Flag className="h-4 w-4 text-red-600" />
                     <span className="text-sm font-medium text-red-800">Oman Holidays</span>
                   </div>
-                  <p className="text-2xl font-bold text-red-700">{calendarData?.statistics?.upcomingHolidays || 0}</p>
+                  <p className="text-2xl font-bold text-red-700">{calendarData.statistics.upcomingHolidays}</p>
                 </div>
               </div>
 
@@ -1824,7 +1732,7 @@ export default function TrackingPage() {
                     Today's Events
                   </h4>
                   <div className="space-y-2">
-                    {calendarData?.todayEvents?.length > 0 ? (
+                    {calendarData.todayEvents.length > 0 ? (
                       calendarData.todayEvents.slice(0, 3).map((event, index) => (
                         <div key={event.id} className="flex items-center gap-3 p-2 bg-gray-50 rounded-lg">
                           <div className="flex-shrink-0">
@@ -1860,7 +1768,7 @@ export default function TrackingPage() {
                     Upcoming Events
                   </h4>
                   <div className="space-y-2">
-                    {calendarData?.upcomingEvents?.length > 0 ? (
+                    {calendarData.upcomingEvents.length > 0 ? (
                       calendarData.upcomingEvents.slice(0, 3).map((event, index) => (
                         <div key={event.id} className="flex items-center gap-3 p-2 bg-gray-50 rounded-lg">
                           <div className="flex-shrink-0">

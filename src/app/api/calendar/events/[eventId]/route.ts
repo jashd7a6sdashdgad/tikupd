@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { google } from 'googleapis';
+import { getAuthenticatedClient, GoogleCalendar } from '@/lib/google';
 import { verifyToken, COOKIE_OPTIONS } from '@/lib/auth';
 
 // Helper function to get Google auth from cookies
@@ -11,18 +11,10 @@ function getGoogleAuth(request: NextRequest) {
     throw new Error('Google authentication required');
   }
   
-  const oauth2Client = new google.auth.OAuth2(
-    process.env.GOOGLE_CLIENT_ID,
-    process.env.GOOGLE_CLIENT_SECRET,
-    process.env.GOOGLE_REDIRECT_URI
-  );
-
-  oauth2Client.setCredentials({
+  return getAuthenticatedClient({
     access_token: accessToken,
-    refresh_token: refreshToken,
+    refresh_token: refreshToken
   });
-
-  return oauth2Client;
 }
 
 export async function PUT(
@@ -43,21 +35,17 @@ export async function PUT(
     
     // Get Google authentication
     const auth = getGoogleAuth(request);
-    const calendar = google.calendar({ version: 'v3', auth });
+    const calendar = new GoogleCalendar(auth);
     
     const body = await request.json();
     const { eventId } = await params;
     
     // Update event
-    const event = await calendar.events.update({
-      calendarId: 'primary',
-      eventId: eventId,
-      requestBody: body.event
-    });
+    const event = await calendar.updateEvent(eventId, body.event);
     
     return NextResponse.json({
       success: true,
-      data: event.data,
+      data: event,
       message: 'Event updated successfully'
     });
     
@@ -92,15 +80,12 @@ export async function DELETE(
     
     // Get Google authentication
     const auth = getGoogleAuth(request);
-    const calendar = google.calendar({ version: 'v3', auth });
+    const calendar = new GoogleCalendar(auth);
     
     const { eventId } = await params;
     
     // Delete event
-    await calendar.events.delete({
-      calendarId: 'primary',
-      eventId: eventId
-    });
+    await calendar.deleteEvent(eventId);
     
     return NextResponse.json({
       success: true,

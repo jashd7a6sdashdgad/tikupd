@@ -6,10 +6,10 @@ interface CalendarEvent {
   title: string;
   date: string;
   type: 'birthday' | 'task' | 'holiday' | 'event';
-  description?: string;
+  description?: string | null;
   priority?: 'high' | 'medium' | 'low';
   status?: 'pending' | 'completed' | 'cancelled';
-  location?: string;
+  location?: string | null;
 }
 
 interface CalendarData {
@@ -73,8 +73,8 @@ export async function GET(request: NextRequest) {
           title: event.summary || 'Untitled Event',
           date: event.start?.date || event.start?.dateTime || now.toISOString(),
           type: determineEventType(event.summary || ''),
-          description: event.description || undefined,
-          location: event.location || undefined,
+          description: event.description,
+          location: event.location,
           status: 'pending' as const
         })));
 
