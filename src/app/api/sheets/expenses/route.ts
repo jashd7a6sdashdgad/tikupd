@@ -149,14 +149,17 @@ export async function GET(request: NextRequest) {
       // Skip header row and convert to structured data
       const dataRows = rows.slice(1);
       let expenses = dataRows.map((row, index) => ({
-        id: row[7] || (index + 1).toString(),
+        id: row[10] || (index + 1).toString(),
         from: row[0] || '',
-        date: row[1] || '',
-        creditAmount: parseFloat(row[2]) || 0,
-        debitAmount: parseFloat(row[3]) || 0,
-        category: row[4] || 'General',
-        description: row[5] || '',
-        availableBalance: parseFloat(row[6]) || 0
+        accountNumber: row[1] || '',
+        accountTypeName: row[2] || '',
+        date: row[3] || '',
+        creditAmount: parseFloat(row[4]) || 0,
+        debitAmount: parseFloat(row[5]) || 0,
+        category: row[6] || 'General',
+        description: row[7] || '',
+        creditCardBalance: parseFloat(row[8]) || 0,
+        debitCardBalance: parseFloat(row[9]) || 0
       }));
 
       // Apply filters
@@ -343,7 +346,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { from, creditAmount, debitAmount, category = 'General', description, availableBalance, id } = body;
+    const { from, accountNumber, accountTypeName, creditAmount, debitAmount, category = 'General', description, creditCardBalance, debitCardBalance, id } = body;
     
     if (!description || (!creditAmount && !debitAmount)) {
       return NextResponse.json({
@@ -395,12 +398,15 @@ export async function POST(request: NextRequest) {
     try {
       const rowData = SheetHelpers.expenses.formatRow({
         from,
+        accountNumber,
+        accountTypeName,
         date: new Date().toISOString().split('T')[0],
         creditAmount,
         debitAmount,
         category,
         description,
-        availableBalance,
+        creditCardBalance,
+        debitCardBalance,
         id
       });
 
@@ -446,7 +452,7 @@ export async function POST(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     const body = await request.json();
-    const { id, from, creditAmount, debitAmount, category, description, availableBalance } = body;
+    const { id, from, accountNumber, accountTypeName, creditAmount, debitAmount, category, description, creditCardBalance, debitCardBalance } = body;
     
     if (!id || !description || (!creditAmount && !debitAmount)) {
       return NextResponse.json({
@@ -467,22 +473,25 @@ export async function PUT(request: NextRequest) {
 
     try {
       // Get current entry to preserve date
-      const currentRange = `${EXPENSES_CONFIG.name}!A${rowIndex}:H${rowIndex}`;
+      const currentRange = `${EXPENSES_CONFIG.name}!A${rowIndex}:K${rowIndex}`;
       const currentResponse = await sheets.spreadsheets.values.get({
         spreadsheetId: SPREADSHEET_ID,
         range: currentRange,
       });
       
-      const originalDate = currentResponse.data.values?.[0]?.[1] || new Date().toISOString().split('T')[0];
+      const originalDate = currentResponse.data.values?.[0]?.[3] || new Date().toISOString().split('T')[0];
 
       const rowData = SheetHelpers.expenses.formatRow({
         from,
+        accountNumber,
+        accountTypeName,
         date: originalDate,
         creditAmount,
         debitAmount,
         category,
         description,
-        availableBalance,
+        creditCardBalance,
+        debitCardBalance,
         id
       });
 
@@ -559,7 +568,7 @@ export async function DELETE(request: NextRequest) {
       let targetRowIndex = -1;
       
       for (let i = 0; i < dataRows.length; i++) {
-        const rowId = dataRows[i][7] || (i + 1).toString(); // Column H (ID) or fallback to index
+        const rowId = dataRows[i][10] || (i + 1).toString(); // Column K (ID) or fallback to index
         if (rowId === id) {
           targetRowIndex = i + 2; // +2 because: +1 for header row, +1 for 1-based indexing
           break;

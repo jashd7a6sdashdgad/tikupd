@@ -241,8 +241,14 @@ export default function TravelCompanionPage() {
   const [textToTranslate, setTextToTranslate] = useState('');
   const [translatedText, setTranslatedText] = useState('');
   
-  // Document management states
+  // Form management states
   const [showDocumentForm, setShowDocumentForm] = useState(false);
+  const [showTripForm, setShowTripForm] = useState(false);
+  const [showActivityForm, setShowActivityForm] = useState(false);
+  const [showTransportForm, setShowTransportForm] = useState(false);
+  const [showExpenseForm, setShowExpenseForm] = useState(false);
+  
+  // Form data states
   const [newDocument, setNewDocument] = useState({
     type: 'passport',
     name: '',
@@ -250,6 +256,44 @@ export default function TravelCompanionPage() {
     expiryDate: '',
     issuingCountry: '',
     notes: ''
+  });
+  
+  const [newTrip, setNewTrip] = useState({
+    destination: '',
+    startDate: '',
+    endDate: '',
+    budget: '',
+    currency: baseCurrency
+  });
+  
+  const [newActivity, setNewActivity] = useState({
+    name: '',
+    description: '',
+    date: '',
+    time: '',
+    location: '',
+    cost: '',
+    category: 'other',
+    priority: 'medium'
+  });
+  
+  const [newTransport, setNewTransport] = useState({
+    type: 'flight',
+    from: '',
+    to: '',
+    departure: '',
+    arrival: '',
+    provider: '',
+    bookingReference: '',
+    cost: ''
+  });
+  
+  const [newExpense, setNewExpense] = useState({
+    category: 'other',
+    amount: '',
+    description: '',
+    location: '',
+    paymentMethod: 'card'
   });
 
   // Initialize with sample data
@@ -425,6 +469,65 @@ export default function TravelCompanionPage() {
     };
     
     setDocuments([...documents, document]);
+    resetDocumentForm();
+  };
+  
+  const deleteDocument = (id: string) => {
+    setDocuments(documents.filter(doc => doc.id !== id));
+  };
+  
+  // Reset form functions
+  const resetTripForm = () => {
+    setNewTrip({
+      destination: '',
+      startDate: '',
+      endDate: '',
+      budget: '',
+      currency: baseCurrency
+    });
+    setShowTripForm(false);
+  };
+  
+  const resetActivityForm = () => {
+    setNewActivity({
+      name: '',
+      description: '',
+      date: '',
+      time: '',
+      location: '',
+      cost: '',
+      category: 'other',
+      priority: 'medium'
+    });
+    setShowActivityForm(false);
+  };
+  
+  const resetTransportForm = () => {
+    setNewTransport({
+      type: 'flight',
+      from: '',
+      to: '',
+      departure: '',
+      arrival: '',
+      provider: '',
+      bookingReference: '',
+      cost: ''
+    });
+    setShowTransportForm(false);
+  };
+  
+  const resetExpenseForm = () => {
+    setNewExpense({
+      category: 'other',
+      amount: '',
+      description: '',
+      location: '',
+      paymentMethod: 'card'
+    });
+    setShowExpenseForm(false);
+  };
+  
+  const resetDocumentForm = () => {
     setNewDocument({
       type: 'passport',
       name: '',
@@ -436,97 +539,128 @@ export default function TravelCompanionPage() {
     setShowDocumentForm(false);
   };
   
-  const deleteDocument = (id: string) => {
-    setDocuments(documents.filter(doc => doc.id !== id));
+  // Activity and itinerary functions
+  const showTripFormHandler = () => {
+    setShowTripForm(true);
   };
   
-  // Activity and itinerary functions
-  const addNewTrip = () => {
-    const newTrip: TravelItinerary = {
+  const addTripFromForm = () => {
+    if (!newTrip.destination || !newTrip.startDate || !newTrip.endDate) {
+      alert('Please fill in all required fields');
+      return;
+    }
+    
+    const trip: TravelItinerary = {
       id: Date.now().toString(),
-      destination: 'New Destination',
-      startDate: new Date(),
-      endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
+      destination: newTrip.destination,
+      startDate: new Date(newTrip.startDate),
+      endDate: new Date(newTrip.endDate),
       activities: [],
-      budget: 1000,
-      currency: baseCurrency,
+      budget: parseFloat(newTrip.budget) || 1000,
+      currency: newTrip.currency,
       status: 'planning'
     };
     
-    setItineraries([...itineraries, newTrip]);
-    setSelectedItinerary(newTrip);
+    setItineraries([...itineraries, trip]);
+    setSelectedItinerary(trip);
+    resetTripForm();
   };
   
-  const addNewActivity = () => {
-    if (!selectedItinerary) return;
+  const showActivityFormHandler = () => {
+    setShowActivityForm(true);
+  };
+  
+  const addActivityFromForm = () => {
+    if (!selectedItinerary || !newActivity.name || !newActivity.date) {
+      alert('Please fill in all required fields');
+      return;
+    }
     
-    const newActivity: Activity = {
+    const activity: Activity = {
       id: Date.now().toString(),
-      name: 'New Activity',
-      description: 'Activity description',
-      date: new Date(),
-      time: '12:00',
-      location: 'Location',
-      cost: 0,
+      name: newActivity.name,
+      description: newActivity.description,
+      date: new Date(newActivity.date),
+      time: newActivity.time,
+      location: newActivity.location,
+      cost: parseFloat(newActivity.cost) || 0,
       currency: selectedItinerary.currency,
-      category: 'other',
-      priority: 'medium',
+      category: newActivity.category as Activity['category'],
+      priority: newActivity.priority as Activity['priority'],
       completed: false
     };
     
     const updatedItinerary = {
       ...selectedItinerary,
-      activities: [...(selectedItinerary.activities || []), newActivity]
+      activities: [...(selectedItinerary.activities || []), activity]
     };
     
     setItineraries(itineraries.map(it => it.id === selectedItinerary.id ? updatedItinerary : it));
     setSelectedItinerary(updatedItinerary);
+    resetActivityForm();
   };
   
-  const addNewTransport = () => {
-    if (!selectedItinerary) return;
+  const showTransportFormHandler = () => {
+    setShowTransportForm(true);
+  };
+  
+  const addTransportFromForm = () => {
+    if (!selectedItinerary || !newTransport.from || !newTransport.to || !newTransport.departure) {
+      alert('Please fill in all required fields');
+      return;
+    }
     
-    const newTransport: Transportation = {
+    const transport: Transportation = {
       id: Date.now().toString(),
-      type: 'flight',
-      from: 'Origin',
-      to: 'Destination',
-      departure: new Date(),
-      arrival: new Date(Date.now() + 2 * 60 * 60 * 1000), // 2 hours later
-      provider: 'Transport Provider',
-      bookingReference: 'REF123456',
-      cost: 0,
+      type: newTransport.type as Transportation['type'],
+      from: newTransport.from,
+      to: newTransport.to,
+      departure: new Date(newTransport.departure),
+      arrival: new Date(newTransport.arrival || newTransport.departure),
+      provider: newTransport.provider,
+      bookingReference: newTransport.bookingReference,
+      cost: parseFloat(newTransport.cost) || 0,
       currency: selectedItinerary.currency,
       status: 'booked'
     };
     
     const updatedItinerary = {
       ...selectedItinerary,
-      transportation: [...(selectedItinerary.transportation || []), newTransport]
+      transportation: [...(selectedItinerary.transportation || []), transport]
     };
     
     setItineraries(itineraries.map(it => it.id === selectedItinerary.id ? updatedItinerary : it));
     setSelectedItinerary(updatedItinerary);
+    resetTransportForm();
   };
   
-  const addNewExpense = () => {
-    if (!selectedItinerary) return;
+  const showExpenseFormHandler = () => {
+    setShowExpenseForm(true);
+  };
+  
+  const addExpenseFromForm = () => {
+    if (!selectedItinerary || !newExpense.description || !newExpense.amount) {
+      alert('Please fill in all required fields');
+      return;
+    }
     
-    const newExpense: TravelExpense = {
+    const amount = parseFloat(newExpense.amount);
+    const expense: TravelExpense = {
       id: Date.now().toString(),
       itineraryId: selectedItinerary.id,
-      category: 'other',
-      amount: 0,
+      category: newExpense.category as TravelExpense['category'],
+      amount: amount,
       currency: selectedItinerary.currency,
-      convertedAmount: 0,
+      convertedAmount: convertCurrency(amount, selectedItinerary.currency, baseCurrency),
       baseCurrency: baseCurrency,
-      description: 'New Expense',
+      description: newExpense.description,
       date: new Date(),
-      location: selectedItinerary.destination,
-      paymentMethod: 'card'
+      location: newExpense.location || selectedItinerary.destination,
+      paymentMethod: newExpense.paymentMethod as TravelExpense['paymentMethod']
     };
     
-    setExpenses([...expenses, newExpense]);
+    setExpenses([...expenses, expense]);
+    resetExpenseForm();
   };
 
   const convertCurrency = (amount: number, from: string, to: string): number => {
@@ -609,7 +743,7 @@ export default function TravelCompanionPage() {
                     <div className="flex justify-between items-center">
                       <CardTitle className="text-2xl text-gray-800">Your Itineraries</CardTitle>
                       <Button 
-                        onClick={addNewTrip}
+                        onClick={showTripFormHandler}
                         className="bg-gradient-to-r from-blue-500 to-cyan-600 hover:from-blue-600 hover:to-cyan-700 text-white font-bold"
                       >
                         <Plus className="h-4 w-4 mr-2" />
@@ -663,7 +797,7 @@ export default function TravelCompanionPage() {
                       <div className="flex justify-between items-center">
                         <CardTitle className="text-xl text-gray-800">Activities - {selectedItinerary.destination}</CardTitle>
                         <Button 
-                          onClick={addNewActivity}
+                          onClick={showActivityFormHandler}
                           variant="outline" 
                           className="bg-white/60 hover:bg-white/80"
                         >
@@ -803,7 +937,7 @@ export default function TravelCompanionPage() {
                 <div className="flex justify-between items-center">
                   <CardTitle className="text-2xl text-gray-800">Transportation Tracking</CardTitle>
                   <Button 
-                    onClick={addNewTransport}
+                    onClick={showTransportFormHandler}
                     className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-bold"
                   >
                     <Plus className="h-4 w-4 mr-2" />
@@ -914,7 +1048,7 @@ export default function TravelCompanionPage() {
                   <div className="flex justify-between items-center">
                     <CardTitle className="text-2xl text-gray-800">Expense Management</CardTitle>
                     <Button 
-                      onClick={addNewExpense}
+                      onClick={showExpenseFormHandler}
                       className="bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white font-bold"
                     >
                       <Plus className="h-4 w-4 mr-2" />
@@ -987,7 +1121,7 @@ export default function TravelCompanionPage() {
                   <div className="flex justify-between items-center">
                     <CardTitle className="text-2xl text-gray-800">Travel Documents</CardTitle>
                     <Button 
-                      onClick={() => setShowDocumentForm(!showDocumentForm)}
+                      onClick={() => setShowDocumentForm(true)}
                       className="bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white font-bold"
                     >
                       <Plus className="h-4 w-4 mr-2" />
@@ -1073,7 +1207,7 @@ export default function TravelCompanionPage() {
                           <Save className="h-4 w-4 mr-2" />
                           Save Document
                         </Button>
-                        <Button onClick={() => setShowDocumentForm(false)} variant="outline">
+                        <Button onClick={resetDocumentForm} variant="outline">
                           <X className="h-4 w-4 mr-2" />
                           Cancel
                         </Button>
@@ -1293,6 +1427,389 @@ export default function TravelCompanionPage() {
             </Card>
           </TabsContent>
         </Tabs>
+
+        {/* Modal Forms */}
+        
+        {/* Trip Form Modal */}
+        {showTripForm && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <Card className="bg-white w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+              <CardHeader>
+                <div className="flex justify-between items-center">
+                  <CardTitle>Add New Trip</CardTitle>
+                  <Button onClick={resetTripForm} variant="ghost" size="sm">
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <Label>Destination *</Label>
+                  <Input 
+                    value={newTrip.destination}
+                    onChange={(e) => setNewTrip({...newTrip, destination: e.target.value})}
+                    placeholder="e.g., Paris, France"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label>Start Date *</Label>
+                    <Input 
+                      type="date"
+                      value={newTrip.startDate}
+                      onChange={(e) => setNewTrip({...newTrip, startDate: e.target.value})}
+                    />
+                  </div>
+                  <div>
+                    <Label>End Date *</Label>
+                    <Input 
+                      type="date"
+                      value={newTrip.endDate}
+                      onChange={(e) => setNewTrip({...newTrip, endDate: e.target.value})}
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label>Budget</Label>
+                    <Input 
+                      type="number"
+                      value={newTrip.budget}
+                      onChange={(e) => setNewTrip({...newTrip, budget: e.target.value})}
+                      placeholder="1000"
+                    />
+                  </div>
+                  <div>
+                    <Label>Currency</Label>
+                    <Select value={newTrip.currency} onValueChange={(value) => setNewTrip({...newTrip, currency: value})}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Object.keys(currencySymbols).map((currency) => (
+                          <SelectItem key={currency} value={currency}>{currency}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="flex gap-3 pt-4">
+                  <Button onClick={addTripFromForm} className="flex-1 bg-blue-600 hover:bg-blue-700 text-white">
+                    <Save className="h-4 w-4 mr-2" />
+                    Create Trip
+                  </Button>
+                  <Button onClick={resetTripForm} variant="outline" className="flex-1">
+                    <X className="h-4 w-4 mr-2" />
+                    Cancel
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {/* Activity Form Modal */}
+        {showActivityForm && selectedItinerary && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <Card className="bg-white w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+              <CardHeader>
+                <div className="flex justify-between items-center">
+                  <CardTitle>Add Activity - {selectedItinerary.destination}</CardTitle>
+                  <Button onClick={resetActivityForm} variant="ghost" size="sm">
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <Label>Activity Name *</Label>
+                  <Input 
+                    value={newActivity.name}
+                    onChange={(e) => setNewActivity({...newActivity, name: e.target.value})}
+                    placeholder="e.g., Visit Eiffel Tower"
+                  />
+                </div>
+                <div>
+                  <Label>Description</Label>
+                  <Textarea 
+                    value={newActivity.description}
+                    onChange={(e) => setNewActivity({...newActivity, description: e.target.value})}
+                    placeholder="Activity details..."
+                    rows={3}
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label>Date *</Label>
+                    <Input 
+                      type="date"
+                      value={newActivity.date}
+                      onChange={(e) => setNewActivity({...newActivity, date: e.target.value})}
+                    />
+                  </div>
+                  <div>
+                    <Label>Time</Label>
+                    <Input 
+                      type="time"
+                      value={newActivity.time}
+                      onChange={(e) => setNewActivity({...newActivity, time: e.target.value})}
+                    />
+                  </div>
+                </div>
+                <div>
+                  <Label>Location</Label>
+                  <Input 
+                    value={newActivity.location}
+                    onChange={(e) => setNewActivity({...newActivity, location: e.target.value})}
+                    placeholder="Location or address"
+                  />
+                </div>
+                <div className="grid grid-cols-3 gap-4">
+                  <div>
+                    <Label>Cost</Label>
+                    <Input 
+                      type="number"
+                      value={newActivity.cost}
+                      onChange={(e) => setNewActivity({...newActivity, cost: e.target.value})}
+                      placeholder="0"
+                    />
+                  </div>
+                  <div>
+                    <Label>Category</Label>
+                    <Select value={newActivity.category} onValueChange={(value) => setNewActivity({...newActivity, category: value})}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="sightseeing">Sightseeing</SelectItem>
+                        <SelectItem value="dining">Dining</SelectItem>
+                        <SelectItem value="accommodation">Accommodation</SelectItem>
+                        <SelectItem value="transport">Transport</SelectItem>
+                        <SelectItem value="shopping">Shopping</SelectItem>
+                        <SelectItem value="other">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label>Priority</Label>
+                    <Select value={newActivity.priority} onValueChange={(value) => setNewActivity({...newActivity, priority: value})}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="high">High</SelectItem>
+                        <SelectItem value="medium">Medium</SelectItem>
+                        <SelectItem value="low">Low</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="flex gap-3 pt-4">
+                  <Button onClick={addActivityFromForm} className="flex-1 bg-green-600 hover:bg-green-700 text-white">
+                    <Save className="h-4 w-4 mr-2" />
+                    Add Activity
+                  </Button>
+                  <Button onClick={resetActivityForm} variant="outline" className="flex-1">
+                    <X className="h-4 w-4 mr-2" />
+                    Cancel
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {/* Transport Form Modal */}
+        {showTransportForm && selectedItinerary && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <Card className="bg-white w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+              <CardHeader>
+                <div className="flex justify-between items-center">
+                  <CardTitle>Add Transport - {selectedItinerary.destination}</CardTitle>
+                  <Button onClick={resetTransportForm} variant="ghost" size="sm">
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <Label>Transport Type</Label>
+                  <Select value={newTransport.type} onValueChange={(value) => setNewTransport({...newTransport, type: value})}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="flight">Flight</SelectItem>
+                      <SelectItem value="train">Train</SelectItem>
+                      <SelectItem value="bus">Bus</SelectItem>
+                      <SelectItem value="car">Car</SelectItem>
+                      <SelectItem value="ship">Ship</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label>From *</Label>
+                    <Input 
+                      value={newTransport.from}
+                      onChange={(e) => setNewTransport({...newTransport, from: e.target.value})}
+                      placeholder="Origin city/airport"
+                    />
+                  </div>
+                  <div>
+                    <Label>To *</Label>
+                    <Input 
+                      value={newTransport.to}
+                      onChange={(e) => setNewTransport({...newTransport, to: e.target.value})}
+                      placeholder="Destination city/airport"
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label>Departure *</Label>
+                    <Input 
+                      type="datetime-local"
+                      value={newTransport.departure}
+                      onChange={(e) => setNewTransport({...newTransport, departure: e.target.value})}
+                    />
+                  </div>
+                  <div>
+                    <Label>Arrival</Label>
+                    <Input 
+                      type="datetime-local"
+                      value={newTransport.arrival}
+                      onChange={(e) => setNewTransport({...newTransport, arrival: e.target.value})}
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label>Provider</Label>
+                    <Input 
+                      value={newTransport.provider}
+                      onChange={(e) => setNewTransport({...newTransport, provider: e.target.value})}
+                      placeholder="Airline/Company name"
+                    />
+                  </div>
+                  <div>
+                    <Label>Booking Reference</Label>
+                    <Input 
+                      value={newTransport.bookingReference}
+                      onChange={(e) => setNewTransport({...newTransport, bookingReference: e.target.value})}
+                      placeholder="Booking/Flight number"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <Label>Cost</Label>
+                  <Input 
+                    type="number"
+                    value={newTransport.cost}
+                    onChange={(e) => setNewTransport({...newTransport, cost: e.target.value})}
+                    placeholder="0"
+                  />
+                </div>
+                <div className="flex gap-3 pt-4">
+                  <Button onClick={addTransportFromForm} className="flex-1 bg-green-600 hover:bg-green-700 text-white">
+                    <Save className="h-4 w-4 mr-2" />
+                    Add Transport
+                  </Button>
+                  <Button onClick={resetTransportForm} variant="outline" className="flex-1">
+                    <X className="h-4 w-4 mr-2" />
+                    Cancel
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {/* Expense Form Modal */}
+        {showExpenseForm && selectedItinerary && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <Card className="bg-white w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+              <CardHeader>
+                <div className="flex justify-between items-center">
+                  <CardTitle>Add Expense - {selectedItinerary.destination}</CardTitle>
+                  <Button onClick={resetExpenseForm} variant="ghost" size="sm">
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <Label>Description *</Label>
+                  <Input 
+                    value={newExpense.description}
+                    onChange={(e) => setNewExpense({...newExpense, description: e.target.value})}
+                    placeholder="e.g., Hotel booking, Restaurant meal"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label>Amount *</Label>
+                    <Input 
+                      type="number"
+                      value={newExpense.amount}
+                      onChange={(e) => setNewExpense({...newExpense, amount: e.target.value})}
+                      placeholder="0.00"
+                    />
+                  </div>
+                  <div>
+                    <Label>Category</Label>
+                    <Select value={newExpense.category} onValueChange={(value) => setNewExpense({...newExpense, category: value})}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="accommodation">Accommodation</SelectItem>
+                        <SelectItem value="transport">Transport</SelectItem>
+                        <SelectItem value="food">Food</SelectItem>
+                        <SelectItem value="activities">Activities</SelectItem>
+                        <SelectItem value="shopping">Shopping</SelectItem>
+                        <SelectItem value="other">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label>Location</Label>
+                    <Input 
+                      value={newExpense.location}
+                      onChange={(e) => setNewExpense({...newExpense, location: e.target.value})}
+                      placeholder="Location of expense"
+                    />
+                  </div>
+                  <div>
+                    <Label>Payment Method</Label>
+                    <Select value={newExpense.paymentMethod} onValueChange={(value) => setNewExpense({...newExpense, paymentMethod: value})}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="cash">Cash</SelectItem>
+                        <SelectItem value="card">Card</SelectItem>
+                        <SelectItem value="digital">Digital Wallet</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="flex gap-3 pt-4">
+                  <Button onClick={addExpenseFromForm} className="flex-1 bg-purple-600 hover:bg-purple-700 text-white">
+                    <Save className="h-4 w-4 mr-2" />
+                    Add Expense
+                  </Button>
+                  <Button onClick={resetExpenseForm} variant="outline" className="flex-1">
+                    <X className="h-4 w-4 mr-2" />
+                    Cancel
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
       </div>
     </div>
   );

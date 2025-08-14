@@ -12,11 +12,14 @@ export default function AddExpenseForm({ onAdded }: { onAdded: () => void }) {
   const { t } = useTranslation(language);
   
   const [from, setFrom] = useState('');
+  const [accountNumber, setAccountNumber] = useState('');
+  const [accountTypeName, setAccountTypeName] = useState('');
   const [creditAmount, setCreditAmount] = useState('');
   const [debitAmount, setDebitAmount] = useState('');
   const [category, setCategory] = useState('General');
   const [description, setDescription] = useState('');
-  const [availableBalance, setAvailableBalance] = useState('');
+  const [creditCardBalance, setCreditCardBalance] = useState('');
+  const [debitCardBalance, setDebitCardBalance] = useState('');
   const [id, setId] = useState('');
 
   const [showImageUpload, setShowImageUpload] = useState(false);
@@ -323,10 +326,14 @@ HEre the answer you are looking for.`,
     
     // Clear auto-filled data to start fresh
     setFrom('');
+    setAccountNumber('');
+    setAccountTypeName('');
     setCreditAmount('');
     setDebitAmount('');
     setCategory('General');
-    setAvailableBalance('');
+    setDescription('');
+    setCreditCardBalance('');
+    setDebitCardBalance('');
     setId('');
   };
 
@@ -345,11 +352,14 @@ HEre the answer you are looking for.`,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           from,
+          accountNumber,
+          accountTypeName,
           creditAmount: creditAmount ? parseFloat(creditAmount) : undefined,
           debitAmount: debitAmount ? parseFloat(debitAmount) : undefined,
           category,
           description,
-          availableBalance: availableBalance ? parseFloat(availableBalance) : undefined,
+          creditCardBalance: creditCardBalance ? parseFloat(creditCardBalance) : undefined,
+          debitCardBalance: debitCardBalance ? parseFloat(debitCardBalance) : undefined,
           id,
           receiptImage: receiptImage ? {
             fileName: receiptImage.fileName,
@@ -363,11 +373,14 @@ HEre the answer you are looking for.`,
 
       if (data.success) {
         setFrom('');
+        setAccountNumber('');
+        setAccountTypeName('');
         setCreditAmount('');
         setDebitAmount('');
         setCategory('General');
         setDescription('');
-        setAvailableBalance('');
+        setCreditCardBalance('');
+        setDebitCardBalance('');
         setId('');
         setReceiptImage(null);
         setImageError(null);
@@ -431,6 +444,31 @@ HEre the answer you are looking for.`,
 
       <div className="grid grid-cols-2 gap-4 mb-4">
         <input
+          type="text"
+          placeholder="Account Number"
+          value={accountNumber}
+          onChange={e => {
+            setAccountNumber(e.target.value);
+            setFormError(null);
+          }}
+          className="p-3 border rounded-md w-full text-black"
+          disabled={loading}
+        />
+        <input
+          type="text"
+          placeholder="Account Type/Name"
+          value={accountTypeName}
+          onChange={e => {
+            setAccountTypeName(e.target.value);
+            setFormError(null);
+          }}
+          className="p-3 border rounded-md w-full text-black"
+          disabled={loading}
+        />
+      </div>
+
+      <div className="grid grid-cols-2 gap-4 mb-4">
+        <input
           type="number"
           step="0.01"
           placeholder="Credit Amount"
@@ -484,13 +522,22 @@ HEre the answer you are looking for.`,
         />
       </div>
 
-      <div className="mb-4">
+      <div className="grid grid-cols-2 gap-4 mb-4">
         <input
           type="number"
           step="0.01"
-          placeholder="Available Balance"
-          value={availableBalance}
-          onChange={e => setAvailableBalance(e.target.value)}
+          placeholder="Credit Card Balance"
+          value={creditCardBalance}
+          onChange={e => setCreditCardBalance(e.target.value)}
+          className="p-3 border rounded-md w-full text-black"
+          disabled={loading}
+        />
+        <input
+          type="number"
+          step="0.01"
+          placeholder="Debit Card Balance"
+          value={debitCardBalance}
+          onChange={e => setDebitCardBalance(e.target.value)}
           className="p-3 border rounded-md w-full text-black"
           disabled={loading}
         />

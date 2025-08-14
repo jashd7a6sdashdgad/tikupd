@@ -13,8 +13,8 @@ export interface SheetConfig {
 export const SHEETS_CONFIG: Record<string, SheetConfig> = {
   expenses: {
     name: 'Expenses',
-    range: 'Expenses!A:H',
-    columns: ['From', 'Date', 'Credit Amount', 'Debit Amount', 'Category', 'Description', 'Available Balance', 'ID'],
+    range: 'Expenses!A:K',
+    columns: ['From', 'Account Number', 'Account Type/Name', 'Date', 'Credit Amount', 'Debit Amount', 'Category', 'Description', 'Credit Card Balance', 'Debit Card Balance', 'ID'],
     description: 'Track daily expenses and spending with credit/debit amounts'
   },
   shoppingList: {
@@ -80,12 +80,15 @@ export const SheetHelpers = {
     getHeaders: () => SHEETS_CONFIG.expenses.columns,
     formatRow: (data: any) => [
       data.from || '',
+      data.accountNumber || '',
+      data.accountTypeName || '',
       data.date || new Date().toISOString().split('T')[0],
       data.creditAmount?.toString() || '',
       data.debitAmount?.toString() || '',
       data.category || 'General',
       data.description || '',
-      data.availableBalance?.toString() || '',
+      data.creditCardBalance?.toString() || '',
+      data.debitCardBalance?.toString() || '',
       data.id || ''
     ]
   },

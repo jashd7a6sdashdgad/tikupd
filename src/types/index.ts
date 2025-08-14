@@ -65,13 +65,17 @@ export interface ShoppingItem {
 export interface Expense {
   id?: string;
   from?: string;
+  accountNumber?: string;
+  accountTypeName?: string;
   date: string;
   creditAmount?: number;
   debitAmount?: number;
   amount?: number; // Keep for backward compatibility
   category: string;
   description: string;
-  availableBalance?: number;
+  creditCardBalance?: number;
+  debitCardBalance?: number;
+  availableBalance?: number; // Keep for backward compatibility
   budgetImpact?: 'low' | 'medium' | 'high';
   anomalyScore?: number;
   autoCategory?: string;

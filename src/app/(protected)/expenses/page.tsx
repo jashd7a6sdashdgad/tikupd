@@ -706,6 +706,12 @@ export default function ExpensesPage() {
                               {expense.from && (
                                 <span className="ml-2">• From: {expense.from}</span>
                               )}
+                              {expense.accountNumber && (
+                                <span className="ml-2">• Account: {expense.accountNumber}</span>
+                              )}
+                              {expense.accountTypeName && (
+                                <span className="ml-2">• Type: {expense.accountTypeName}</span>
+                              )}
                             </div>
                             
                             {'tags' in (smartExpense || {}) && smartExpense?.tags && smartExpense.tags.length > 0 && (
@@ -728,9 +734,14 @@ export default function ExpensesPage() {
                               </div>
                             )}
                             
-                            {expense.availableBalance !== undefined && expense.availableBalance !== null && (
+                            {(expense.creditCardBalance !== undefined && expense.creditCardBalance !== null && expense.creditCardBalance !== 0) && (
                               <div className="text-sm text-gray-600 mt-1">
-                                Available Balance: {formatCurrency(Number(expense.availableBalance))}
+                                Credit Card Balance: {formatCurrency(Number(expense.creditCardBalance))}
+                              </div>
+                            )}
+                            {(expense.debitCardBalance !== undefined && expense.debitCardBalance !== null && expense.debitCardBalance !== 0) && (
+                              <div className="text-sm text-gray-600 mt-1">
+                                Debit Card Balance: {formatCurrency(Number(expense.debitCardBalance))}
                               </div>
                             )}
                             
