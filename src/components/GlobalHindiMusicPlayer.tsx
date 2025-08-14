@@ -26,97 +26,34 @@ interface HindiSong {
   imageUrl: string;
 }
 
-// Top 10 Hindi songs with YouTube audio URLs (these would need to be replaced with actual audio files)
+// Selected Hindi songs (using sample audio for demo purposes)
 const TOP_HINDI_SONGS: HindiSong[] = [
   {
     id: '1',
-    title: 'Tum Hi Ho',
-    artist: 'Arijit Singh',
-    album: 'Aashiqui 2',
-    duration: '4:22',
-    audioUrl: '/audio/tum-hi-ho.mp3', // Replace with actual audio file
-    imageUrl: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=400&fit=crop'
-  },
-  {
-    id: '2',
-    title: 'Raabta',
-    artist: 'Arijit Singh',
-    album: 'Agent Vinod',
-    duration: '4:06',
-    audioUrl: '/audio/raabta.mp3',
-    imageUrl: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=400&h=400&fit=crop'
-  },
-  {
-    id: '3',
     title: 'Channa Mereya',
     artist: 'Arijit Singh',
     album: 'Ae Dil Hai Mushkil',
     duration: '4:49',
-    audioUrl: '/audio/channa-mereya.mp3',
+    audioUrl: 'https://www.soundjay.com/misc/sounds/bell-ringing-05.wav', // Demo audio - replace with actual
     imageUrl: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=400&fit=crop'
   },
   {
-    id: '4',
-    title: 'Gerua',
-    artist: 'Arijit Singh & Antara Mitra',
-    album: 'Dilwale',
-    duration: '4:55',
-    audioUrl: '/audio/gerua.mp3',
+    id: '2',
+    title: 'Ommi Jannah',
+    artist: 'Hussain Al Jassmi',
+    album: 'Arabic Hits',
+    duration: '4:15',
+    audioUrl: 'https://www.soundjay.com/misc/sounds/bell-ringing-05.wav', // Demo audio - replace with actual
     imageUrl: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=400&h=400&fit=crop'
   },
   {
-    id: '5',
-    title: 'Hawayein',
-    artist: 'Arijit Singh',
-    album: 'Jab Harry Met Sejal',
-    duration: '3:56',
-    audioUrl: '/audio/hawayein.mp3',
+    id: '3',
+    title: 'Lag Jaa Gale - Acoustic',
+    artist: 'SANAM',
+    album: 'SANAM Acoustic',
+    duration: '3:42',
+    audioUrl: 'https://www.soundjay.com/misc/sounds/bell-ringing-05.wav', // Demo audio - replace with actual
     imageUrl: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=400&fit=crop'
-  },
-  {
-    id: '6',
-    title: 'Dil Diyan Gallan',
-    artist: 'Atif Aslam',
-    album: 'Tiger Zinda Hai',
-    duration: '3:54',
-    audioUrl: '/audio/dil-diyan-gallan.mp3',
-    imageUrl: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=400&h=400&fit=crop'
-  },
-  {
-    id: '7',
-    title: 'Bekhayali',
-    artist: 'Sachet Tandon',
-    album: 'Kabir Singh',
-    duration: '6:10',
-    audioUrl: '/audio/bekhayali.mp3',
-    imageUrl: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=400&fit=crop'
-  },
-  {
-    id: '8',
-    title: 'Kesariya',
-    artist: 'Arijit Singh',
-    album: 'Brahmastra',
-    duration: '4:28',
-    audioUrl: '/audio/kesariya.mp3',
-    imageUrl: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=400&h=400&fit=crop'
-  },
-  {
-    id: '9',
-    title: 'Apna Bana Le',
-    artist: 'Arijit Singh',
-    album: 'Bhediya',
-    duration: '3:54',
-    audioUrl: '/audio/apna-bana-le.mp3',
-    imageUrl: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=400&fit=crop'
-  },
-  {
-    id: '10',
-    title: 'Ve Kamleya',
-    artist: 'Arijit Singh, Shreya Ghoshal',
-    album: 'Rocky Aur Rani Kii Prem Kahaani',
-    duration: '4:32',
-    audioUrl: '/audio/ve-kamleya.mp3',
-    imageUrl: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=400&h=400&fit=crop'
   }
 ];
 

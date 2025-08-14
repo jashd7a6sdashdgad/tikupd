@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { CalendarEvent } from '@/types';
 import { useSettings } from '@/contexts/SettingsContext';
 import { useTranslation } from '@/lib/translations';
+import { ModernCard } from '@/components/ui/ModernCard';
 import { 
   Calendar as CalendarIcon, 
   Plus, 
@@ -15,7 +16,15 @@ import {
   Clock, 
   Users,
   Mic,
-  RefreshCw
+  RefreshCw,
+  Gift,
+  CheckSquare,
+  Flag,
+  Star,
+  TrendingUp,
+  Calendar as CalendarDays,
+  PartyPopper,
+  MapPin
 } from 'lucide-react';
 import { useVoiceInput } from '@/hooks/useVoiceInput';
 
@@ -38,6 +47,33 @@ export default function CalendarPage() {
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const [showConflicts, setShowConflicts] = useState(false);
   const [authError, setAuthError] = useState(false);
+  
+  // Calendar data state
+  const [calendarData, setCalendarData] = useState<{
+    statistics: {
+      totalEvents: number;
+      pendingTasks: number;
+      upcomingBirthdays: number;
+      upcomingHolidays: number;
+    };
+    todayEvents: Array<{
+      id: string;
+      title: string;
+      description?: string;
+      type: 'birthday' | 'task' | 'holiday' | 'event';
+      priority?: 'high' | 'medium' | 'low';
+    }>;
+    upcomingEvents: Array<{
+      id: string;
+      title: string;
+      description?: string;
+      type: 'birthday' | 'task' | 'holiday' | 'event';
+      priority?: 'high' | 'medium' | 'low';
+      date: string;
+      location?: string;
+    }>;
+  } | null>(null);
+  const [calendarLoading, setCalendarLoading] = useState(true);
 
   const { 
     isListening, 
@@ -48,8 +84,28 @@ export default function CalendarPage() {
     isSupported 
   } = useVoiceInput();
 
+  // Fetch calendar data (birthdays, tasks, holidays)
+  const fetchCalendarData = async () => {
+    setCalendarLoading(true);
+    try {
+      const response = await fetch('/api/calendar/data');
+      const result = await response.json();
+      
+      if (result.success) {
+        setCalendarData(result.data);
+      } else {
+        console.error('Calendar data fetch failed:', result.error);
+      }
+    } catch (error) {
+      console.error('Calendar data fetch error:', error);
+    } finally {
+      setCalendarLoading(false);
+    }
+  };
+
   useEffect(() => {
     fetchEvents();
+    fetchCalendarData();
   }, []);
 
   useEffect(() => {
@@ -494,7 +550,175 @@ export default function CalendarPage() {
           </div>
         )}
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Modern Calendar Overview Section */}
+        {!calendarLoading && calendarData && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            {/* Statistics Cards */}
+            <ModernCard gradient="blue" blur="lg" className="hover:scale-105 transition-transform duration-300">
+              <div className="p-6">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="p-2 bg-white/20 rounded-xl">
+                    <CalendarDays className="h-6 w-6 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-white">Total Events</h3>
+                    <p className="text-white/80 text-sm">All upcoming events</p>
+                  </div>
+                </div>
+                <p className="text-3xl font-bold text-white">{calendarData.statistics.totalEvents}</p>
+              </div>
+            </ModernCard>
+
+            <ModernCard gradient="purple" blur="lg" className="hover:scale-105 transition-transform duration-300">
+              <div className="p-6">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="p-2 bg-white/20 rounded-xl">
+                    <CheckSquare className="h-6 w-6 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-white">Pending Tasks</h3>
+                    <p className="text-white/80 text-sm">Tasks to complete</p>
+                  </div>
+                </div>
+                <p className="text-3xl font-bold text-white">{calendarData.statistics.pendingTasks}</p>
+              </div>
+            </ModernCard>
+
+            <ModernCard gradient="green" blur="lg" className="hover:scale-105 transition-transform duration-300">
+              <div className="p-6">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="p-2 bg-white/20 rounded-xl">
+                    <Gift className="h-6 w-6 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-white">Birthdays</h3>
+                    <p className="text-white/80 text-sm">Upcoming birthdays</p>
+                  </div>
+                </div>
+                <p className="text-3xl font-bold text-white">{calendarData.statistics.upcomingBirthdays}</p>
+              </div>
+            </ModernCard>
+
+            <ModernCard gradient="orange" blur="lg" className="hover:scale-105 transition-transform duration-300">
+              <div className="p-6">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="p-2 bg-white/20 rounded-xl">
+                    <Flag className="h-6 w-6 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-white">Oman Holidays</h3>
+                    <p className="text-white/80 text-sm">Public holidays</p>
+                  </div>
+                </div>
+                <p className="text-3xl font-bold text-white">{calendarData.statistics.upcomingHolidays}</p>
+              </div>
+            </ModernCard>
+          </div>
+        )}
+
+        {/* Modern Calendar Sections */}
+        {!calendarLoading && calendarData && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+            {/* Today's Events */}
+            <ModernCard gradient="none" blur="lg" className="border-gray-200">
+              <div className="p-6">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="p-2 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl">
+                    <Clock className="h-6 w-6 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-gray-800">Today's Events</h3>
+                    <p className="text-gray-600">What's happening today</p>
+                  </div>
+                </div>
+                
+                <div className="space-y-3">
+                  {calendarData.todayEvents.length > 0 ? (
+                    calendarData.todayEvents.map((event, index) => (
+                      <div key={event.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                        <div className="flex-shrink-0">
+                          {event.type === 'birthday' && <PartyPopper className="h-5 w-5 text-pink-500" />}
+                          {event.type === 'task' && <CheckSquare className="h-5 w-5 text-blue-500" />}
+                          {event.type === 'holiday' && <Flag className="h-5 w-5 text-red-500" />}
+                          {event.type === 'event' && <CalendarDays className="h-5 w-5 text-purple-500" />}
+                        </div>
+                        <div className="flex-1">
+                          <p className="font-medium text-gray-800">{event.title}</p>
+                          {event.description && (
+                            <p className="text-sm text-gray-600">{event.description}</p>
+                          )}
+                        </div>
+                        {event.priority === 'high' && (
+                          <Star className="h-4 w-4 text-yellow-500" />
+                        )}
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-center py-8">
+                      <Clock className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+                      <p className="text-gray-500">No events today</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </ModernCard>
+
+            {/* Upcoming Events */}
+            <ModernCard gradient="none" blur="lg" className="border-gray-200">
+              <div className="p-6">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="p-2 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl">
+                    <TrendingUp className="h-6 w-6 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-gray-800">Upcoming Events</h3>
+                    <p className="text-gray-600">Next 10 events</p>
+                  </div>
+                </div>
+                
+                <div className="space-y-3 max-h-96 overflow-y-auto">
+                  {calendarData.upcomingEvents.length > 0 ? (
+                    calendarData.upcomingEvents.map((event, index) => (
+                      <div key={event.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                        <div className="flex-shrink-0">
+                          {event.type === 'birthday' && <PartyPopper className="h-5 w-5 text-pink-500" />}
+                          {event.type === 'task' && <CheckSquare className="h-5 w-5 text-blue-500" />}
+                          {event.type === 'holiday' && <Flag className="h-5 w-5 text-red-500" />}
+                          {event.type === 'event' && <CalendarDays className="h-5 w-5 text-purple-500" />}
+                        </div>
+                        <div className="flex-1">
+                          <p className="font-medium text-gray-800">{event.title}</p>
+                          <p className="text-sm text-gray-600">
+                            {new Date(event.date).toLocaleDateString('en-US', { 
+                              weekday: 'short', 
+                              month: 'short', 
+                              day: 'numeric' 
+                            })}
+                          </p>
+                          {event.location && (
+                            <p className="text-xs text-gray-500 flex items-center gap-1">
+                              <MapPin className="h-3 w-3" />
+                              {event.location}
+                            </p>
+                          )}
+                        </div>
+                        {event.priority === 'high' && (
+                          <Star className="h-4 w-4 text-yellow-500" />
+                        )}
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-center py-8">
+                      <CalendarDays className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+                      <p className="text-gray-500">No upcoming events</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </ModernCard>
+          </div>
+        )}
+
         {/* Modern Quick Create Card */}
         <div className="bg-white/70 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/30 p-8 mb-8 hover:shadow-3xl hover:bg-white/80 transition-all duration-500">
           <div className="flex items-center gap-3 mb-6">
@@ -845,7 +1069,6 @@ export default function CalendarPage() {
             </CardContent>
           </Card>
         </div>
-      </main>
       </div>
     </div>
   );

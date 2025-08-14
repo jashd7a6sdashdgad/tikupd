@@ -5,90 +5,60 @@ import { parseNaturalLanguageDate, parseNaturalLanguageTime } from '@/lib/utils'
 import { smartCalendar } from '@/lib/smartCalendar';
 import { locationServices } from '@/lib/locationServices';
 
-// Helper function to get Google auth from cookies or env
+// Helper function to get Google auth from multiple sources
 function getGoogleAuth(request: NextRequest) {
-  // Try cookies first
-  const accessToken = request.cookies.get('google_access_token')?.value;
+  // Source 1: Cookies (browser OAuth flow)
+  let accessToken = request.cookies.get('google_access_token')?.value;
   const rawRefreshToken = request.cookies.get('google_refresh_token')?.value;
-  const refreshToken = rawRefreshToken ? decodeURIComponent(rawRefreshToken) : undefined;
+  let refreshToken = rawRefreshToken ? decodeURIComponent(rawRefreshToken) : undefined;
   
-  if (accessToken) {
-    return {
-      access_token: accessToken,
-      refresh_token: refreshToken
-    };
+  // Source 2: Headers (server-to-server, e.g., n8n)
+  if (!accessToken) {
+    const headerAccess = 
+      request.headers.get('x-google-access-token') ||
+      request.headers.get('x-goog-access-token') ||
+      request.headers.get('x-gapi-access-token');
+    const headerRefresh = 
+      request.headers.get('x-google-refresh-token') ||
+      request.headers.get('x-goog-refresh-token') ||
+      request.headers.get('x-gapi-refresh-token');
+    if (headerAccess) {
+      accessToken = headerAccess;
+      refreshToken = headerRefresh || refreshToken;
+    }
   }
   
-  // Fallback to environment variables
-  const envAccessToken = process.env.GOOGLE_ACCESS_TOKEN;
-  const envRefreshToken = process.env.GOOGLE_REFRESH_TOKEN;
-  
-  if (envAccessToken) {
-    return {
-      access_token: envAccessToken,
-      refresh_token: envRefreshToken
-    };
+  // Source 3: Query params (manual testing / integrations)
+  if (!accessToken) {
+    const url = new URL(request.url);
+    const qpAccess = url.searchParams.get('google_access_token');
+    const qpRefresh = url.searchParams.get('google_refresh_token');
+    if (qpAccess) {
+      accessToken = qpAccess;
+      refreshToken = qpRefresh || refreshToken;
+    }
   }
   
-  throw new Error('Google authentication required');
+  // Source 4: Environment variables (system tokens)
+  if (!accessToken) {
+    accessToken = process.env.GOOGLE_ACCESS_TOKEN;
+    refreshToken = process.env.GOOGLE_REFRESH_TOKEN;
+  }
+  
+  if (!accessToken) {
+    throw new Error('Google authentication required');
+  }
+  
+  return {
+    access_token: accessToken,
+    refresh_token: refreshToken
+  };
 }
 
 export async function GET(request: NextRequest) {
   try {
     // Get Google authentication
-    let googleTokens;
-    try {
-      googleTokens = getGoogleAuth(request);
-    } catch (authError) {
-      console.log('Google authentication not available, using fallback data');
-      // Return fallback data instead of throwing error
-      const now = new Date();
-      const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
-      const nextWeek = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
-      
-      const fallbackEvents = [
-        {
-          id: 'fallback_event_1',
-          summary: 'Team Standup Meeting',
-          description: 'Daily standup with development team',
-          start: {
-            dateTime: new Date(tomorrow.getFullYear(), tomorrow.getMonth(), tomorrow.getDate(), 9, 0).toISOString(),
-            timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
-          },
-          end: {
-            dateTime: new Date(tomorrow.getFullYear(), tomorrow.getMonth(), tomorrow.getDate(), 9, 30).toISOString(),
-            timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
-          },
-          location: 'Conference Room A',
-          status: 'confirmed'
-        },
-        {
-          id: 'fallback_event_2',
-          summary: 'Flight to Dubai',
-          description: 'Emirates flight EK0123 from MCT to DXB',
-          start: {
-            dateTime: new Date(nextWeek.getFullYear(), nextWeek.getMonth(), nextWeek.getDate(), 14, 30).toISOString(),
-            timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
-          },
-          end: {
-            dateTime: new Date(nextWeek.getFullYear(), nextWeek.getMonth(), nextWeek.getDate(), 15, 45).toISOString(),
-            timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
-          },
-          location: 'Muscat International Airport',
-          status: 'confirmed'
-        }
-      ];
-      
-      return NextResponse.json({
-        success: true,
-        data: {
-          events: fallbackEvents,
-          total: fallbackEvents.length
-        },
-        message: 'Sample calendar events loaded (Google authentication not available)',
-        warning: 'Using sample data - connect Google account for real calendar access'
-      });
-    }
+    const googleTokens = getGoogleAuth(request);
     
     // Get query parameters
     const { searchParams } = new URL(request.url);
@@ -116,63 +86,7 @@ export async function GET(request: NextRequest) {
     }
 
     const eventsResponse = await response.json();
-    let events = eventsResponse.items || [];
-    
-    // If no events from Google Calendar API, provide sample data for development
-    if (events.length === 0) {
-      console.log('No calendar events found, providing sample data');
-      const now = new Date();
-      const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
-      const nextWeek = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
-      
-      events = [
-        {
-          id: 'sample_event_1',
-          summary: 'Team Standup Meeting',
-          description: 'Daily standup with development team',
-          start: {
-            dateTime: new Date(tomorrow.getFullYear(), tomorrow.getMonth(), tomorrow.getDate(), 9, 0).toISOString(),
-            timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
-          },
-          end: {
-            dateTime: new Date(tomorrow.getFullYear(), tomorrow.getMonth(), tomorrow.getDate(), 9, 30).toISOString(),
-            timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
-          },
-          location: 'Conference Room A',
-          status: 'confirmed'
-        },
-        {
-          id: 'sample_event_2',
-          summary: 'Flight to Dubai',
-          description: 'Emirates flight EK0123 from MCT to DXB',
-          start: {
-            dateTime: new Date(nextWeek.getFullYear(), nextWeek.getMonth(), nextWeek.getDate(), 14, 30).toISOString(),
-            timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
-          },
-          end: {
-            dateTime: new Date(nextWeek.getFullYear(), nextWeek.getMonth(), nextWeek.getDate(), 15, 45).toISOString(),
-            timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
-          },
-          location: 'Muscat International Airport',
-          status: 'confirmed'
-        },
-        {
-          id: 'sample_event_3',
-          summary: 'Doctor Appointment',
-          description: 'Regular checkup with Dr. Smith',
-          start: {
-            dateTime: new Date(now.getFullYear(), now.getMonth(), now.getDate() + 3, 10, 0).toISOString(),
-            timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
-          },
-          end: {
-            dateTime: new Date(now.getFullYear(), now.getMonth(), now.getDate() + 3, 11, 0).toISOString(),
-            timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
-          },
-          location: 'Medical Center',
-          status: 'confirmed'
-        }
-      ];
-    }
+    const events = eventsResponse.items || [];
     
     return NextResponse.json({
       success: true,
@@ -180,61 +94,17 @@ export async function GET(request: NextRequest) {
         events: events,
         total: events.length
       },
-      message: events.length === 3 && events[0].id === 'sample_event_1' ? 
-        'Sample calendar events loaded (Google Calendar API returned empty)' : 
-        'Calendar events retrieved successfully'
+      message: 'Calendar events retrieved successfully'
     });
     
   } catch (error: any) {
     console.error('Calendar events GET error:', error);
     
-    // Provide fallback sample data even when there's an error
-    const now = new Date();
-    const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
-    const nextWeek = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
-    
-    const fallbackEvents = [
-      {
-        id: 'fallback_event_1',
-        summary: 'Team Standup Meeting',
-        description: 'Daily standup with development team',
-        start: {
-          dateTime: new Date(tomorrow.getFullYear(), tomorrow.getMonth(), tomorrow.getDate(), 9, 0).toISOString(),
-          timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
-        },
-        end: {
-          dateTime: new Date(tomorrow.getFullYear(), tomorrow.getMonth(), tomorrow.getDate(), 9, 30).toISOString(),
-          timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
-        },
-        location: 'Conference Room A',
-        status: 'confirmed'
-      },
-      {
-        id: 'fallback_event_2',
-        summary: 'Flight to Dubai',
-        description: 'Emirates flight EK0123 from MCT to DXB',
-        start: {
-          dateTime: new Date(nextWeek.getFullYear(), nextWeek.getMonth(), nextWeek.getDate(), 14, 30).toISOString(),
-          timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
-        },
-        end: {
-          dateTime: new Date(nextWeek.getFullYear(), nextWeek.getMonth(), nextWeek.getDate(), 15, 45).toISOString(),
-          timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
-        },
-        location: 'Muscat International Airport',
-        status: 'confirmed'
-      }
-    ];
-    
     return NextResponse.json({
-      success: true,
-      data: {
-        events: fallbackEvents,
-        total: fallbackEvents.length
-      },
-      message: 'Sample calendar events loaded (Calendar API unavailable)',
-      warning: 'Using fallback data due to authentication or API issues'
-    });
+      success: false,
+      message: error.message || 'Failed to fetch calendar events',
+      error: error.toString()
+    }, { status: 500 });
   }
 }
 

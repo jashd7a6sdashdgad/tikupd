@@ -34,7 +34,12 @@ import {
   ArrowRight,
   PieChart,
   Star,
-  AlertCircle
+  AlertCircle,
+  Gift,
+  CheckSquare,
+  CalendarDays,
+  PartyPopper,
+  MapPin
 } from 'lucide-react';
 
 interface BankAnalysis {
@@ -129,6 +134,33 @@ export default function TrackingPage() {
     }
   });
   const [loading, setLoading] = useState(true);
+  
+  // Calendar data state
+  const [calendarData, setCalendarData] = useState<{
+    statistics: {
+      totalEvents: number;
+      pendingTasks: number;
+      upcomingBirthdays: number;
+      upcomingHolidays: number;
+    };
+    todayEvents: Array<{
+      id: string;
+      title: string;
+      description?: string;
+      type: 'birthday' | 'task' | 'holiday' | 'event';
+      priority?: 'high' | 'medium' | 'low';
+    }>;
+    upcomingEvents: Array<{
+      id: string;
+      title: string;
+      description?: string;
+      type: 'birthday' | 'task' | 'holiday' | 'event';
+      priority?: 'high' | 'medium' | 'low';
+      date: string;
+      location?: string;
+    }>;
+  } | null>(null);
+  const [calendarLoading, setCalendarLoading] = useState(true);
  // 'week', 'month', 'year'
 
   // Bank detection functions (from expenses page)
@@ -276,6 +308,7 @@ export default function TrackingPage() {
   useEffect(() => {
     fetchAnalytics();
     fetchBankAnalytics();
+    fetchCalendarData();
   }, [timeRange]);
 
   const fetchBankAnalytics = async () => {
@@ -415,6 +448,25 @@ export default function TrackingPage() {
         }
       });
       setLoading(false);
+    }
+  };
+
+  // Fetch calendar data (birthdays, tasks, holidays)
+  const fetchCalendarData = async () => {
+    setCalendarLoading(true);
+    try {
+      const response = await fetch('/api/calendar/data');
+      const result = await response.json();
+      
+      if (result.success) {
+        setCalendarData(result.data);
+      } else {
+        console.error('Calendar data fetch failed:', result.error);
+      }
+    } catch (error) {
+      console.error('Calendar data fetch error:', error);
+    } finally {
+      setCalendarLoading(false);
     }
   };
 
@@ -835,6 +887,10 @@ export default function TrackingPage() {
                               <div className="text-xs font-medium">
                                 {bank.transactionCount} txns
                               </div>
+                              {/* Available Balance */}
+                              <div className="text-xs font-semibold text-blue-600 mt-1">
+                                Available Balance: {formatCurrency(bank.availableBalance)}
+                              </div>
                             </div>
                           </div>
                           <div className="w-full bg-gray-200 rounded-full h-3 shadow-inner">
@@ -905,143 +961,6 @@ export default function TrackingPage() {
                         ))}
                       </div>
                       <p className="text-xs text-blue-600 text-center mt-4">🔄 Loading REAL bank analytics...</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </ModernCard>
-            
-            {/* Available Balance Tracking */}
-            <ModernCard gradient="none" blur="lg" className={cardHoverEffects}>
-              <div className="p-4">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="p-2 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl">
-                    <DollarSign className="h-5 w-5 text-white" />
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-bold text-gray-800">Available Balance Tracking</h3>
-                    <p className="text-sm text-gray-600">Current available balances by account</p>
-                  </div>
-                </div>
-                
-                <div className="space-y-3">
-                  {bankAnalytics && bankAnalytics.bankAnalysis.length > 0 ? (
-                    bankAnalytics.bankAnalysis.map((bank, index) => {
-                      const getBalanceColor = () => {
-                        switch (bank.balanceStatus) {
-                          case 'healthy': return { bg: 'from-green-50 to-emerald-50', border: 'border-green-300', text: 'text-green-800', icon: 'text-green-600' };
-                          case 'warning': return { bg: 'from-yellow-50 to-amber-50', border: 'border-yellow-300', text: 'text-yellow-800', icon: 'text-yellow-600' };
-                          case 'critical': return { bg: 'from-red-50 to-rose-50', border: 'border-red-300', text: 'text-red-800', icon: 'text-red-600' };
-                          default: return { bg: 'from-gray-50 to-slate-50', border: 'border-gray-300', text: 'text-gray-800', icon: 'text-gray-600' };
-                        }
-                      };
-                      
-                      const colors = getBalanceColor();
-                      const getStatusIcon = () => {
-                        switch (bank.balanceStatus) {
-                          case 'healthy': return '✅';
-                          case 'warning': return '⚠️';
-                          case 'critical': return '🚨';
-                          default: return '📊';
-                        }
-                      };
-                      
-                      const getAccountTypeIcon = () => {
-                        if (bank.bankType.includes('Ahli Bank Saving')) return '🏦';
-                        if (bank.bankType.includes('Wafrah')) return '💰';
-                        if (bank.bankType.includes('Overdraft')) return '🔴';
-                        if (bank.bankType.includes('Credit Card')) return '💳';
-                        if (bank.bankType.includes('Bank Muscat')) return '🏛️';
-                        return '💼';
-                      };
-                      
-                      return (
-                        <div key={bank.bankType} className={`p-4 bg-gradient-to-r ${colors.bg} border ${colors.border} rounded-xl shadow-md hover:shadow-lg transition-all duration-300`}>
-                          <div className="flex items-center justify-between mb-3">
-                            <div className="flex items-center gap-3">
-                              <span className="text-2xl">{getAccountTypeIcon()}</span>
-                              <div>
-                                <h4 className={`text-sm font-bold ${colors.text}`}>
-                                  {bank.bankType.replace('Ahli Bank ', '').replace('Bank Muscat ', '')}
-                                </h4>
-                                <p className="text-xs opacity-70">
-                                  {bank.bankType.includes('Credit Card') ? 'Available Credit' : 
-                                   bank.bankType.includes('Overdraft') ? 'Available Overdraft' : 
-                                   'Available Balance'}
-                                </p>
-                              </div>
-                            </div>
-                            <div className="text-right">
-                              <div className="flex items-center gap-2 mb-1">
-                                <span className="text-xs">{getStatusIcon()}</span>
-                                <span className={`text-lg font-bold ${colors.text}`}>
-                                  {formatCurrency(bank.availableBalance)}
-                                </span>
-                              </div>
-                              <div className={`text-xs font-medium ${colors.icon} uppercase tracking-wider`}>
-                                {bank.balanceStatus}
-                              </div>
-                            </div>
-                          </div>
-                          
-                          {/* Balance Status Bar */}
-                          <div className="w-full bg-gray-200 rounded-full h-2 shadow-inner">
-                            <div 
-                              className={`h-2 rounded-full shadow-sm ${
-                                bank.balanceStatus === 'healthy' ? 'bg-gradient-to-r from-green-400 to-emerald-500' :
-                                bank.balanceStatus === 'warning' ? 'bg-gradient-to-r from-yellow-400 to-amber-500' :
-                                'bg-gradient-to-r from-red-400 to-rose-500'
-                              }`} 
-                              style={{ 
-                                width: bank.bankType.includes('Credit Card') || bank.bankType.includes('Overdraft') 
-                                  ? `${Math.min((bank.availableBalance / 10000) * 100, 100)}%`
-                                  : `${Math.min((bank.availableBalance / 2000) * 100, 100)}%`
-                              }}
-                            ></div>
-                          </div>
-                          
-                          <div className={`text-xs ${colors.text} mt-2 flex justify-between items-center`}>
-                            <span>
-                              {bank.bankType.includes('Credit Card') ? 'Credit Usage:' : 
-                               bank.bankType.includes('Overdraft') ? 'Overdraft Usage:' : 
-                               'Account Activity:'} {bank.transactionCount} txns
-                            </span>
-                            <span className="font-semibold">
-                              Health: {bank.healthScore}/100
-                            </span>
-                          </div>
-                        </div>
-                      );
-                    })
-                  ) : bankAnalytics && bankAnalytics.analysisStatus.includes('Error') ? (
-                    <div className="p-4 bg-red-50 rounded-xl border border-red-200">
-                      <div className="flex items-center gap-3 mb-2">
-                        <div className="p-2 bg-red-500 rounded-lg">
-                          <AlertCircle className="h-4 w-4 text-white" />
-                        </div>
-                        <div>
-                          <h4 className="text-sm font-bold text-red-800">Balance Data Unavailable</h4>
-                          <p className="text-xs text-red-600">Please authenticate with Google to view balances</p>
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="p-4 bg-blue-50 rounded-xl border border-blue-200">
-                      <div className="animate-pulse space-y-3">
-                        {[1, 2, 3, 4, 5].map(i => (
-                          <div key={i} className="flex items-center justify-between p-3 bg-blue-100 rounded-lg">
-                            <div className="flex items-center gap-3">
-                              <div className="w-6 h-6 bg-blue-300 rounded"></div>
-                              <div className="space-y-1">
-                                <div className="h-3 bg-blue-300 rounded w-32"></div>
-                                <div className="h-2 bg-blue-200 rounded w-20"></div>
-                              </div>
-                            </div>
-                            <div className="h-4 bg-blue-300 rounded w-20"></div>
-                          </div>
-                        ))}
-                      </div>
-                      <p className="text-xs text-blue-600 text-center mt-4">🔄 Loading balance data...</p>
                     </div>
                   )}
                 </div>
@@ -1752,6 +1671,143 @@ export default function TrackingPage() {
             </div>
           </div>
         </ModernCard>
+
+        {/* Calendar Widget */}
+        {!calendarLoading && calendarData && (
+          <ModernCard gradient="none" blur="lg" className="mt-8 border-gray-200">
+            <div className="p-6">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="p-2 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-xl">
+                  <CalendarDays className="h-6 w-6 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-gray-800">Calendar Overview</h3>
+                  <p className="text-gray-600">Mahboob AlBulushi - Birthdays, Tasks & Oman Holidays</p>
+                </div>
+              </div>
+
+              {/* Statistics Row */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                <div className="bg-blue-50 p-3 rounded-lg border border-blue-200">
+                  <div className="flex items-center gap-2 mb-1">
+                    <CalendarDays className="h-4 w-4 text-blue-600" />
+                    <span className="text-sm font-medium text-blue-800">Total Events</span>
+                  </div>
+                  <p className="text-2xl font-bold text-blue-700">{calendarData.statistics.totalEvents}</p>
+                </div>
+
+                <div className="bg-purple-50 p-3 rounded-lg border border-purple-200">
+                  <div className="flex items-center gap-2 mb-1">
+                    <CheckSquare className="h-4 w-4 text-purple-600" />
+                    <span className="text-sm font-medium text-purple-800">Pending Tasks</span>
+                  </div>
+                  <p className="text-2xl font-bold text-purple-700">{calendarData.statistics.pendingTasks}</p>
+                </div>
+
+                <div className="bg-pink-50 p-3 rounded-lg border border-pink-200">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Gift className="h-4 w-4 text-pink-600" />
+                    <span className="text-sm font-medium text-pink-800">Birthdays</span>
+                  </div>
+                  <p className="text-2xl font-bold text-pink-700">{calendarData.statistics.upcomingBirthdays}</p>
+                </div>
+
+                <div className="bg-red-50 p-3 rounded-lg border border-red-200">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Flag className="h-4 w-4 text-red-600" />
+                    <span className="text-sm font-medium text-red-800">Oman Holidays</span>
+                  </div>
+                  <p className="text-2xl font-bold text-red-700">{calendarData.statistics.upcomingHolidays}</p>
+                </div>
+              </div>
+
+              {/* Events List */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Today's Events */}
+                <div>
+                  <h4 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                    <Clock className="h-4 w-4" />
+                    Today's Events
+                  </h4>
+                  <div className="space-y-2">
+                    {calendarData.todayEvents.length > 0 ? (
+                      calendarData.todayEvents.slice(0, 3).map((event, index) => (
+                        <div key={event.id} className="flex items-center gap-3 p-2 bg-gray-50 rounded-lg">
+                          <div className="flex-shrink-0">
+                            {event.type === 'birthday' && <PartyPopper className="h-4 w-4 text-pink-500" />}
+                            {event.type === 'task' && <CheckSquare className="h-4 w-4 text-blue-500" />}
+                            {event.type === 'holiday' && <Flag className="h-4 w-4 text-red-500" />}
+                            {event.type === 'event' && <CalendarDays className="h-4 w-4 text-purple-500" />}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium text-gray-800 text-sm truncate">{event.title}</p>
+                            {event.description && (
+                              <p className="text-xs text-gray-600 truncate">{event.description}</p>
+                            )}
+                          </div>
+                          {event.priority === 'high' && (
+                            <Star className="h-3 w-3 text-yellow-500" />
+                          )}
+                        </div>
+                      ))
+                    ) : (
+                      <div className="text-center py-4">
+                        <Clock className="h-8 w-8 text-gray-300 mx-auto mb-2" />
+                        <p className="text-gray-500 text-sm">No events today</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Upcoming Events */}
+                <div>
+                  <h4 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                    <TrendingUp className="h-4 w-4" />
+                    Upcoming Events
+                  </h4>
+                  <div className="space-y-2">
+                    {calendarData.upcomingEvents.length > 0 ? (
+                      calendarData.upcomingEvents.slice(0, 3).map((event, index) => (
+                        <div key={event.id} className="flex items-center gap-3 p-2 bg-gray-50 rounded-lg">
+                          <div className="flex-shrink-0">
+                            {event.type === 'birthday' && <PartyPopper className="h-4 w-4 text-pink-500" />}
+                            {event.type === 'task' && <CheckSquare className="h-4 w-4 text-blue-500" />}
+                            {event.type === 'holiday' && <Flag className="h-4 w-4 text-red-500" />}
+                            {event.type === 'event' && <CalendarDays className="h-4 w-4 text-purple-500" />}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium text-gray-800 text-sm truncate">{event.title}</p>
+                            <p className="text-xs text-gray-600">
+                              {new Date(event.date).toLocaleDateString('en-US', { 
+                                weekday: 'short', 
+                                month: 'short', 
+                                day: 'numeric' 
+                              })}
+                            </p>
+                            {event.location && (
+                              <p className="text-xs text-gray-500 flex items-center gap-1 truncate">
+                                <MapPin className="h-2 w-2" />
+                                {event.location}
+                              </p>
+                            )}
+                          </div>
+                          {event.priority === 'high' && (
+                            <Star className="h-3 w-3 text-yellow-500" />
+                          )}
+                        </div>
+                      ))
+                    ) : (
+                      <div className="text-center py-4">
+                        <CalendarDays className="h-8 w-8 text-gray-300 mx-auto mb-2" />
+                        <p className="text-gray-500 text-sm">No upcoming events</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </ModernCard>
+        )}
       </div>
     </div>
   );

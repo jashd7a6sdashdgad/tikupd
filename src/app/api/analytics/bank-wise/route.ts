@@ -12,8 +12,6 @@ interface BankAnalysis {
   insights: string;
   trend: 'up' | 'down' | 'stable';
   healthScore: number;
-  availableBalance: number;
-  balanceStatus: 'healthy' | 'warning' | 'critical';
 }
 
 interface BankAnalyticsResponse {
@@ -37,7 +35,9 @@ export async function GET(request: NextRequest): Promise<NextResponse<BankAnalyt
 
     // Initialize Google Sheets API using OAuth2 tokens
     // Try multiple sources for tokens: cookies, env vars, or file storage
+    // eslint-disable-next-line prefer-const
     let accessToken: string | undefined;
+    // eslint-disable-next-line prefer-const
     let refreshToken: string | undefined;
 
     // Method 1: Try from cookies (most reliable after OAuth flow)
@@ -461,10 +461,6 @@ function analyzeBankData(expenseData: any[][], headers: string[]) {
     const data = bankData[bank];
     const percentage = totalExpenses > 0 ? (Math.abs(data.amount) / totalExpenses) * 100 : 0;
     
-    // Calculate available balance (simplified logic)
-    const availableBalance = calculateAvailableBalance(bank, data.amount, data.count);
-    const balanceStatus = determineBalanceStatus(bank, availableBalance);
-
     return {
       bankType: bank,
       amount: data.amount,
@@ -472,9 +468,7 @@ function analyzeBankData(expenseData: any[][], headers: string[]) {
       transactionCount: data.count,
       insights: generateBankInsight(bank, data.amount, data.count),
       trend: determineTrend(data.amount, data.count),
-      healthScore: calculateHealthScore(data.amount, data.count, bank),
-      availableBalance: availableBalance,
-      balanceStatus: balanceStatus
+      healthScore: calculateHealthScore(data.amount, data.count, bank)
     };
   });
 
@@ -626,48 +620,6 @@ function calculateHealthScore(amount: number, transactionCount: number, bankType
   if (transactionCount > 100) score -= 5; // Very high activity might indicate poor budgeting
   
   return Math.max(0, Math.min(100, score));
-}
-
-function calculateAvailableBalance(bankType: string, transactionAmount: number, transactionCount: number): number {
-  // Simplified available balance calculation based on bank type and usage patterns
-  let baseBalance = 0;
-  
-  if (bankType.includes('Ahli Bank Saving')) {
-    // Savings account - typically higher balance
-    baseBalance = Math.max(500, Math.abs(transactionAmount) * 2);
-  } else if (bankType.includes('Wafrah')) {
-    // Wafrah savings - dedicated savings with positive growth
-    baseBalance = Math.max(1000, Math.abs(transactionAmount) + 500);
-  } else if (bankType.includes('Overdraft')) {
-    // Overdraft - available overdraft limit minus used amount
-    const overdraftLimit = 5000; // Typical overdraft limit
-    baseBalance = Math.max(0, overdraftLimit - Math.abs(transactionAmount));
-  } else if (bankType.includes('Credit Card')) {
-    // Credit card - available credit limit minus used amount
-    const creditLimit = 10000; // Typical credit limit
-    baseBalance = Math.max(0, creditLimit - Math.abs(transactionAmount));
-  } else if (bankType.includes('Bank Muscat')) {
-    // Bank Muscat debit - checking account
-    baseBalance = Math.max(200, Math.abs(transactionAmount) * 1.5);
-  }
-  
-  // Add some randomness based on transaction count to simulate real balance variations
-  const variationFactor = 1 + (transactionCount * 0.01);
-  return Math.round(baseBalance * variationFactor);
-}
-
-function determineBalanceStatus(bankType: string, availableBalance: number): 'healthy' | 'warning' | 'critical' {
-  if (bankType.includes('Credit Card') || bankType.includes('Overdraft')) {
-    // For credit/overdraft accounts, lower available balance is more concerning
-    if (availableBalance < 1000) return 'critical';
-    if (availableBalance < 3000) return 'warning';
-    return 'healthy';
-  } else {
-    // For savings/debit accounts
-    if (availableBalance < 100) return 'critical';
-    if (availableBalance < 500) return 'warning';
-    return 'healthy';
-  }
 }
 
 // Mock data function removed - using REAL data only

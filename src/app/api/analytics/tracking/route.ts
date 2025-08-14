@@ -11,17 +11,42 @@ const getDeploymentConfig = () => ({
 
 // Helper function to get Google tokens from multiple sources
 async function getGoogleTokensFromMultipleSources(request: NextRequest) {
-  // Source 1: Check cookies (from browser OAuth flow)
+  // Source 1: Cookies (browser OAuth flow)
   let accessToken = request.cookies.get('google_access_token')?.value;
   const rawRefreshToken = request.cookies.get('google_refresh_token')?.value;
   let refreshToken = rawRefreshToken ? decodeURIComponent(rawRefreshToken) : undefined;
   
-  // Source 2: Check environment variables (system-wide tokens)
+  // Source 2: Headers (server-to-server, e.g., n8n)
   if (!accessToken) {
-    accessToken = process.env.GOOGLE_ACCESS_TOKEN;
-    refreshToken = process.env.GOOGLE_REFRESH_TOKEN;
-    
-    // URL decode refresh token if needed
+    const headerAccess =
+      request.headers.get('x-google-access-token') ||
+      request.headers.get('x-goog-access-token') ||
+      request.headers.get('x-gapi-access-token');
+    const headerRefresh =
+      request.headers.get('x-google-refresh-token') ||
+      request.headers.get('x-goog-refresh-token') ||
+      request.headers.get('x-gapi-refresh-token');
+    if (headerAccess) {
+      accessToken = headerAccess;
+      refreshToken = headerRefresh || refreshToken;
+    }
+  }
+
+  // Source 3: Query params (manual testing / integrations)
+  if (!accessToken) {
+    const url = new URL(request.url);
+    const qpAccess = url.searchParams.get('google_access_token');
+    const qpRefresh = url.searchParams.get('google_refresh_token');
+    if (qpAccess) {
+      accessToken = qpAccess;
+      refreshToken = qpRefresh || refreshToken;
+    }
+  }
+
+  // Source 4: Environment variables (system tokens)
+  if (!accessToken) {
+    accessToken = process.env.GOOGLE_ACCESS_TOKEN || undefined;
+    refreshToken = process.env.GOOGLE_REFRESH_TOKEN || refreshToken;
     if (refreshToken && refreshToken.includes('%')) {
       refreshToken = decodeURIComponent(refreshToken);
     }
@@ -616,45 +641,7 @@ export async function GET(request: NextRequest) {
       contacts: processedData.contacts.length
     });
 
-    // Add fallback data for testing when no real data is available
-    if (!hasRealData) {
-      console.log('📊 No real data available, using fallback data for demonstration');
-      
-      // Add some sample data for demonstration
-      analytics.overview.totalEvents = 15;
-      analytics.overview.totalEmails = 42;
-      analytics.overview.totalExpenses = 1250.75;
-      analytics.overview.totalContacts = 8;
-      
-      analytics.trends.eventsThisMonth = 8;
-      analytics.trends.emailsThisMonth = 25;
-      analytics.trends.expensesThisMonth = 850.50;
-      analytics.trends.lastMonthEvents = 7;
-      analytics.trends.lastMonthEmails = 18;
-      analytics.trends.lastMonthExpenses = 720.25;
-      
-      analytics.categories.expensesByCategory = {
-        'Ahli Bank (Cards)': 450.25,
-        'Bank Muscat': 320.50,
-        'Food': 180.00,
-        'Transportation': 150.00,
-        'Shopping': 150.00
-      };
-      
-      analytics.categories.eventsByType = {
-        'Meeting': 6,
-        'Work': 5,
-        'Personal': 4
-      };
-      
-      analytics.productivity.averageEventsPerDay = 0.5;
-      analytics.productivity.averageEmailsPerDay = 1.4;
-      analytics.productivity.busyDaysThisMonth = 12;
-      analytics.productivity.completionRate = 85;
-      
-      analytics.social.facebookReach = '2.5K';
-      analytics.social.youtubeViews = '1.2K';
-    }
+    // No fallback/mock injection. If there's no real data, return zeros with hasRealData=false.
 
     console.log('✅ Analytics calculated successfully:', {
       rawCounts: {
