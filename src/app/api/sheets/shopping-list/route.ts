@@ -337,6 +337,22 @@ export async function DELETE(request: NextRequest) {
         }, { status: 404 });
       }
 
+      // Get the correct sheet ID first
+      const spreadsheet = await sheets.spreadsheets.get({
+        spreadsheetId: SPREADSHEET_ID
+      });
+      
+      const sheet = spreadsheet.data.sheets?.find(s => 
+        s.properties?.title === SHOPPING_LIST_CONFIG.name
+      );
+      
+      if (!sheet || !sheet.properties?.sheetId) {
+        return NextResponse.json({
+          success: false,
+          message: 'Shopping list sheet not found'
+        }, { status: 404 });
+      }
+
       // Delete the row
       await sheets.spreadsheets.batchUpdate({
         spreadsheetId: SPREADSHEET_ID,
@@ -344,7 +360,7 @@ export async function DELETE(request: NextRequest) {
           requests: [{
             deleteDimension: {
               range: {
-                sheetId: 0, // Assuming first sheet
+                sheetId: sheet.properties.sheetId,
                 dimension: 'ROWS',
                 startIndex: targetRowIndex - 1, // 0-based for API
                 endIndex: targetRowIndex
