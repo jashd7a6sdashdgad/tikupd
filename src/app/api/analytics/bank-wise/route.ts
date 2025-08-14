@@ -1,8 +1,66 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { GoogleGenerativeAI } from '@google/generative-ai';
 import { google } from 'googleapis';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
+// Rate limiting for Gemini API
+const GEMINI_RATE_LIMIT = {
+  maxRequestsPerDay: 50,
+  maxRequestsPerHour: 10,
+  requests: new Map<string, { count: number; resetTime: number }>()
+};
+
+function checkGeminiRateLimit(): { allowed: boolean; remaining: number; resetTime?: number } {
+  const now = Date.now();
+  const today = new Date().toDateString();
+  const hour = Math.floor(now / (1000 * 60 * 60));
+  
+  // Check daily limit
+  const dailyKey = `daily_${today}`;
+  const dailyData = GEMINI_RATE_LIMIT.requests.get(dailyKey) || { count: 0, resetTime: now + (24 * 60 * 60 * 1000) };
+  
+  if (now > dailyData.resetTime) {
+    dailyData.count = 0;
+    dailyData.resetTime = now + (24 * 60 * 60 * 1000);
+  }
+  
+  // Check hourly limit
+  const hourlyKey = `hourly_${hour}`;
+  const hourlyData = GEMINI_RATE_LIMIT.requests.get(hourlyKey) || { count: 0, resetTime: now + (60 * 60 * 1000) };
+  
+  if (now > hourlyData.resetTime) {
+    hourlyData.count = 0;
+    hourlyData.resetTime = now + (60 * 60 * 1000);
+  }
+  
+  // Update counts
+  dailyData.count++;
+  hourlyData.count++;
+  GEMINI_RATE_LIMIT.requests.set(dailyKey, dailyData);
+  GEMINI_RATE_LIMIT.requests.set(hourlyKey, hourlyData);
+  
+  // Check limits
+  const dailyExceeded = dailyData.count > GEMINI_RATE_LIMIT.maxRequestsPerDay;
+  const hourlyExceeded = hourlyData.count > GEMINI_RATE_LIMIT.maxRequestsPerHour;
+  
+  if (dailyExceeded || hourlyExceeded) {
+    return {
+      allowed: false,
+      remaining: 0,
+      resetTime: dailyExceeded ? dailyData.resetTime : hourlyData.resetTime
+    };
+  }
+  
+  return {
+    allowed: true,
+    remaining: Math.min(
+      GEMINI_RATE_LIMIT.maxRequestsPerDay - dailyData.count,
+      GEMINI_RATE_LIMIT.maxRequestsPerHour - hourlyData.count
+    )
+  };
+}
+
+// Initialize Gemini AI
+const genAI = process.env.GEMINI_API_KEY ? new GoogleGenerativeAI(process.env.GEMINI_API_KEY) : null;
 
 interface BankAnalysis {
   bankType: string;
@@ -500,15 +558,22 @@ function analyzeBankData(expenseData: any[][], headers: string[]) {
 }
 
 async function generateAIInsights(bankAnalysis: any, expenseData: any[][]): Promise<{ aiRecommendations: string[] }> {
-  console.log('🤖 Generating REAL AI insights using Gemini 1.5 Flash...');
+  console.log('🤖 Generating AI insights...');
   
-  if (!process.env.GEMINI_API_KEY) {
-    console.error('❌ GEMINI_API_KEY not configured - AI insights unavailable');
-    throw new Error('Gemini API key not configured - please set GEMINI_API_KEY environment variable');
+  // Check rate limits first
+  const rateLimit = checkGeminiRateLimit();
+  if (!rateLimit.allowed) {
+    console.warn(`⚠️ Gemini API rate limit exceeded. Reset time: ${new Date(rateLimit.resetTime || 0).toISOString()}`);
+    return generateFallbackInsights(bankAnalysis);
+  }
+  
+  if (!process.env.GEMINI_API_KEY || !genAI) {
+    console.error('❌ GEMINI_API_KEY not configured - using fallback insights');
+    return generateFallbackInsights(bankAnalysis);
   }
 
   try {
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    const model = genAI?.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
     // Prepare REAL data for analysis
     const totalTransactions = expenseData.length;
@@ -554,36 +619,97 @@ Requirements:
 - Start each with the specified emoji`;
 
     console.log('🔄 Sending real data to Gemini for analysis...');
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const text = response.text();
+    const result = await model?.generateContent(prompt);
+    const response = await result?.response;
+    const text = response?.text();
 
     console.log('📝 Raw Gemini response:', text);
 
     // Parse recommendations from response
-    const lines = text.split('\n').filter(line => {
+    const lines = text?.split('\n').filter(line => {
       const trimmed = line.trim();
       return trimmed && (trimmed.includes('🎯') || trimmed.includes('⚠️') || trimmed.includes('📊'));
     });
     
-    const recommendations = lines.slice(0, 3).map(line => {
+    const recommendations = lines?.slice(0, 3).map(line => {
       // Clean up the recommendation text
       return line.trim().replace(/^\d+\.\s*/, ''); // Remove numbering if present
     });
 
     // Validate we have 3 recommendations
-    if (recommendations.length >= 3) {
+    if (recommendations && recommendations.length >= 3) {
       console.log('✅ Real AI recommendations generated successfully:', recommendations);
       return { aiRecommendations: recommendations };
     } else {
-      console.error('❌ AI response incomplete - only got', recommendations.length, 'recommendations');
-      throw new Error(`Gemini returned only ${recommendations.length} recommendations instead of 3`);
+      console.error('❌ AI response incomplete - only got', recommendations?.length || 0, 'recommendations');
+      throw new Error(`Gemini returned only ${recommendations?.length || 0} recommendations instead of 3`);
     }
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('❌ Gemini AI analysis failed:', error);
-    throw error; // Re-throw to be handled by calling function
+    
+    // Handle specific rate limit errors
+    if (error.message?.includes('429') || 
+        error.message?.includes('quota') || 
+        error.message?.includes('rate limit') ||
+        error.message?.includes('Too Many Requests')) {
+      console.warn('⚠️ Gemini API rate limit exceeded - using fallback insights');
+      return generateFallbackInsights(bankAnalysis);
+    }
+    
+    // Handle other API errors
+    if (error.message?.includes('API key') || 
+        error.message?.includes('authentication') ||
+        error.message?.includes('unauthorized')) {
+      console.warn('⚠️ Gemini API authentication failed - using fallback insights');
+      return generateFallbackInsights(bankAnalysis);
+    }
+    
+    // For other errors, still use fallback but log the error
+    console.warn('⚠️ Unexpected Gemini API error - using fallback insights:', error.message);
+    return generateFallbackInsights(bankAnalysis);
   }
+}
+
+// Fallback function when Gemini API is unavailable
+function generateFallbackInsights(bankAnalysis: any): { aiRecommendations: string[] } {
+  console.log('🔄 Generating fallback insights based on transaction patterns...');
+  
+  const totalExpenses = Math.abs(bankAnalysis.totalExpenses);
+  const bankCount = bankAnalysis.bankAnalysis.length;
+  
+  // Generate contextual recommendations based on actual data
+  const recommendations: string[] = [];
+  
+  // Recommendation 1: Spending optimization
+  if (totalExpenses > 1000) {
+    recommendations.push('🎯 Review monthly subscriptions and reduce non-essential spending');
+  } else if (totalExpenses > 500) {
+    recommendations.push('🎯 Consider setting up automatic savings transfers');
+  } else {
+    recommendations.push('🎯 Great spending control - maintain current budget habits');
+  }
+  
+  // Recommendation 2: Financial risk
+  if (bankAnalysis.bankAnalysis.some((bank: any) => bank.bankType.includes('Credit Card') && Math.abs(bank.amount) > 500)) {
+    recommendations.push('⚠️ Monitor credit card usage to avoid high interest charges');
+  } else if (bankAnalysis.bankAnalysis.some((bank: any) => bank.bankType.includes('Overdraft'))) {
+    recommendations.push('⚠️ Watch overdraft usage to minimize banking fees');
+  } else {
+    recommendations.push('⚠️ Maintain emergency fund equivalent to 3 months expenses');
+  }
+  
+  // Recommendation 3: Improvement
+  if (bankCount > 2) {
+    recommendations.push('📊 Consolidate accounts for better financial management');
+  } else if (totalExpenses > 800) {
+    recommendations.push('📊 Set up expense tracking categories for better insights');
+  } else {
+    recommendations.push('📊 Consider investment options for long-term financial growth');
+  }
+  
+  console.log('✅ Fallback insights generated:', recommendations);
+  return { aiRecommendations: recommendations };
 }
 
 function generateBankInsight(bankType: string, amount: number, transactionCount: number): string {
