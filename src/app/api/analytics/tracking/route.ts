@@ -187,8 +187,8 @@ export async function GET(request: NextRequest) {
           // Google Sheets (expenses)
           (async () => {
             try {
-              const spreadsheetId = process.env.EXPENSES_SPREADSHEET_ID || '1d2OgyNgTKSX-ACVkdWjarBp6WHh1mDvtflOrUO1dCNk';
-              const range = 'Expenses!A:H';
+              const spreadsheetId = process.env.GOOGLE_SHEETS_ID || process.env.EXPENSES_SPREADSHEET_ID || '1d2OgyNgTKSX-ACVkdWjarBp6WHh1mDvtflOrUO1dCNk';
+              const range = 'Expenses!A:K';
               
               const response = await fetch(
                 `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${range}`,
@@ -363,10 +363,12 @@ export async function GET(request: NextRequest) {
         totalEmails: rawEmailCount === 100 ? 99 : rawEmailCount,
         totalExpenses: (Array.isArray(processedData.expenses) && processedData.expenses.length > 1) ? 
           processedData.expenses.slice(1).reduce((sum: number, row: any) => {
-            // Skip header row, assume columns: [Date, Description, Amount, Category, etc.]
-            if (Array.isArray(row) && row.length >= 3) {
-              const amount = parseFloat(row[2] as string) || 0; // Amount is typically in column 3
-              return sum + Math.abs(amount);
+            // Skip header row, new format: [From, Account Number, Account Type/Name, Date, Credit Amount, Debit Amount, Category, Description, Credit Card Balance, Debit Card Balance, ID]
+            if (Array.isArray(row) && row.length >= 6) {
+              const creditAmount = parseFloat(row[4] as string) || 0; // Credit Amount in column 5
+              const debitAmount = parseFloat(row[5] as string) || 0; // Debit Amount in column 6
+              const totalAmount = Math.abs(creditAmount) + Math.abs(debitAmount);
+              return sum + totalAmount;
             }
             return sum;
           }, 0) : 0,
@@ -384,14 +386,16 @@ export async function GET(request: NextRequest) {
         
         expensesThisMonth: processedData.expenses.length > 1 ? 
           processedData.expenses.slice(1).reduce((sum: number, row: any) => {
-            if (Array.isArray(row) && row.length >= 3) {
+            if (Array.isArray(row) && row.length >= 6) {
               try {
-                const dateStr = row[0]; // Date in column 1
-                const amount = parseFloat(row[2]) || 0; // Amount in column 3
+                const dateStr = row[3]; // Date in column 4 (new format)
+                const creditAmount = parseFloat(row[4]) || 0; // Credit Amount in column 5
+                const debitAmount = parseFloat(row[5]) || 0; // Debit Amount in column 6
+                const totalAmount = Math.abs(creditAmount) + Math.abs(debitAmount);
                 if (dateStr) {
                   const expenseDate = new Date(dateStr);
                   if (expenseDate >= thisMonthStart && expenseDate <= now) {
-                    return sum + Math.abs(amount);
+                    return sum + totalAmount;
                   }
                 }
               } catch (error) {
@@ -411,14 +415,16 @@ export async function GET(request: NextRequest) {
         
         lastMonthExpenses: processedData.expenses.length > 1 ? 
           processedData.expenses.slice(1).reduce((sum: number, row: any) => {
-            if (Array.isArray(row) && row.length >= 3) {
+            if (Array.isArray(row) && row.length >= 6) {
               try {
-                const dateStr = row[0]; // Date in column 1
-                const amount = parseFloat(row[2]) || 0; // Amount in column 3
+                const dateStr = row[3]; // Date in column 4 (new format)
+                const creditAmount = parseFloat(row[4]) || 0; // Credit Amount in column 5
+                const debitAmount = parseFloat(row[5]) || 0; // Debit Amount in column 6
+                const totalAmount = Math.abs(creditAmount) + Math.abs(debitAmount);
                 if (dateStr) {
                   const expenseDate = new Date(dateStr);
                   if (expenseDate >= lastMonthStart && expenseDate <= lastMonthEnd) {
-                    return sum + Math.abs(amount);
+                    return sum + totalAmount;
                   }
                 }
               } catch (error) {
@@ -432,19 +438,23 @@ export async function GET(request: NextRequest) {
       categories: {
         expensesByCategory: processedData.expenses.length > 1 ? 
           processedData.expenses.slice(1).reduce((acc: {[key: string]: number}, row: any) => {
-            if (Array.isArray(row) && row.length >= 3) {
+            if (Array.isArray(row) && row.length >= 8) {
               try {
-                const amount = parseFloat(row[2]) || 0; // Amount in column 3
-                let category = row[3] || row[4] || 'Other'; // Try column 4 or 5 for category
-                const description = row[1] || ''; // Description in column 2
-                const date = row[0] || ''; // Date in column 1
+                const creditAmount = parseFloat(row[4]) || 0; // Credit Amount in column 5
+                const debitAmount = parseFloat(row[5]) || 0; // Debit Amount in column 6
+                const totalAmount = Math.abs(creditAmount) + Math.abs(debitAmount);
+                let category = row[6] || 'Other'; // Category in column 7
+                const description = row[7] || ''; // Description in column 8
+                const date = row[3] || ''; // Date in column 4
                 
                 // Debug logging for first few rows
                 if (Object.keys(acc).length < 5) {
                   console.log('Processing expense row:', {
                     date: date,
                     description: description,
-                    amount: amount,
+                    creditAmount: creditAmount,
+                    debitAmount: debitAmount,
+                    totalAmount: totalAmount,
                     originalCategory: category,
                     rowLength: row.length,
                     fullRow: row
@@ -548,8 +558,8 @@ export async function GET(request: NextRequest) {
                 }
                 
                 // Only process if amount is valid and category is not null
-                if (amount !== 0 && category && category !== null) {
-                  acc[category] = (acc[category] || 0) + Math.abs(amount);
+                if (totalAmount !== 0 && category && category !== null) {
+                  acc[category] = (acc[category] || 0) + totalAmount;
                 }
               } catch (error) {
                 // Skip invalid rows

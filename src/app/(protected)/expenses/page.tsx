@@ -26,13 +26,19 @@ import {
   Zap,
   Target,
   Eye,
-  Flag
+  Flag,
+  Filter,
+  SortAsc,
+  SortDesc,
+  Building2,
+  CreditCard
 } from 'lucide-react';
 // import { useVoiceInput } from '@/hooks/useVoiceInput'; // Removed for stability
 import AddExpenseForm from '@/components/AddExpenseForm';
 import { ExpenseIntelligence, SmartExpense } from '@/lib/expenseIntelligence';
 import ExpenseInsightsDashboard from '@/components/ExpenseInsightsDashboard';
 import BudgetAdvisorDashboard from '@/components/BudgetAdvisorDashboard';
+import { AISpendingAdvisor } from '@/components/AISpendingAdvisor';
 
 interface ExpenseAnalytics {
   total: number;
@@ -65,6 +71,12 @@ export default function ExpensesPage() {
   const [showInsights, setShowInsights] = useState(false);
   const [showBudgetAdvisor, setShowBudgetAdvisor] = useState(false);
   const [smartExpenses, setSmartExpenses] = useState<SmartExpense[]>([]);
+
+  // New features state
+  const [selectedBank, setSelectedBank] = useState<'all' | 'ahli' | 'wafrah'>('all');
+  const [sortMethod, setSortMethod] = useState<string>('date-recent');
+  const [isAISorting, setIsAISorting] = useState(false);
+  const [showAIAdvisor, setShowAIAdvisor] = useState(false);
 
   // Voice input temporarily disabled for stability
   // const { 
@@ -329,10 +341,57 @@ export default function ExpensesPage() {
     return expense.from && expense.from.toLowerCase().includes('ahlibank@ahlibank.om');
   };
 
+  // Filter expenses by selected bank
+  const getFilteredExpenses = () => {
+    let filteredExpenses = expenses;
+    
+    if (selectedBank === 'ahli') {
+      filteredExpenses = expenses.filter(expense => 
+        expense.from?.toLowerCase().includes('ahli') || 
+        expense.from?.toLowerCase().includes('noreply@cards.ahlibank.om')
+      );
+    } else if (selectedBank === 'wafrah') {
+      filteredExpenses = expenses.filter(expense => 
+        expense.from?.toLowerCase().includes('wafrah') ||
+        expense.from?.toLowerCase().includes('bankmuscat') // If Wafrah data comes from Bank Muscat
+      );
+    }
+    
+    return filteredExpenses;
+  };
+
+  // AI Sorting function
+  const handleAISort = async (method: string) => {
+    setIsAISorting(true);
+    try {
+      const response = await fetch('/api/ai/expense-sort', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          expenses: getFilteredExpenses(),
+          sortCriteria: method
+        })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          setExpenses(data.sortedExpenses);
+          setSortMethod(method);
+        }
+      }
+    } catch (error) {
+      console.error('AI sorting failed:', error);
+    } finally {
+      setIsAISorting(false);
+    }
+  };
+
   const getPaginatedExpenses = () => {
     const startIndex = (currentPage - 1) * itemsPerPage;
     const endIndex = startIndex + itemsPerPage;
-    return expenses.slice(startIndex, endIndex);
+    const filtered = getFilteredExpenses();
+    return filtered.slice(startIndex, endIndex);
   };
 
   const totalPages = Math.ceil(expenses.length / itemsPerPage);
@@ -402,6 +461,15 @@ export default function ExpensesPage() {
                 <Target className="h-4 w-4 mr-2" />
                 Budget Advisor
               </Button>
+              <Button 
+                onClick={() => setShowAIAdvisor(!showAIAdvisor)} 
+                variant="outline" 
+                size="sm"
+                className={showAIAdvisor ? 'bg-purple-50 text-purple-700' : ''}
+              >
+                <Brain className="h-4 w-4 mr-2" />
+                AI Advisor
+              </Button>
               <Button onClick={() => setShowAddForm(true)}>
                 <Plus className="h-4 w-4 mr-2" />
                 {t('addExpense')}
@@ -410,7 +478,103 @@ export default function ExpensesPage() {
           </div>
         </div>
 
+        {/* Bank Filtering and AI Sorting Controls */}
+        <div className="bg-white/70 backdrop-blur-xl rounded-2xl shadow-xl border border-white/30 p-6 mb-6">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            {/* Bank Filter */}
+            <div className="flex items-center gap-3">
+              <Building2 className="h-5 w-5 text-gray-600" />
+              <span className="text-sm font-medium text-gray-700">Bank Filter:</span>
+              <div className="flex gap-2">
+                <Button
+                  variant={selectedBank === 'all' ? 'secondary' : 'outline'}
+                  size="sm"
+                  onClick={() => setSelectedBank('all')}
+                >
+                  All Banks
+                </Button>
+                <Button
+                  variant={selectedBank === 'ahli' ? 'secondary' : 'outline'}
+                  size="sm"
+                  onClick={() => setSelectedBank('ahli')}
+                  className={selectedBank === 'ahli' ? 'bg-blue-600 text-white' : ''}
+                >
+                  <CreditCard className="h-4 w-4 mr-1" />
+                  Ahli
+                </Button>
+                <Button
+                  variant={selectedBank === 'wafrah' ? 'secondary' : 'outline'}
+                  size="sm"
+                  onClick={() => setSelectedBank('wafrah')}
+                  className={selectedBank === 'wafrah' ? 'bg-green-600 text-white' : ''}
+                >
+                  <CreditCard className="h-4 w-4 mr-1" />
+                  Wafrah
+                </Button>
+              </div>
+            </div>
+
+            {/* AI Sorting */}
+            <div className="flex items-center gap-3">
+              <Brain className="h-5 w-5 text-purple-600" />
+              <span className="text-sm font-medium text-gray-700">AI Sort:</span>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleAISort('ai-smart')}
+                  disabled={isAISorting}
+                  className="text-purple-600 border-purple-300"
+                >
+                  {isAISorting ? (
+                    <RefreshCw className="h-4 w-4 mr-1 animate-spin" />
+                  ) : (
+                    <SortDesc className="h-4 w-4 mr-1" />
+                  )}
+                  Smart Sort
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleAISort('ai-categorize')}
+                  disabled={isAISorting}
+                  className="text-indigo-600 border-indigo-300"
+                >
+                  <Filter className="h-4 w-4 mr-1" />
+                  AI Categorize
+                </Button>
+              </div>
+            </div>
+          </div>
+          
+          {/* Current Filter Status */}
+          <div className="mt-4 pt-4 border-t border-gray-200">
+            <div className="flex items-center justify-between text-sm text-gray-600">
+              <span>
+                Showing {getFilteredExpenses().length} expenses 
+                {selectedBank !== 'all' && ` from ${selectedBank === 'ahli' ? 'Ahli Bank' : 'Wafrah Bank'}`}
+              </span>
+              {sortMethod && (
+                <span className="flex items-center gap-1">
+                  <SortAsc className="h-4 w-4" />
+                  Sorted by: {sortMethod.replace('ai-', 'AI ').replace('-', ' ')}
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+
         <main className="space-y-8">
+        {/* AI Spending Advisor */}
+        {showAIAdvisor && (
+          <div className="mb-8">
+            <AISpendingAdvisor 
+              expenses={getFilteredExpenses()} 
+              selectedBank={selectedBank}
+            />
+          </div>
+        )}
+
         {/* Budget Advisor Dashboard */}
         {showBudgetAdvisor && (
           <div className="mb-8">

@@ -50,7 +50,7 @@ export default function YouTubePage() {
   const [recentActivity, setRecentActivity] = useState<any[]>([]);
   const [channelStats, setChannelStats] = useState({ subscribers: 0, totalVideos: 0 });
 
-  // Check authentication status on load
+  // Check authentication status on load (but don't auto-redirect)
   useEffect(() => {
     checkAuthStatus();
   }, []);

@@ -193,11 +193,18 @@ export function Navigation() {
     await logout();
   };
 
-  const handleGoogleConnect = () => {
+  const handleGoogleConnect = async () => {
     try {
       setIsConnectingGoogle(true);
       console.log('Initiating Google OAuth flow...');
-      window.location.href = '/api/auth/google';
+      const response = await fetch('/api/google/auth');
+      const data = await response.json();
+      
+      if (data.success && data.authUrl) {
+        window.location.href = data.authUrl;
+      } else {
+        throw new Error('Failed to get auth URL');
+      }
     } catch (error) {
       console.error('Error connecting to Google:', error);
       setIsConnectingGoogle(false);

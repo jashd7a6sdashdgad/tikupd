@@ -573,6 +573,50 @@ export default function MusicPage() {
     </ModernCard>
   );
 
+  const playPlaylist = useCallback(async (playlist: Playlist) => {
+    try {
+      if (playlist.spotifyUrl && spotifyConnected) {
+        // For Spotify playlists, try to get the actual tracks
+        const response = await fetch('/api/music', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            action: 'get_playlist_tracks',
+            playlistId: playlist.id 
+          })
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success && data.data.tracks?.length > 0) {
+            setCurrentPlaylist(data.data.tracks);
+            setCurrentSong(data.data.tracks[0]);
+            setIsPlaying(true);
+            return;
+          }
+        }
+      }
+      
+      // Fallback: if playlist has songs or redirect to external service
+      if (playlist.songs && playlist.songs.length > 0) {
+        setCurrentPlaylist(playlist.songs);
+        setCurrentSong(playlist.songs[0]);
+        setIsPlaying(true);
+      } else if (playlist.spotifyUrl) {
+        // Open in Spotify since we can't play it directly
+        openExternalLink(playlist.spotifyUrl);
+      } else {
+        setError(`Playlist "${playlist.name}" is empty or unavailable for playback.`);
+      }
+    } catch (error) {
+      console.error('Error playing playlist:', error);
+      setError('Failed to load playlist. Opening in external app...');
+      if (playlist.spotifyUrl) {
+        openExternalLink(playlist.spotifyUrl);
+      }
+    }
+  }, [spotifyConnected, openExternalLink]);
+
   const PlaylistCard = ({ playlist }: { playlist: Playlist }) => (
     <ModernCard className="group hover:shadow-lg transition-all duration-300" gradient="none" blur="lg">
       <div className="p-4">
@@ -582,7 +626,7 @@ export default function MusicPage() {
           </div>
           <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-lg flex items-center justify-center">
             <Button
-              onClick={() => playlist.songs.length > 0 && togglePlayPause(playlist.songs[0])}
+              onClick={() => playPlaylist(playlist)}
               className="bg-white/20 hover:bg-white/30 text-white rounded-full w-12 h-12 p-0"
             >
               <Play className="h-6 w-6" />

@@ -65,7 +65,7 @@ export class SocialAuthManager {
       this.providers.set('google', {
         name: 'Google',
         clientId: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID,
-        redirectUri: `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/auth/google/callback`,
+        redirectUri: `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/google/callback`,
         scopes: [
           'https://www.googleapis.com/auth/userinfo.email',
           'https://www.googleapis.com/auth/userinfo.profile',

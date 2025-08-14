@@ -44,7 +44,7 @@ export default function GmailAuthSetup({ onAuthSuccess, onAuthError }: GmailAuth
   // OAuth configuration - client secret should not be exposed to client
   const OAUTH_CONFIG = {
     clientId: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '',
-    redirectUri: process.env.NEXT_PUBLIC_BASE_URL ? `${process.env.NEXT_PUBLIC_BASE_URL}/api/auth/google` : 'http://localhost:3000/api/auth/google',
+    redirectUri: process.env.NEXT_PUBLIC_BASE_URL ? `${process.env.NEXT_PUBLIC_BASE_URL}/api/google/callback` : 'http://localhost:3000/api/google/callback',
     scope: 'https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/gmail.send https://www.googleapis.com/auth/gmail.modify',
     responseType: 'code',
     accessType: 'offline',

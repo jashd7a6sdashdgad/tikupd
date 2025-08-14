@@ -271,3 +271,111 @@ export async function PUT(request: NextRequest) {
     }, { status: 500 });
   }
 }
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const token = request.cookies.get(COOKIE_OPTIONS.name)?.value;
+    if (!token) {
+      return NextResponse.json({ success: false, message: 'Authentication required' }, { status: 401 });
+    }
+    
+    const user = verifyToken(token);
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get('id');
+    
+    if (!id) {
+      return NextResponse.json({
+        success: false,
+        message: 'Item ID is required'
+      }, { status: 400 });
+    }
+
+    // Get OAuth tokens from cookies
+    const accessToken = request.cookies.get('google_access_token')?.value;
+    const refreshToken = request.cookies.get('google_refresh_token')?.value;
+    
+    if (!accessToken) {
+      throw new Error('Google authentication required');
+    }
+
+    const sheets = await getGoogleSheetsClient({
+      access_token: accessToken,
+      refresh_token: refreshToken
+    });
+
+    try {
+      // Get current data to find the row to delete
+      const range = SHOPPING_LIST_CONFIG.range;
+      const response = await sheets.spreadsheets.values.get({
+        spreadsheetId: SPREADSHEET_ID,
+        range,
+      });
+
+      const rows = response.data.values || [];
+      if (rows.length === 0) {
+        return NextResponse.json({
+          success: false,
+          message: 'No items found to delete'
+        }, { status: 404 });
+      }
+
+      // Find the row index (skip header)
+      const dataRows = rows.slice(1);
+      let targetRowIndex = -1;
+      
+      for (let i = 0; i < dataRows.length; i++) {
+        if (i.toString() === id) {
+          targetRowIndex = i + 2; // +2 because: +1 for header row, +1 for 1-based indexing
+          break;
+        }
+      }
+
+      if (targetRowIndex === -1) {
+        return NextResponse.json({
+          success: false,
+          message: 'Item not found'
+        }, { status: 404 });
+      }
+
+      // Delete the row
+      await sheets.spreadsheets.batchUpdate({
+        spreadsheetId: SPREADSHEET_ID,
+        requestBody: {
+          requests: [{
+            deleteDimension: {
+              range: {
+                sheetId: 0, // Assuming first sheet
+                dimension: 'ROWS',
+                startIndex: targetRowIndex - 1, // 0-based for API
+                endIndex: targetRowIndex
+              }
+            }
+          }]
+        }
+      });
+
+      return NextResponse.json({
+        success: true,
+        message: 'Shopping list item deleted successfully',
+        userId: user.id,
+        timestamp: new Date().toISOString()
+      });
+
+    } catch (apiError: any) {
+      if (apiError.message?.includes('not been used') || apiError.message?.includes('disabled')) {
+        return NextResponse.json({
+          success: false,
+          message: 'Google Sheets API has not been used in project 573350886841 before or it is disabled. Enable it by visiting https://console.developers.google.com/apis/api/sheets.googleapis.com/overview?project=573350886841 then retry. If you enabled this API recently, wait a few minutes for the action to propagate to our systems and retry.'
+        }, { status: 500 });
+      }
+      throw apiError;
+    }
+
+  } catch (error: any) {
+    console.error('Shopping list delete error:', error);
+    return NextResponse.json({
+      success: false,
+      message: error.message || 'Failed to delete shopping list item'
+    }, { status: 500 });
+  }
+}

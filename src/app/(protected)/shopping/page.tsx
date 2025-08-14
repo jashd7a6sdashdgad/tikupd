@@ -15,7 +15,8 @@ import {
   Mic,
   RefreshCw,
   DollarSign,
-  Package
+  Package,
+  Trash2
 } from 'lucide-react';
 import { useVoiceInput } from '@/hooks/useVoiceInput';
 
@@ -167,6 +168,29 @@ export default function ShoppingPage() {
     } catch (error) {
       console.error('Error updating item:', error);
       alert(t('errorUpdatingItem'));
+    }
+  };
+
+  const deleteItem = async (item: ShoppingItem) => {
+    if (!confirm(`Are you sure you want to delete "${item.name}"?`)) {
+      return;
+    }
+    
+    try {
+      const response = await fetch(`/api/sheets/shopping-list?id=${item.id}`, {
+        method: 'DELETE'
+      });
+
+      const data = await response.json();
+      
+      if (data.success) {
+        await fetchItems();
+      } else {
+        alert(t('failedToDeleteItem') + ': ' + data.message);
+      }
+    } catch (error) {
+      console.error('Error deleting item:', error);
+      alert(t('errorDeletingItem'));
     }
   };
 
@@ -378,13 +402,23 @@ export default function ShoppingPage() {
                           </div>
                         </div>
                         
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => togglePurchased(item)}
-                        >
-                          <Check className="h-4 w-4" />
-                        </Button>
+                        <div className="flex items-center space-x-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => togglePurchased(item)}
+                          >
+                            <Check className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => deleteItem(item)}
+                            className="text-red-600 hover:text-red-800 hover:bg-red-50"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -441,13 +475,23 @@ export default function ShoppingPage() {
                           </div>
                         </div>
                         
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => togglePurchased(item)}
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
+                        <div className="flex items-center space-x-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => togglePurchased(item)}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => deleteItem(item)}
+                            className="text-red-600 hover:text-red-800 hover:bg-red-50"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   ))}

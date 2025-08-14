@@ -35,6 +35,8 @@ export default function AddExpenseForm({ onAdded }: { onAdded: () => void }) {
   const [formError, setFormError] = useState<string | null>(null);
 
   const categories = [
+    { key: 'credit', value: '1. Credit' },
+    { key: 'debit', value: '2. Debit' },
     { key: 'food', value: 'Food' },
     { key: 'transportation', value: 'Transportation' },
     { key: 'business', value: 'Business' },
