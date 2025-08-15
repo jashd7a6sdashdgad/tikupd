@@ -325,9 +325,10 @@ export async function DELETE(request: NextRequest) {
       // Continue with default sheetId = 0
     }
 
-    // ID is the row index (1-based after header), so calculate the actual row
-    const rowIndex = parseInt(id);
-    console.log('DELETE /api/sheets/contacts: Parsed row index:', rowIndex);
+    // ID is 1-based index from the dataRows array (after header), so calculate actual row
+    const contactIndex = parseInt(id); // This is 1-based from frontend
+    const actualRowIndex = contactIndex + 1; // +1 for header row (so row 2 = first data row)
+    console.log('DELETE /api/sheets/contacts: Contact index:', contactIndex, 'Actual row index:', actualRowIndex);
     
     // First, validate that the row exists by getting current data
     console.log('DELETE /api/sheets/contacts: Fetching current data from range:', `${CONTACTS_CONFIG.name}!A:F`);
@@ -339,9 +340,10 @@ export async function DELETE(request: NextRequest) {
     const rows = response.data.values || [];
     console.log('DELETE /api/sheets/contacts: Found', rows.length, 'total rows (including header)');
     
-    // Check if the ID corresponds to a valid row (skipping header)
-    if (rowIndex < 1 || rowIndex >= rows.length) {
-      console.log('DELETE /api/sheets/contacts: Invalid row index:', { rowIndex, totalRows: rows.length });
+    // Check if the contact index corresponds to a valid data row
+    const dataRows = rows.slice(1); // Skip header
+    if (contactIndex < 1 || contactIndex > dataRows.length) {
+      console.log('DELETE /api/sheets/contacts: Invalid contact index:', { contactIndex, dataRowsCount: dataRows.length });
       return NextResponse.json({
         success: false,
         message: 'Contact not found'
@@ -352,18 +354,18 @@ export async function DELETE(request: NextRequest) {
 
     try {
       // Delete the row (Google Sheets API uses 0-based indexing for rows)
-      // rowIndex is 1-based (user-facing), but we need 0-based for API
-      // Also need to account for the header row (row 1 in sheets)
-      // For example: if rowIndex = 2 (first contact), we want to delete row 2 in sheets (which is index 1 in 0-based)
-      const actualRowIndex = rowIndex - 1; // Convert 1-based to 0-based
+      // actualRowIndex is already calculated correctly above (contactIndex + 1 for header)
+      // We need to convert to 0-based for the API
+      const deleteRowIndex = actualRowIndex - 1; // Convert 1-based to 0-based for API
       
       console.log('DELETE /api/sheets/contacts: Attempting to delete row with params:', {
         spreadsheetId: SPREADSHEET_ID,
         sheetId: sheetId,
-        startIndex: actualRowIndex,
-        endIndex: actualRowIndex + 1,
-        rowIndex: rowIndex,
-        explanation: `Deleting row ${rowIndex} (1-based) which is index ${actualRowIndex} (0-based)`
+        startIndex: deleteRowIndex,
+        endIndex: deleteRowIndex + 1,
+        actualRowIndex: actualRowIndex,
+        contactIndex: contactIndex,
+        explanation: `Deleting contact ${contactIndex} from row ${actualRowIndex} (API index ${deleteRowIndex})`
       });
       
       const deleteResponse = await sheets.spreadsheets.batchUpdate({
@@ -374,8 +376,8 @@ export async function DELETE(request: NextRequest) {
               range: {
                 sheetId: sheetId,
                 dimension: 'ROWS',
-                startIndex: actualRowIndex,
-                endIndex: actualRowIndex + 1
+                startIndex: deleteRowIndex,
+                endIndex: deleteRowIndex + 1
               }
             }
           }]
@@ -426,7 +428,7 @@ export async function DELETE(request: NextRequest) {
         
         const clearResponse = await sheets.spreadsheets.values.clear({
           spreadsheetId: SPREADSHEET_ID,
-          range: `${CONTACTS_CONFIG.name}!A${rowIndex}:F${rowIndex}`
+          range: `${CONTACTS_CONFIG.name}!A${actualRowIndex}:F${actualRowIndex}`
         });
         
         console.log('DELETE /api/sheets/contacts: Alternative deletion successful:', clearResponse.data);

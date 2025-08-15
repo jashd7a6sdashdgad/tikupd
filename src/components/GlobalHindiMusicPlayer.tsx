@@ -26,48 +26,72 @@ interface HindiSong {
   imageUrl: string;
 }
 
-// Selected Hindi songs (using sample audio for demo purposes)
-const TOP_HINDI_SONGS: HindiSong[] = [
+// Fallback songs if local music loading fails
+const FALLBACK_SONGS: HindiSong[] = [
   {
     id: '1',
     title: 'Channa Mereya',
     artist: 'Arijit Singh',
     album: 'Ae Dil Hai Mushkil',
     duration: '4:49',
-    audioUrl: 'https://www.soundjay.com/misc/sounds/bell-ringing-05.wav', // Demo audio - replace with actual
-    imageUrl: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=400&fit=crop'
-  },
-  {
-    id: '2',
-    title: 'Ommi Jannah',
-    artist: 'Hussain Al Jassmi',
-    album: 'Arabic Hits',
-    duration: '4:15',
-    audioUrl: 'https://www.soundjay.com/misc/sounds/bell-ringing-05.wav', // Demo audio - replace with actual
-    imageUrl: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=400&h=400&fit=crop'
-  },
-  {
-    id: '3',
-    title: 'Lag Jaa Gale - Acoustic',
-    artist: 'SANAM',
-    album: 'SANAM Acoustic',
-    duration: '3:42',
-    audioUrl: 'https://www.soundjay.com/misc/sounds/bell-ringing-05.wav', // Demo audio - replace with actual
+    audioUrl: 'https://commondatastorage.googleapis.com/codeskulptor-demos/DDR_assets/Sevish_-__nbsp_.mp3',
     imageUrl: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=400&fit=crop'
   }
 ];
 
 export function GlobalHindiMusicPlayer() {
   const { isGlobalMusicEnabled, volume: globalVolume, setVolume: setGlobalVolume } = useMusic();
-  const [currentSong, setCurrentSong] = useState<HindiSong>(TOP_HINDI_SONGS[0]);
+  const [songs, setSongs] = useState<HindiSong[]>(FALLBACK_SONGS);
+  const [currentSong, setCurrentSong] = useState<HindiSong>(FALLBACK_SONGS[0]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [isLoadingMusic, setIsLoadingMusic] = useState(true);
   const [isMuted, setIsMuted] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   
   const audioRef = useRef<HTMLAudioElement>(null);
+
+  // Load local music on component mount
+  useEffect(() => {
+    const loadLocalMusic = async () => {
+      try {
+        console.log('🎵 Loading local music from /Music folder...');
+        const response = await fetch('/api/music/local');
+        const result = await response.json();
+        
+        if (result.success && result.tracks.length > 0) {
+          console.log('✅ Loaded local music tracks:', result.tracks);
+          
+          // Convert local tracks to HindiSong format
+          const localSongs: HindiSong[] = result.tracks.map((track: any) => ({
+            id: track.id,
+            title: track.title,
+            artist: track.artist,
+            album: track.artist, // Use artist as album for now
+            duration: track.duration || '0:00',
+            audioUrl: track.audioUrl,
+            imageUrl: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=400&fit=crop'
+          }));
+          
+          setSongs(localSongs);
+          setCurrentSong(localSongs[0]);
+          console.log('🎵 Hindi music player updated with local files');
+        } else {
+          console.log('⚠️ No local music found, using fallback songs');
+          setSongs(FALLBACK_SONGS);
+        }
+      } catch (error) {
+        console.error('❌ Failed to load local music:', error);
+        setSongs(FALLBACK_SONGS);
+      } finally {
+        setIsLoadingMusic(false);
+      }
+    };
+    
+    loadLocalMusic();
+  }, []);
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -121,16 +145,16 @@ export function GlobalHindiMusicPlayer() {
   };
 
   const playNext = () => {
-    const nextIndex = (currentIndex + 1) % TOP_HINDI_SONGS.length;
+    const nextIndex = (currentIndex + 1) % songs.length;
     setCurrentIndex(nextIndex);
-    setCurrentSong(TOP_HINDI_SONGS[nextIndex]);
+    setCurrentSong(songs[nextIndex]);
     setIsPlaying(true);
   };
 
   const playPrevious = () => {
-    const prevIndex = currentIndex === 0 ? TOP_HINDI_SONGS.length - 1 : currentIndex - 1;
+    const prevIndex = currentIndex === 0 ? songs.length - 1 : currentIndex - 1;
     setCurrentIndex(prevIndex);
-    setCurrentSong(TOP_HINDI_SONGS[prevIndex]);
+    setCurrentSong(songs[prevIndex]);
     setIsPlaying(true);
   };
 
@@ -182,7 +206,9 @@ export function GlobalHindiMusicPlayer() {
             <div className="flex items-center gap-2">
               <Music className="h-4 w-4 text-orange-600" />
               {!isMinimized && (
-                <span className="text-sm font-medium text-gray-800">Hindi Hits</span>
+                <span className="text-sm font-medium text-gray-800">
+                  {isLoadingMusic ? 'Loading Music...' : `Local Music (${songs.length})`}
+                </span>
               )}
             </div>
             <div className="flex items-center gap-1">

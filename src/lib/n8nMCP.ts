@@ -192,9 +192,20 @@ Return ONLY valid JSON in this format:
         console.error('❌ N8N API error response:', {
           status: response.status,
           statusText: response.statusText,
-          body: errorText
+          body: errorText,
+          url: `${n8nApiUrl}/api/v1/workflows`,
+          workflowName: workflow.name
         });
-        throw new Error(`N8N API error (${response.status}): ${response.statusText}. ${errorText}`);
+        
+        let errorMessage = errorText;
+        try {
+          const errorJson = JSON.parse(errorText);
+          errorMessage = errorJson.message || errorText;
+        } catch (parseError) {
+          // Error is not JSON, use as-is
+        }
+        
+        throw new Error(`N8N API error (${response.status}): ${response.statusText}. ${errorMessage}`);
       }
 
       const result = await response.json();
@@ -426,26 +437,42 @@ Return ONLY valid JSON in this format:
    * Convert workflow to N8N format
    */
   private convertToN8NFormat(workflow: WorkflowTemplate): any {
-    return {
+    // N8N API expects only specific fields to avoid "additional properties" error
+    const n8nWorkflow = {
       name: workflow.name,
-      active: true,
-      nodes: workflow.nodes.map((node, index) => ({
-        id: node.id,
-        name: node.name,
-        type: node.type,
-        typeVersion: 1,
-        position: [node.position.x, node.position.y],
-        parameters: node.parameters
-      })),
-      connections: this.convertConnections(workflow.connections),
-      settings: {
-        executionOrder: 'v1'
-      },
-      staticData: null,
-      meta: {
-        templateCreatedBy: 'smart-workflow-builder'
-      }
+      active: false, // Start inactive for safety
+      nodes: workflow.nodes.map((node, index) => {
+        // Validate and clean node data
+        const cleanNode = {
+          id: node.id || `node_${index}`,
+          name: node.name || `Node ${index}`,
+          type: node.type || 'n8n-nodes-base.NoOp',
+          typeVersion: 1,
+          position: [node.position?.x || 100, node.position?.y || 100],
+          parameters: node.parameters || {}
+        };
+        
+        // Remove any undefined or null values
+        Object.keys(cleanNode).forEach(key => {
+          if (cleanNode[key] === undefined || cleanNode[key] === null) {
+            delete cleanNode[key];
+          }
+        });
+        
+        return cleanNode;
+      }),
+      connections: this.convertConnections(workflow.connections)
     };
+
+    // Only add settings if needed and valid
+    if (workflow.nodes.length > 0) {
+      n8nWorkflow['settings'] = {
+        executionOrder: 'v1'
+      };
+    }
+
+    console.log('🔧 N8N workflow format:', JSON.stringify(n8nWorkflow, null, 2));
+    return n8nWorkflow;
   }
 
   /**
@@ -454,17 +481,31 @@ Return ONLY valid JSON in this format:
   private convertConnections(connections: WorkflowConnection[]): any {
     const n8nConnections: any = {};
     
+    // Handle empty connections array
+    if (!connections || connections.length === 0) {
+      return {};
+    }
+    
     connections.forEach(conn => {
+      // Validate connection properties
+      if (!conn.sourceNode || !conn.targetNode) {
+        console.warn('⚠️ Skipping invalid connection:', conn);
+        return;
+      }
+      
+      const sourceOutput = conn.sourceOutput || 'main';
+      const targetInput = conn.targetInput || 'main';
+      
       if (!n8nConnections[conn.sourceNode]) {
         n8nConnections[conn.sourceNode] = {};
       }
-      if (!n8nConnections[conn.sourceNode][conn.sourceOutput]) {
-        n8nConnections[conn.sourceNode][conn.sourceOutput] = [];
+      if (!n8nConnections[conn.sourceNode][sourceOutput]) {
+        n8nConnections[conn.sourceNode][sourceOutput] = [];
       }
       
-      n8nConnections[conn.sourceNode][conn.sourceOutput].push({
+      n8nConnections[conn.sourceNode][sourceOutput].push({
         node: conn.targetNode,
-        type: conn.targetInput,
+        type: targetInput,
         index: 0
       });
     });

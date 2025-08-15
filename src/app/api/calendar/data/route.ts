@@ -84,27 +84,23 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Fetch Oman holidays from API
+    // Add Oman holidays (hardcoded since API doesn't support Oman)
     try {
       const currentYear = new Date().getFullYear();
-      const holidayResponse = await fetch(`https://date.nager.at/api/v3/PublicHolidays/${currentYear}/OM`);
+      const omanHolidays = getOmanHolidays(currentYear);
       
-      if (holidayResponse.ok) {
-        const holidays = await holidayResponse.json();
-        
-        calendarEvents.push(...holidays.map((holiday: any) => ({
-          id: `holiday-${holiday.date}`,
-          title: holiday.name,
-          date: holiday.date,
-          type: 'holiday' as const,
-          description: `Public holiday in Oman`,
-          status: 'pending' as const
-        })));
+      calendarEvents.push(...omanHolidays.map((holiday) => ({
+        id: `holiday-${holiday.date}`,
+        title: holiday.name,
+        date: holiday.date,
+        type: 'holiday' as const,
+        description: `Public holiday in Oman - ${holiday.description}`,
+        status: 'pending' as const
+      })));
 
-        console.log(`✅ Fetched ${holidays.length} Oman holidays`);
-      }
+      console.log(`✅ Added ${omanHolidays.length} Oman holidays`);
     } catch (holidayError) {
-      console.warn('⚠️ Holiday API fetch failed:', holidayError);
+      console.warn('⚠️ Holiday processing failed:', holidayError);
     }
 
     // Add Mahboob AlBulushi birthday (from environment or config)
@@ -296,4 +292,84 @@ function determineEventType(title: string): 'birthday' | 'task' | 'holiday' | 'e
   }
   
   return 'event';
+}
+
+function getOmanHolidays(year: number) {
+  const holidays = [
+    // Fixed date holidays
+    {
+      date: `${year}-01-01`,
+      name: "New Year's Day",
+      description: "Start of the Gregorian calendar year"
+    },
+    {
+      date: `${year}-11-18`,
+      name: "National Day",
+      description: "Oman National Day - celebrating independence"
+    },
+    {
+      date: `${year}-11-19`,
+      name: "National Day Holiday",
+      description: "Second day of Oman National Day celebrations"
+    },
+    {
+      date: `${year}-07-23`,
+      name: "Renaissance Day",
+      description: "Celebrating the modern renaissance of Oman"
+    },
+    
+    // Islamic holidays (approximate dates - these vary each year based on lunar calendar)
+    // Note: These are approximate and should be updated with exact dates
+    {
+      date: `${year}-03-29`,
+      name: "Eid al-Fitr",
+      description: "End of Ramadan celebration (approximate date)"
+    },
+    {
+      date: `${year}-03-30`,
+      name: "Eid al-Fitr Holiday",
+      description: "Second day of Eid al-Fitr (approximate date)"
+    },
+    {
+      date: `${year}-06-06`,
+      name: "Eid al-Adha",
+      description: "Festival of Sacrifice (approximate date)"
+    },
+    {
+      date: `${year}-06-07`,
+      name: "Eid al-Adha Holiday",
+      description: "Second day of Eid al-Adha (approximate date)"
+    },
+    {
+      date: `${year}-06-08`,
+      name: "Eid al-Adha Holiday",
+      description: "Third day of Eid al-Adha (approximate date)"
+    },
+    {
+      date: `${year}-06-09`,
+      name: "Eid al-Adha Holiday", 
+      description: "Fourth day of Eid al-Adha (approximate date)"
+    },
+    {
+      date: `${year}-06-27`,
+      name: "Hijri New Year",
+      description: "Islamic New Year (approximate date)"
+    },
+    {
+      date: `${year}-09-05`,
+      name: "Prophet Muhammad's Birthday",
+      description: "Mawlid al-Nabi - Birth of Prophet Muhammad (approximate date)"
+    },
+    {
+      date: `${year}-05-01`,
+      name: "Isra and Mi'raj",
+      description: "Night Journey of Prophet Muhammad (approximate date)"
+    }
+  ];
+
+  // Filter holidays to only include those that are today or in the future
+  const today = new Date();
+  const todayStr = today.toISOString().split('T')[0];
+  
+  return holidays.filter(holiday => holiday.date >= todayStr);
 }

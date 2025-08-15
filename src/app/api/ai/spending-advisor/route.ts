@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { GoogleGenerativeAI } from '@google/generative-ai';
-
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
+// Code-based spending analysis (no external API)
 
 interface SpendingInsight {
   type: 'warning' | 'tip' | 'achievement' | 'trend';
@@ -50,83 +48,14 @@ export async function POST(request: NextRequest) {
       } : null
     };
 
-    const prompt = `
-You are a financial advisor AI. Analyze the following spending data and provide 3-5 actionable insights.
+    console.log('🔄 Generating code-based spending insights...');
+    
+    // Generate insights using code logic
+    let insights: SpendingInsight[] = generateCodeBasedInsights(expensesSummary, selectedBank, monthlyBudget);
 
-Spending Data:
-- Bank Focus: ${selectedBank === 'ahli' ? 'Ahli Bank' : selectedBank === 'wafrah' ? 'Wafrah Bank' : 'All Banks'}
-- Total Transactions: ${expensesSummary.totalExpenses}
-- Total Spent: $${expensesSummary.totalSpent.toFixed(2)}
-- Credit Transactions: $${expensesSummary.creditTotal.toFixed(2)}
-- Debit Transactions: $${expensesSummary.debitTotal.toFixed(2)}
-- Monthly Budget: $${monthlyBudget}
-- Average Transaction: $${expensesSummary.averageTransaction.toFixed(2)}
-- Category Spending: ${JSON.stringify(expensesSummary.categoryBreakdown)}
-
-Provide insights in this exact JSON format:
-{
-  "insights": [
-    {
-      "type": "warning|tip|achievement|trend",
-      "title": "Clear, concise title",
-      "description": "Brief description of the insight",
-      "impact": "high|medium|low",
-      "actionable": "Specific actionable recommendation"
-    }
-  ]
-}
-
-Focus on:
-1. Credit vs Debit usage patterns
-2. Category spending analysis  
-3. Budget adherence
-4. Bank-specific insights (if applicable)
-5. Spending frequency and patterns
-
-Make insights specific to ${selectedBank === 'ahli' ? 'Ahli Bank' : selectedBank === 'wafrah' ? 'Wafrah Bank' : 'the user\'s financial'} situation.
-Keep titles under 50 characters and descriptions under 150 characters.
-Provide actionable recommendations that are practical and implementable.
-`;
-
-    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const text = response.text();
-
-    // Parse the AI response
-    let insights: SpendingInsight[] = [];
-    try {
-      const parsed = JSON.parse(text.replace(/```json|```/g, '').trim());
-      insights = parsed.insights || [];
-      
-      // Validate and clean insights
-      insights = insights.filter(insight => 
-        insight.title && insight.description && insight.actionable
-      ).slice(0, 5); // Limit to 5 insights
-      
-    } catch (parseError) {
-      console.error('Failed to parse AI response:', parseError);
-      // Fallback to rule-based insights
-      insights = generateFallbackInsights(expensesSummary);
-    }
-
-    // Add some additional insights based on bank selection
-    if (selectedBank === 'ahli') {
-      insights.unshift({
-        type: 'tip',
-        title: 'Ahli Bank Account Analysis',
-        description: `Analyzing ${expensesSummary.bankSpecific?.filteredExpenses || 0} Ahli Bank transactions.`,
-        impact: 'medium',
-        actionable: 'Consider using Ahli\'s mobile app features for better expense tracking and budgeting.'
-      });
-    } else if (selectedBank === 'wafrah') {
-      insights.unshift({
-        type: 'tip', 
-        title: 'Wafrah Bank Account Analysis',
-        description: `Analyzing ${expensesSummary.bankSpecific?.filteredExpenses || 0} Wafrah Bank transactions.`,
-        impact: 'medium',
-        actionable: 'Explore Wafrah\'s savings products and automated saving features to optimize your finances.'
-      });
+    // Ensure we have at least 3 insights
+    if (insights.length < 3) {
+      insights = [...insights, ...generateFallbackInsights(expensesSummary)].slice(0, 5);
     }
 
     return NextResponse.json({
@@ -206,4 +135,131 @@ function generateFallbackInsights(summary: any): SpendingInsight[] {
   }
 
   return insights;
+}
+
+function generateCodeBasedInsights(summary: any, selectedBank: string, monthlyBudget: number): SpendingInsight[] {
+  const insights: SpendingInsight[] = [];
+  
+  // Analysis 1: Budget adherence
+  if (monthlyBudget > 0) {
+    const budgetUsage = (summary.totalSpent / monthlyBudget) * 100;
+    if (budgetUsage > 100) {
+      insights.push({
+        type: 'warning',
+        title: 'Budget Exceeded',
+        description: `Spent ${budgetUsage.toFixed(0)}% of monthly budget (${summary.totalSpent.toFixed(0)} vs ${monthlyBudget})`,
+        impact: 'high',
+        actionable: 'Review expenses and cut non-essential spending immediately'
+      });
+    } else if (budgetUsage > 80) {
+      insights.push({
+        type: 'warning',
+        title: 'Approaching Budget Limit',
+        description: `Used ${budgetUsage.toFixed(0)}% of monthly budget - ${(monthlyBudget - summary.totalSpent).toFixed(0)} remaining`,
+        impact: 'medium',
+        actionable: 'Monitor remaining spending carefully for the rest of the month'
+      });
+    } else {
+      insights.push({
+        type: 'achievement',
+        title: 'Budget On Track',
+        description: `Using ${budgetUsage.toFixed(0)}% of budget - good financial discipline`,
+        impact: 'low',
+        actionable: 'Continue current spending patterns and consider increasing savings'
+      });
+    }
+  }
+  
+  // Analysis 2: Credit vs Debit usage
+  if (summary.creditTotal > 0 && summary.debitTotal > 0) {
+    const creditRatio = (summary.creditTotal / summary.totalSpent) * 100;
+    if (creditRatio > 60) {
+      insights.push({
+        type: 'warning',
+        title: 'High Credit Usage',
+        description: `${creditRatio.toFixed(0)}% of spending on credit - potential debt risk`,
+        impact: 'high',
+        actionable: 'Switch to debit/cash for daily expenses to control spending'
+      });
+    } else if (creditRatio > 30) {
+      insights.push({
+        type: 'tip',
+        title: 'Moderate Credit Usage',
+        description: `${creditRatio.toFixed(0)}% credit usage - monitor for interest charges`,
+        impact: 'medium',
+        actionable: 'Pay credit balance in full each month to avoid interest'
+      });
+    } else {
+      insights.push({
+        type: 'achievement',
+        title: 'Balanced Payment Methods',
+        description: `Good mix of credit (${creditRatio.toFixed(0)}%) and debit usage`,
+        impact: 'low',
+        actionable: 'Continue balanced approach while earning credit rewards'
+      });
+    }
+  }
+  
+  // Analysis 3: Category spending analysis
+  const categories = Object.entries(summary.categoryBreakdown)
+    .sort(([,a], [,b]) => (b as number) - (a as number));
+  
+  if (categories.length > 0) {
+    const [topCategory, topAmount] = categories[0];
+    const topPercentage = ((topAmount as number) / summary.totalSpent) * 100;
+    
+    if (topPercentage > 40) {
+      insights.push({
+        type: 'trend',
+        title: `Heavy ${topCategory} Spending`,
+        description: `${topCategory} accounts for ${topPercentage.toFixed(0)}% (${(topAmount as number).toFixed(0)}) of total spending`,
+        impact: 'medium',
+        actionable: `Set specific limits for ${topCategory} and track daily spending in this category`
+      });
+    } else {
+      insights.push({
+        type: 'tip',
+        title: `Top Category: ${topCategory}`,
+        description: `${topCategory} is ${topPercentage.toFixed(0)}% of spending - manageable level`,
+        impact: 'low',
+        actionable: `Review ${topCategory} expenses for potential savings opportunities`
+      });
+    }
+  }
+  
+  // Analysis 4: Transaction frequency
+  const avgTransaction = summary.averageTransaction;
+  if (avgTransaction > 200) {
+    insights.push({
+      type: 'trend',
+      title: 'Large Average Transactions',
+      description: `Average transaction is ${avgTransaction.toFixed(0)} - indicates big purchases`,
+      impact: 'medium',
+      actionable: 'Consider breaking large purchases into smaller, planned expenses'
+    });
+  } else if (avgTransaction < 20) {
+    insights.push({
+      type: 'tip',
+      title: 'Many Small Transactions',
+      description: `Average transaction is ${avgTransaction.toFixed(0)} - lots of small purchases`,
+      impact: 'low',
+      actionable: 'Small purchases add up - track daily spending with a expense app'
+    });
+  }
+  
+  // Analysis 5: Bank-specific insights
+  if (selectedBank !== 'all' && summary.bankSpecific) {
+    const bankExpenses = summary.bankSpecific.filteredExpenses;
+    const bankName = selectedBank === 'ahli' ? 'Ahli Bank' : selectedBank === 'wafrah' ? 'Wafrah Bank' : selectedBank;
+    
+    insights.push({
+      type: 'tip',
+      title: `${bankName} Activity`,
+      description: `${bankExpenses} transactions analyzed for ${bankName} account`,
+      impact: 'medium',
+      actionable: `Optimize ${bankName} account usage and explore account-specific benefits`
+    });
+  }
+  
+  return insights.slice(0, 5);
 }

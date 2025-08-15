@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/button';
 import { useSettings } from '@/contexts/SettingsContext';
 import { useTranslation } from '@/lib/translations';
 import { ModernCard } from '@/components/ui/ModernCard';
-import CollapsibleBankCard from '@/components/CollapsibleBankCard';
 import { 
   BarChart3, 
   TrendingUp, 
@@ -17,29 +16,17 @@ import {
   Activity,
   RefreshCw,
   Download,
-  Filter,
   Users,
-  BookOpen,
-  Youtube,
   Building2,
-  Briefcase,
   Zap,
   TrendingDown,
   Award,
   Eye,
-  MessageSquare,
   Flag,
   Brain,
-  Sun,
-  ArrowRight,
   PieChart,
   Star,
-  AlertCircle,
-  Gift,
-  CheckSquare,
-  CalendarDays,
-  PartyPopper,
-  MapPin
+  AlertCircle
 } from 'lucide-react';
 
 interface BankAnalysis {
@@ -72,9 +59,6 @@ interface AnalyticsData {
     totalExpenses: number;
     totalContacts: number;
   };
-  social: {
-    youtubeViews: string;
-  };
   trends: {
     eventsThisMonth: number;
     emailsThisMonth: number;
@@ -99,12 +83,114 @@ interface AnalyticsData {
   };
 }
 
+// Colorblind-friendly bank color function 
+const getBankColors = (bankType: string) => {
+  const normalizedBank = bankType.toLowerCase();
+  
+  // EXTRA BRIGHT colors with pattern matching
+  if (normalizedBank.includes('wafrah') || normalizedBank.includes('wafra')) {
+    return { 
+      bg: 'from-yellow-400 to-amber-500', 
+      border: 'border-yellow-600', 
+      text: 'text-yellow-950', 
+      icon: 'from-yellow-600 to-amber-700',
+      shadow: 'shadow-yellow-300'
+    };
+  }
+  
+  if (normalizedBank.includes('credit') && normalizedBank.includes('card')) {
+    return { 
+      bg: 'from-blue-400 to-indigo-500', 
+      border: 'border-blue-600', 
+      text: 'text-blue-950', 
+      icon: 'from-blue-600 to-indigo-700',
+      shadow: 'shadow-blue-300'
+    };
+  }
+  
+  if (normalizedBank.includes('overdraft')) {
+    return { 
+      bg: 'from-red-400 to-pink-500', 
+      border: 'border-red-600', 
+      text: 'text-red-950', 
+      icon: 'from-red-600 to-pink-700',
+      shadow: 'shadow-red-300'
+    };
+  }
+  
+  if (normalizedBank.includes('muscat')) {
+    return { 
+      bg: 'from-green-400 to-emerald-500', 
+      border: 'border-green-600', 
+      text: 'text-green-950', 
+      icon: 'from-green-600 to-emerald-700',
+      shadow: 'shadow-green-300'
+    };
+  }
+  
+  if (normalizedBank.includes('debit') || normalizedBank.includes('saving')) {
+    return { 
+      bg: 'from-purple-400 to-violet-500', 
+      border: 'border-purple-600', 
+      text: 'text-purple-950', 
+      icon: 'from-purple-600 to-violet-700',
+      shadow: 'shadow-purple-300'
+    };
+  }
+  
+  if (normalizedBank.includes('ahli') || normalizedBank.includes('alhli')) {
+    return { 
+      bg: 'from-orange-400 to-red-500', 
+      border: 'border-orange-600', 
+      text: 'text-orange-950', 
+      icon: 'from-orange-600 to-red-700',
+      shadow: 'shadow-orange-300'
+    };
+  }
+  
+  // Fallback to bright teal for any unmatched banks
+  return { 
+    bg: 'from-teal-400 to-cyan-500', 
+    border: 'border-teal-600', 
+    text: 'text-teal-950', 
+    icon: 'from-teal-600 to-cyan-700',
+    shadow: 'shadow-teal-300'
+  };
+};
+
 export default function TrackingPage() {
   const { language } = useSettings();
   const { t } = useTranslation(language);
   const [timeRange, setTimeRange] = useState('30d');
   const [bankAnalytics, setBankAnalytics] = useState<BankAnalyticsData | null>(null);
-  
+  const [loading, setLoading] = useState(true);
+
+  // Calendar data state for reminders
+  const [calendarData, setCalendarData] = useState<{
+    upcomingEvents: Array<{
+      id: string;
+      title: string;
+      date: string;
+      type: 'birthday' | 'task' | 'holiday' | 'event';
+      description?: string;
+      priority?: 'high' | 'medium' | 'low';
+      location?: string;
+    }>;
+    todayEvents: Array<{
+      id: string;
+      title: string;
+      description?: string;
+      type: 'birthday' | 'task' | 'holiday' | 'event';
+      priority?: 'high' | 'medium' | 'low';
+    }>;
+    statistics: {
+      totalEvents: number;
+      pendingTasks: number;
+      upcomingBirthdays: number;
+      upcomingHolidays: number;
+    };
+  } | null>(null);
+  const [calendarLoading, setCalendarLoading] = useState(true);
 
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData>({
     overview: {
@@ -112,9 +198,6 @@ export default function TrackingPage() {
       totalEmails: 0,
       totalExpenses: 0,
       totalContacts: 0
-    },
-    social: {
-      youtubeViews: '0'
     },
     trends: {
       eventsThisMonth: 0,
@@ -135,77 +218,6 @@ export default function TrackingPage() {
       completionRate: 0
     }
   });
-  const [loading, setLoading] = useState(true);
-  
-  // Calendar data state
-  const [calendarData, setCalendarData] = useState<{
-    statistics: {
-      totalEvents: number;
-      pendingTasks: number;
-      upcomingBirthdays: number;
-      upcomingHolidays: number;
-    };
-    todayEvents: Array<{
-      id: string;
-      title: string;
-      description?: string;
-      type: 'birthday' | 'task' | 'holiday' | 'event';
-      priority?: 'high' | 'medium' | 'low';
-    }>;
-    upcomingEvents: Array<{
-      id: string;
-      title: string;
-      description?: string;
-      type: 'birthday' | 'task' | 'holiday' | 'event';
-      priority?: 'high' | 'medium' | 'low';
-      date: string;
-      location?: string;
-    }>;
-  } | null>(null);
-  const [calendarLoading, setCalendarLoading] = useState(true);
- // 'week', 'month', 'year'
-
-  // Bank detection functions (from expenses page)
-  const isFromAhliBank = (from: string) => {
-    return from && from.toLowerCase().includes('noreply@cards.ahlibank.om');
-  };
-
-  const isFromBankMuscat = (from: string) => {
-    return from && from.toLowerCase().includes('noreply@bankmuscat.com');
-  };
-
-  const isFromAhliBankGeneral = (from: string) => {
-    return from && from.toLowerCase().includes('ahlibank@ahlibank.om');
-  };
-
-  // Get bank flag component
-  const getBankFlag = (from: string) => {
-    if (isFromAhliBank(from)) {
-      return (
-        <span className="px-2 py-1 bg-yellow-100 text-yellow-700 text-xs rounded-full flex items-center gap-1 ml-2">
-          <Flag className="h-3 w-3" />
-          Ahli Bank
-        </span>
-      );
-    }
-    if (isFromBankMuscat(from)) {
-      return (
-        <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full flex items-center gap-1 ml-2">
-          <Flag className="h-3 w-3" />
-          Bank Muscat
-        </span>
-      );
-    }
-    if (isFromAhliBankGeneral(from)) {
-      return (
-        <span className="px-2 py-1 bg-red-100 text-red-700 text-xs rounded-full flex items-center gap-1 ml-2">
-          <Flag className="h-3 w-3" />
-          Ahli Bank
-        </span>
-      );
-    }
-    return null;
-  };
 
   // Separate bank categories for display
   const separateBankCategories = (expensesByCategory: { [key: string]: number }) => {
@@ -266,37 +278,8 @@ export default function TrackingPage() {
         separated['📚 Education & Learning'] = (separated['📚 Education & Learning'] || 0) + adjustedAmount;
       } else if (normalizedCategory.includes('grocery') || normalizedCategory.includes('supermarket') || normalizedCategory.includes('market')) {
         separated['🛒 Groceries'] = (separated['🛒 Groceries'] || 0) + adjustedAmount;
-      } else if (normalizedCategory.includes('insurance')) {
-        separated['🛡️ Insurance'] = (separated['🛡️ Insurance'] || 0) + adjustedAmount;
-      } else if (normalizedCategory.includes('investment') || normalizedCategory.includes('savings') || normalizedCategory.includes('deposit')) {
-        separated['📈 Investments & Savings'] = (separated['📈 Investments & Savings'] || 0) + adjustedAmount;
       } else if (normalizedCategory.includes('subscription') || normalizedCategory.includes('netflix') || normalizedCategory.includes('spotify')) {
         separated['📱 Subscriptions'] = (separated['📱 Subscriptions'] || 0) + adjustedAmount;
-      } else if (normalizedCategory.includes('clothing') || normalizedCategory.includes('fashion') || normalizedCategory.includes('apparel')) {
-        separated['👕 Clothing & Fashion'] = (separated['👕 Clothing & Fashion'] || 0) + adjustedAmount;
-      } else if (normalizedCategory.includes('gift') || normalizedCategory.includes('charity') || normalizedCategory.includes('donation')) {
-        separated['🎁 Gifts & Charity'] = (separated['🎁 Gifts & Charity'] || 0) + adjustedAmount;
-      } else if (normalizedCategory.includes('fitness') || normalizedCategory.includes('gym') || normalizedCategory.includes('sport')) {
-        separated['💪 Fitness & Sports'] = (separated['💪 Fitness & Sports'] || 0) + adjustedAmount;
-      } else if (normalizedCategory.includes('pet') || normalizedCategory.includes('animal')) {
-        separated['🐾 Pet Care'] = (separated['🐾 Pet Care'] || 0) + adjustedAmount;
-      } else if (normalizedCategory.includes('home') || normalizedCategory.includes('household') || normalizedCategory.includes('furniture')) {
-        separated['🏠 Home & Household'] = (separated['🏠 Home & Household'] || 0) + adjustedAmount;
-      } else if (normalizedCategory.includes('beauty') || normalizedCategory.includes('cosmetics') || normalizedCategory.includes('salon')) {
-        separated['💄 Beauty & Personal Care'] = (separated['💄 Beauty & Personal Care'] || 0) + adjustedAmount;
-      } else if (normalizedCategory.includes('coffee') || normalizedCategory.includes('cafe') || normalizedCategory.includes('beverage')) {
-        separated['☕ Coffee & Beverages'] = (separated['☕ Coffee & Beverages'] || 0) + adjustedAmount;
-      } else if (normalizedCategory.includes('general')) {
-        separated['📄 General Expenses'] = (separated['📄 General Expenses'] || 0) + adjustedAmount;
-      } else if (normalizedCategory.includes('uncategorized')) {
-        separated['❓ Uncategorized'] = (separated['❓ Uncategorized'] || 0) + adjustedAmount;
-      } else if (normalizedCategory.includes('card') && !normalizedCategory.includes('ahli')) {
-        separated['💳 Other Cards'] = (separated['💳 Other Cards'] || 0) + adjustedAmount;
-      } else if (normalizedCategory.includes('bank')) {
-        const displayName = '🏦 ' + category.charAt(0).toUpperCase() + category.slice(1);
-        separated[displayName] = (separated[displayName] || 0) + adjustedAmount;
-      } else if (normalizedCategory.startsWith('category ')) {
-        separated['📋 Miscellaneous'] = (separated['📋 Miscellaneous'] || 0) + adjustedAmount;
       } else {
         // Keep other categories as-is but capitalize first letter and add an icon
         const displayName = '💰 ' + category.charAt(0).toUpperCase() + category.slice(1);
@@ -307,11 +290,28 @@ export default function TrackingPage() {
     return separated;
   };
 
-  useEffect(() => {
-    fetchAnalytics();
-    fetchBankAnalytics();
-    fetchCalendarData();
-  }, [timeRange]);
+  // Fetch calendar data for reminders
+  const fetchCalendarData = async () => {
+    setCalendarLoading(true);
+    try {
+      console.log('📅 Fetching calendar data for reminders...');
+      const response = await fetch('/api/calendar/data');
+      const result = await response.json();
+      
+      if (result.success) {
+        setCalendarData(result.data);
+        console.log('✅ Calendar data fetched successfully:', result.data);
+      } else {
+        console.error('❌ Calendar data fetch failed:', result.error);
+        setCalendarData(null);
+      }
+    } catch (error) {
+      console.error('❌ Calendar data fetch error:', error);
+      setCalendarData(null);
+    } finally {
+      setCalendarLoading(false);
+    }
+  };
 
   const fetchBankAnalytics = async () => {
     try {
@@ -333,7 +333,6 @@ export default function TrackingPage() {
         setBankAnalytics(result.data);
       } else {
         console.error('❌ REAL bank analytics API failed:', result.error || 'Unknown error');
-        // Show error state instead of mock data
         setBankAnalytics({
           bankAnalysis: [],
           totalExpenses: 0,
@@ -347,7 +346,6 @@ export default function TrackingPage() {
       }
     } catch (error) {
       console.error('❌ Error fetching REAL bank analytics:', error);
-      // Show network error instead of mock data
       setBankAnalytics({
         bankAnalysis: [],
         totalExpenses: 0,
@@ -366,7 +364,6 @@ export default function TrackingPage() {
     console.log('📊 Fetching analytics data from centralized API...');
     
     try {
-      // Get JWT token from cookies
       const token = document.cookie
         .split('; ')
         .find(row => row.startsWith('auth-token='))
@@ -384,7 +381,6 @@ export default function TrackingPage() {
         console.log('✅ Analytics data received:', result.data);
         setAnalyticsData(result.data);
         
-        // Cache successful result
         try {
           localStorage.setItem('analytics-cache', JSON.stringify({
             data: result.data,
@@ -402,12 +398,11 @@ export default function TrackingPage() {
     } catch (error) {
       console.error('Error fetching analytics:', error);
       
-      // Try to fetch data from localStorage cache
       try {
         const cachedData = localStorage.getItem('analytics-cache');
         if (cachedData) {
           const parsed = JSON.parse(cachedData);
-          if (parsed.timestamp && (Date.now() - parsed.timestamp < 86400000)) { // 24 hours
+          if (parsed.timestamp && (Date.now() - parsed.timestamp < 86400000)) {
             console.log('🔄 Using cached analytics data');
             setAnalyticsData(parsed.data);
             setLoading(false);
@@ -418,7 +413,6 @@ export default function TrackingPage() {
         console.error('Cache error:', cacheError);
       }
       
-      // Final fallback to empty data
       console.log('📊 Using fallback empty data');
       setAnalyticsData({
         overview: {
@@ -426,9 +420,6 @@ export default function TrackingPage() {
           totalEmails: 0,
           totalExpenses: 0,
           totalContacts: 0
-        },
-        social: {
-          youtubeViews: '0'
         },
         trends: {
           eventsThisMonth: 0,
@@ -453,28 +444,15 @@ export default function TrackingPage() {
     }
   };
 
-  // Fetch calendar data (birthdays, tasks, holidays)
-  const fetchCalendarData = async () => {
-    setCalendarLoading(true);
-    try {
-      const response = await fetch('/api/calendar/data');
-      const result = await response.json();
-      
-      if (result.success) {
-        setCalendarData(result.data);
-      } else {
-        console.error('Calendar data fetch failed:', result.error);
-      }
-    } catch (error) {
-      console.error('Calendar data fetch error:', error);
-    } finally {
-      setCalendarLoading(false);
-    }
-  };
+  useEffect(() => {
+    fetchAnalytics();
+    fetchBankAnalytics();
+    fetchCalendarData();
+  }, [timeRange]);
 
   const calculateChange = (current: number, previous: number) => {
     if (previous === 0) return 0;
-    return ((current - previous) / previous) * 100;
+    return ((current - previous) * 100) / previous;
   };
 
   const formatCurrency = (amount: number) => {
@@ -486,63 +464,23 @@ export default function TrackingPage() {
     return `${sign}${value.toFixed(1)}%`;
   };
 
-  // Dynamic calculations based on real user data
-  const calculateDynamicMetrics = () => {
-    const totalActivities = analyticsData.overview.totalEvents + analyticsData.overview.totalEmails;
-    const avgDaily = totalActivities > 0 ? Math.round(totalActivities / 30) : 0; // Monthly average
-    
-    return {
-      // Social metrics based on actual engagement
-      youtubeViews: analyticsData.overview.totalEvents > 0 ? 
-        `${Math.round(analyticsData.overview.totalEvents * 12)}` : '0',
-      
-      // Goal progress based on current month's activity
-      eventsGoalProgress: `${analyticsData.trends.eventsThisMonth}/${Math.max(analyticsData.trends.eventsThisMonth + 5, 10)}`,
-      budgetProgress: `${Math.round(analyticsData.trends.expensesThisMonth)}/${Math.max(Math.round(analyticsData.trends.expensesThisMonth * 1.2), 200)} OMR`,
-      contactsProgress: `${analyticsData.overview.totalContacts}/${Math.max(analyticsData.overview.totalContacts + 3, 15)}`,
-      
-      // Performance metrics based on actual data
-      efficiencyScore: analyticsData.productivity.completionRate > 0 ? 
-        `${Math.round(analyticsData.productivity.completionRate)}%` : 
-        `${Math.min(Math.round((totalActivities / Math.max(totalActivities, 10)) * 100), 100)}%`,
-      
-      userRating: totalActivities > 0 ? 
-        `${Math.min(4.0 + (totalActivities / 100), 5.0).toFixed(1)}` : '0.0',
-      
-      // Dynamic progress scores
-      overallScore: Math.min(Math.round((totalActivities / Math.max(totalActivities, 1)) * 85) + 10, 100),
-      engagementRate: analyticsData.overview.totalEmails > 0 ? 
-        Math.min(Math.round((analyticsData.overview.totalEvents / Math.max(analyticsData.overview.totalEmails, 1)) * 100), 100) : 0
-    };
-  };
-
-  // Get dynamic metrics
-  const dynamicMetrics = calculateDynamicMetrics();
-
   const exportData = () => {
-    try {
-      const exportData = {
-        generatedAt: new Date().toISOString(),
-        timeRange: timeRange,
-        overview: analyticsData.overview,
-        trends: analyticsData.trends,
-        categories: analyticsData.categories,
-        productivity: analyticsData.productivity
-      };
+    const exportData = {
+      analytics: analyticsData,
+      bankAnalytics: bankAnalytics,
+      exportDate: new Date().toISOString(),
+      timeRange: timeRange
+    };
 
-      const dataStr = JSON.stringify(exportData, null, 2);
-      const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
-      
-      const exportFileDefaultName = `analytics-${timeRange}-${new Date().toISOString().split('T')[0]}.json`;
-      
-      const linkElement = document.createElement('a');
-      linkElement.setAttribute('href', dataUri);
-      linkElement.setAttribute('download', exportFileDefaultName);
-      linkElement.click();
-    } catch (error) {
-      console.error('Export failed:', error);
-      alert('Failed to export data');
-    }
+    const dataStr = JSON.stringify(exportData, null, 2);
+    const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+    
+    const exportFileDefaultName = `analytics-${timeRange}-${new Date().toISOString().split('T')[0]}.json`;
+    
+    const linkElement = document.createElement('a');
+    linkElement.setAttribute('href', dataUri);
+    linkElement.setAttribute('download', exportFileDefaultName);
+    linkElement.click();
   };
 
   const initiateGoogleAuth = async () => {
@@ -552,7 +490,7 @@ export default function TrackingPage() {
       const data = await response.json();
       
       if (data.success && data.authUrl) {
-        console.log('✅ Got OAuth URL, redirecting...');
+        console.log('✅ Redirecting to Google OAuth...');
         window.location.href = data.authUrl;
       } else {
         console.error('❌ Failed to get OAuth URL:', data.message);
@@ -562,15 +500,27 @@ export default function TrackingPage() {
     }
   };
 
-  // Enhanced glassmorphism effects like dashboard
   const cardHoverEffects = "hover:shadow-3xl hover:scale-[1.02] transition-all duration-500 transform";
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 p-8">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center py-12">
+            <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-500 mx-auto"></div>
+            <p className="text-gray-600 mt-4">Loading analytics...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 p-2 lg:p-4">
       <div className="w-full space-y-6">
         {/* Modern Header */}
         <ModernCard gradient="blue" blur="xl" className={`${cardHoverEffects} relative overflow-hidden`}>
-          <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 via-purple-500/10 to-indigo-500/10" />
+          <div className="absolute inset-0 bg-gradient-to-r from-blue-500 via-purple-500 to-indigo-500 opacity-10" />
           <div className="relative p-8">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-6">
@@ -588,11 +538,21 @@ export default function TrackingPage() {
                         analyticsData.overview.totalEvents > 0 || 
                         analyticsData.overview.totalEmails > 0 || 
                         analyticsData.overview.totalExpenses > 0;
+                      
+                      const hasBankData = bankAnalytics && bankAnalytics.bankAnalysis.length > 0;
+                      
+                      const connectionStatus = hasRealData || hasBankData ? 'connected' : 
+                        (bankAnalytics?.analysisStatus.includes('OAuth') ? 'auth-error' : 'not-connected');
+                      
                       return (
                         <>
-                          <div className={`w-2 h-2 rounded-full ${hasRealData ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                          <div className={`w-2 h-2 rounded-full ${
+                            connectionStatus === 'connected' ? 'bg-green-500' : 
+                            connectionStatus === 'auth-error' ? 'bg-yellow-500' : 'bg-red-500'
+                          }`}></div>
                           <span className="text-sm text-gray-500">
-                            {hasRealData ? 'Google Connected' : 'Google Not Connected'}
+                            {connectionStatus === 'connected' ? 'Google Connected' : 
+                             connectionStatus === 'auth-error' ? 'Google Auth Required' : 'Google Not Connected'}
                           </span>
                         </>
                       );
@@ -605,13 +565,13 @@ export default function TrackingPage() {
                 <select
                   value={timeRange}
                   onChange={(e) => setTimeRange(e.target.value)}
-                  className="px-4 py-2 bg-white/80 backdrop-blur-sm border border-white/30 rounded-xl shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 font-medium"
+                  className="px-4 py-2 bg-white bg-opacity-80 backdrop-blur-sm border border-gray-300 rounded-xl shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 font-medium"
                 >
                   <option value="week">This Week</option>
                   <option value="month">This Month</option>
                   <option value="year">This Year</option>
                 </select>
-                <Button onClick={fetchAnalytics} className="bg-white/20 hover:bg-white/30 backdrop-blur-sm border border-white/30 text-gray-800">
+                <Button onClick={fetchAnalytics} className="bg-white bg-opacity-20 hover:bg-opacity-30 backdrop-blur-sm border border-gray-300 text-gray-800">
                   <RefreshCw className="h-4 w-4 mr-2" />
                   Refresh
                 </Button>
@@ -627,12 +587,12 @@ export default function TrackingPage() {
                   Connect Google
                 </Button>
               </div>
-            </div> {/* closes .flex items-center justify-between */}
-          </div> {/* closes .relative p-8 */}
-          </ModernCard>
+            </div>
+          </div>
+        </ModernCard>
 
-        {/* Overview Cards - Dashboard Style */}
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+        {/* Overview Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <ModernCard gradient="blue" blur="lg" className={cardHoverEffects}>
             <div className="p-6">
               <div className="flex items-center justify-between">
@@ -643,7 +603,7 @@ export default function TrackingPage() {
                     <TrendingUp className="h-4 w-4 text-green-500 mr-1" />
                     <p className="text-sm text-green-600 font-medium">
                       {formatPercentage(calculateChange(
-                        analyticsData.trends.eventsThisMonth, 
+                        analyticsData.trends.eventsThisMonth,
                         analyticsData.trends.lastMonthEvents
                       ))} from last month
                     </p>
@@ -666,7 +626,7 @@ export default function TrackingPage() {
                     <TrendingUp className="h-4 w-4 text-green-500 mr-1" />
                     <p className="text-sm text-green-600 font-medium">
                       {formatPercentage(calculateChange(
-                        analyticsData.trends.emailsThisMonth, 
+                        analyticsData.trends.emailsThisMonth,
                         analyticsData.trends.lastMonthEmails
                       ))} from last month
                     </p>
@@ -691,7 +651,7 @@ export default function TrackingPage() {
                     <TrendingDown className="h-4 w-4 text-red-500 mr-1" />
                     <p className="text-sm text-red-600 font-medium">
                       {formatPercentage(calculateChange(
-                        analyticsData.trends.expensesThisMonth, 
+                        analyticsData.trends.expensesThisMonth,
                         analyticsData.trends.lastMonthExpenses
                       ))} from last month
                     </p>
@@ -720,273 +680,185 @@ export default function TrackingPage() {
           </ModernCard>
         </div>
 
-        {/* Main Analytics Grid - Full Width Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          {/* Column 1 - Productivity Analytics */}
-          <div className="space-y-4">
-            <ModernCard gradient="none" blur="lg" className={cardHoverEffects}>
-              <div className="p-4">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="p-2 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl">
-                    <Target className="h-5 w-5 text-white" />
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-bold text-gray-800">Productivity Analytics</h3>
-                    <p className="text-sm text-gray-600">Performance metrics and insights</p>
+        {/* Analytics Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+          {/* Productivity Analytics */}
+          <ModernCard gradient="none" blur="lg" className={cardHoverEffects}>
+            <div className="p-4">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-2 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl">
+                  <Target className="h-5 w-5 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-gray-800">Productivity Analytics</h3>
+                  <p className="text-sm text-gray-600">Performance metrics and insights</p>
+                </div>
+              </div>
+              
+              <div className="space-y-3">
+                <div className="p-3 bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl border border-blue-200">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs font-semibold text-blue-700">Daily Events</p>
+                      <p className="text-xl font-bold text-blue-800">{analyticsData.productivity.averageEventsPerDay}</p>
+                    </div>
+                    <Calendar className="h-6 w-6 text-blue-600" />
                   </div>
                 </div>
                 
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="p-3 bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl border border-blue-200">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-xs font-semibold text-blue-700">Daily Events</p>
-                        <p className="text-xl font-bold text-blue-800">{analyticsData.productivity.averageEventsPerDay}</p>
-                      </div>
-                      <Calendar className="h-6 w-6 text-blue-600" />
+                <div className="p-3 bg-gradient-to-br from-green-50 to-green-100 rounded-xl border border-green-200">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs font-semibold text-green-700">Daily Emails</p>
+                      <p className="text-xl font-bold text-green-800">{analyticsData.productivity.averageEmailsPerDay}</p>
                     </div>
-                  </div>
-                  
-                  <div className="p-3 bg-gradient-to-br from-green-50 to-green-100 rounded-xl border border-green-200">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-xs font-semibold text-green-700">Daily Emails</p>
-                        <p className="text-xl font-bold text-green-800">{analyticsData.productivity.averageEmailsPerDay}</p>
-                      </div>
-                      <Mail className="h-6 w-6 text-green-600" />
-                    </div>
-                  </div>
-                  
-                  <div className="p-3 bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl border border-purple-200">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-xs font-semibold text-purple-700">Busy Days</p>
-                        <p className="text-xl font-bold text-purple-800">{analyticsData.productivity.busyDaysThisMonth}</p>
-                      </div>
-                      <Clock className="h-6 w-6 text-purple-600" />
-                    </div>
-                  </div>
-                  
-                  <div className="p-3 bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl border border-orange-200">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-xs font-semibold text-orange-700">Completion</p>
-                        <p className="text-xl font-bold text-orange-800">{analyticsData.productivity.completionRate}%</p>
-                      </div>
-                      <Award className="h-6 w-6 text-orange-600" />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </ModernCard>
-            
-            {/* Performance Indicators */}
-            <ModernCard gradient="none" blur="lg" className={cardHoverEffects}>
-              <div className="p-4">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="p-2 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl">
-                    <Star className="h-5 w-5 text-white" />
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-bold text-gray-800">Performance Insights</h3>
-                    <p className="text-sm text-gray-600">Key indicators</p>
+                    <Mail className="h-6 w-6 text-green-600" />
                   </div>
                 </div>
                 
-                <div className="space-y-3">
-                  <div className="p-3 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center">
-                        <TrendingUp className="h-4 w-4 mr-2 text-green-600" />
-                        <span className="text-xs font-semibold text-green-800">Overall Performance</span>
-                      </div>
-                      <span className="text-lg font-bold text-green-700">{dynamicMetrics.overallScore}</span>
+                <div className="p-3 bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl border border-orange-200">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs font-semibold text-orange-700">Completion Rate</p>
+                      <p className="text-xl font-bold text-orange-800">{analyticsData.productivity.completionRate}%</p>
                     </div>
-                    <div className="w-full bg-green-200 rounded-full h-2">
-                      <div className="bg-gradient-to-r from-green-500 to-emerald-600 h-2 rounded-full shadow-sm" style={{ width: `${dynamicMetrics.overallScore}%` }}></div>
-                    </div>
-                  </div>
-                  
-                  <div className="p-3 bg-gradient-to-r from-blue-50 to-cyan-50 border border-blue-200 rounded-xl">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center">
-                        <Eye className="h-4 w-4 mr-2 text-blue-600" />
-                        <span className="text-xs font-semibold text-blue-800">Engagement Rate</span>
-                      </div>
-                      <span className="text-lg font-bold text-blue-700">{dynamicMetrics.engagementRate}%</span>
-                    </div>
-                    <div className="w-full bg-blue-200 rounded-full h-2">
-                      <div className="bg-gradient-to-r from-blue-500 to-cyan-600 h-2 rounded-full shadow-sm" style={{ width: `${dynamicMetrics.engagementRate}%` }}></div>
-                    </div>
+                    <Award className="h-6 w-6 text-orange-600" />
                   </div>
                 </div>
               </div>
-            </ModernCard>
-          </div>
+            </div>
+          </ModernCard>
 
-          {/* Column 2 - Detailed Expense Breakdown */}
-          <div className="space-y-4">
-            {/* Bank-wise Breakdown */}
-            <ModernCard gradient="none" blur="lg" className={cardHoverEffects}>
-              <div className="p-4">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="p-2 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl">
-                    <Building2 className="h-5 w-5 text-white" />
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-bold text-gray-800">Bank-wise Breakdown</h3>
-                    <p className="text-sm text-gray-600">Account-specific transactions</p>
-                  </div>
+          {/* Bank-wise Breakdown */}
+          <ModernCard gradient="none" blur="lg" className={cardHoverEffects}>
+            <div className="p-4">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-2 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl">
+                  <Building2 className="h-5 w-5 text-white" />
                 </div>
-                
-                <div className="space-y-3">
-                  {bankAnalytics && bankAnalytics.bankAnalysis.length > 0 ? (
-                    bankAnalytics.bankAnalysis.map((bank, index) => {
-                      // Define colors for each bank
-                      const bankColors = [
-                        { bg: 'from-yellow-50 to-amber-50', border: 'border-yellow-300', icon: 'from-yellow-400 to-orange-500', text: 'text-yellow-800' },
-                        { bg: 'from-emerald-50 to-teal-50', border: 'border-emerald-300', icon: 'from-emerald-400 to-teal-500', text: 'text-emerald-800' },
-                        { bg: 'from-rose-50 to-pink-50', border: 'border-rose-300', icon: 'from-rose-400 to-pink-500', text: 'text-rose-800' },
-                        { bg: 'from-purple-50 to-violet-50', border: 'border-purple-300', icon: 'from-purple-400 to-violet-500', text: 'text-purple-800' },
-                        { bg: 'from-cyan-50 to-blue-50', border: 'border-cyan-300', icon: 'from-cyan-400 to-blue-500', text: 'text-cyan-800' }
-                      ];
-                      
-                      const colors = bankColors[index % bankColors.length];
-                      const isPositive = bank.amount > 0;
-                      
-                      // Get appropriate icon
-                      const getIcon = () => {
-                        if (bank.bankType.includes('Credit Card')) return Award;
-                        if (bank.bankType.includes('Wafrah')) return DollarSign;
-                        if (bank.bankType.includes('Overdraft')) return TrendingDown;
-                        if (bank.bankType.includes('Muscat')) return Building2;
-                        return Flag;
-                      };
-                      
-                      const IconComponent = getIcon();
-                      
-                      return (
-                        <div key={bank.bankType} className={`p-3 bg-gradient-to-r ${colors.bg} border ${colors.border} rounded-xl shadow-lg hover:shadow-xl transition-all duration-300`}>
-                          <div className="flex items-center gap-3 mb-2">
-                            <div className={`p-2 bg-gradient-to-r ${colors.icon} rounded-lg shadow-md`}>
-                              <IconComponent className="h-4 w-4 text-white" />
-                            </div>
-                            <div className="flex-1">
-                              <h4 className={`text-sm font-bold ${colors.text}`}>
-                                {bank.bankType.includes('Ahli Bank Saving') && '🏦 '}
-                                {bank.bankType.includes('Wafrah') && '💰 '}
-                                {bank.bankType.includes('Overdraft') && '🔴 '}
-                                {bank.bankType.includes('Credit Card') && '💳 '}
-                                {bank.bankType.includes('Bank Muscat') && '🏛️ '}
-                                {bank.bankType}
-                              </h4>
-                              <p className="text-xs opacity-70">{bank.insights}</p>
-                            </div>
-                            <div className="text-right">
-                              <span className={`text-lg font-bold ${isPositive ? 'text-green-700' : 'text-red-700'}`}>
-                                {isPositive ? '+' : ''}{formatCurrency(bank.amount)}
-                              </span>
-                              <div className="text-xs font-medium">
-                                {bank.transactionCount} txns
-                              </div>
-                              {/* Available Balance */}
-                              <div className="text-xs font-semibold text-blue-600 mt-1">
-                                Available Balance: {formatCurrency(bank.availableBalance)}
-                              </div>
-                            </div>
-                          </div>
-                          <div className="w-full bg-gray-200 rounded-full h-3 shadow-inner">
-                            <div 
-                              className={`bg-gradient-to-r ${colors.icon} h-3 rounded-full shadow-sm animate-pulse`} 
-                              style={{ width: `${Math.min(bank.percentage, 100)}%` }}
-                            ></div>
-                          </div>
-                          <div className={`text-xs ${colors.text} mt-1 font-semibold`}>
-                            {bank.percentage.toFixed(1)}% of total expenses
-                          </div>
-                        </div>
-                      );
-                    })
-                  ) : bankAnalytics && bankAnalytics.analysisStatus.includes('Error') ? (
-                    <div className="p-4 bg-red-50 rounded-xl border border-red-200">
-                      <div className="flex items-center gap-3 mb-3">
-                        <div className="p-2 bg-red-500 rounded-lg">
-                          <AlertCircle className="h-4 w-4 text-white" />
-                        </div>
-                        <div>
-                          <h4 className="text-sm font-bold text-red-800">Configuration Required</h4>
-                          <p className="text-xs text-red-600">Real data source not available</p>
-                        </div>
-                      </div>
-                      <div className="p-3 bg-red-100 rounded-lg mb-3">
-                        <p className="text-xs text-red-800 font-medium">Status: {bankAnalytics.analysisStatus}</p>
-                      </div>
-                      <div className="space-y-2 text-xs text-red-700">
-                        <p><strong>Required Setup:</strong></p>
-                        {bankAnalytics.analysisStatus.includes('OAuth') || bankAnalytics.analysisStatus.includes('invalid_grant') ? (
-                          <div className="space-y-2">
-                            <div className="p-2 bg-yellow-100 rounded border border-yellow-300">
-                              <p className="text-yellow-800 font-semibold">🔑 OAuth Token Issue Detected</p>
-                            </div>
-                            <ul className="list-disc list-inside space-y-1 ml-2">
-                              <li><strong>Visit:</strong> <a href="/api/auth/google" className="text-blue-600 underline hover:text-blue-800">/api/auth/google</a> to re-authenticate</li>
-                              <li>Grant access to Google Sheets in the authorization flow</li>
-                              <li>Ensure your Google account has access to the expense spreadsheet</li>
-                              <li>Check that GOOGLE_SHEETS_EXPENSES_ID matches your spreadsheet</li>
-                            </ul>
-                          </div>
-                        ) : (
-                          <ul className="list-disc list-inside space-y-1 ml-2">
-                            <li>✅ GOOGLE_SHEETS_EXPENSES_ID: Configured</li>
-                            <li>✅ GEMINI_API_KEY: Configured</li>
-                            <li>❌ Google OAuth: Requires re-authentication</li>
-                            <li>❓ Google Sheets: Check data format and permissions</li>
-                          </ul>
-                        )}
-                        <div className="mt-3 p-2 bg-blue-100 rounded border border-blue-300">
-                          <p className="text-blue-800 text-xs"><strong>Quick Fix:</strong> Visit the Google auth link above to refresh your access tokens</p>
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="p-4 bg-blue-50 rounded-xl border border-blue-200">
-                      <div className="animate-pulse space-y-3">
-                        {[1, 2, 3, 4, 5].map(i => (
-                          <div key={i} className="flex items-center gap-3">
-                            <div className="w-8 h-8 bg-blue-300 rounded-lg"></div>
-                            <div className="flex-1">
-                              <div className="h-4 bg-blue-300 rounded w-3/4 mb-1"></div>
-                              <div className="h-3 bg-blue-200 rounded w-1/2"></div>
-                            </div>
-                            <div className="h-4 bg-blue-300 rounded w-16"></div>
-                          </div>
-                        ))}
-                      </div>
-                      <p className="text-xs text-blue-600 text-center mt-4">🔄 Loading REAL bank analytics...</p>
-                    </div>
-                  )}
+                <div>
+                  <h3 className="text-lg font-bold text-gray-800">Bank-wise Breakdown</h3>
+                  <p className="text-sm text-gray-600">Account-specific transactions</p>
                 </div>
               </div>
-            </ModernCard>
-            
-            {/* Category Breakdown */}
-            <ModernCard gradient="none" blur="lg" className={cardHoverEffects}>
-              <div className="p-4">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="p-2 bg-gradient-to-br from-orange-500 to-red-600 rounded-xl">
-                    <PieChart className="h-5 w-5 text-white" />
+              
+              <div className="space-y-3">
+                {bankAnalytics && bankAnalytics.bankAnalysis.length > 0 ? (
+                  bankAnalytics.bankAnalysis.slice(0, 5).map((bank, index) => {
+                    const colors = getBankColors(bank.bankType);
+
+                    // Determine emoji based on debit transaction count (higher debit count = sad, lower = happy)
+                    const averageDebitCount = 10; // You can adjust this threshold
+                    const isHighDebitCount = bank.transactionCount > averageDebitCount;
+                    const debitEmoji = isHighDebitCount ? '😢' : '😊';
+                    
+                    return (
+                      <div key={bank.bankType} className={`p-3 bg-gradient-to-r ${colors.bg} border-2 ${colors.border} rounded-xl shadow-lg ${colors.shadow} hover:shadow-xl hover:scale-105 transition-all duration-300`}>
+                        <div className="flex items-center gap-3 mb-2">
+                          <div className={`p-2 bg-gradient-to-r ${colors.icon} rounded-lg shadow-md`}>
+                            <DollarSign className="h-4 w-4 text-white" />
+                          </div>
+                          <div className="flex-1">
+                            <h4 className={`text-sm font-bold ${colors.text} flex items-center gap-1`}>
+                              {bank.bankType.includes('Wafrah') && '💰 '}
+                              {bank.bankType.includes('Credit Card') && '💳 '}
+                              {bank.bankType.includes('Bank Muscat') && '🏛️ '}
+                              {bank.bankType.includes('Debit') && '💸 '}
+                              {bank.bankType.includes('General') && '🏦 '}
+                              {bank.bankType}
+                              <span className="ml-1">{debitEmoji}</span>
+                            </h4>
+                            <p className="text-xs opacity-80 font-medium">{bank.insights}</p>
+                            {/* Available Balance Display */}
+                            <div className="mt-1 text-xs font-semibold">
+                              <span className="text-gray-700">Available: </span>
+                              <span className={`${colors.text}`}>
+                                {bank.availableBalance ? formatCurrency(bank.availableBalance) : 'Loading...'}
+                              </span>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <span className={`text-lg font-bold ${colors.text}`}>
+                              {formatCurrency(Math.abs(bank.amount))}
+                            </span>
+                            <div className="text-xs opacity-70 font-medium">
+                              {bank.percentage.toFixed(1)}% of total
+                            </div>
+                          </div>
+                        </div>
+                        <div className="w-full bg-white/50 rounded-full h-2 shadow-inner">
+                          <div 
+                            className={`bg-gradient-to-r ${colors.icon} h-2 rounded-full shadow-sm`}
+                            style={{ width: `${Math.min(bank.percentage, 100)}%` }}
+                          ></div>
+                        </div>
+                        <div className="mt-2 flex justify-between items-center">
+                          <span className="text-xs opacity-70 font-medium">
+                            Transactions: {bank.transactionCount}
+                          </span>
+                          <span className="text-xs font-semibold">
+                            {isHighDebitCount ? 'High Activity' : 'Low Activity'}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })
+                ) : (
+                  <div className="p-4 bg-gradient-to-r from-red-50 to-pink-50 border border-red-200 rounded-xl">
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="p-2 bg-gradient-to-r from-red-500 to-pink-600 rounded-lg">
+                        <AlertCircle className="h-4 w-4 text-white" />
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-bold text-red-800">Configuration Required</h4>
+                        <p className="text-xs text-red-600">Real data source not available</p>
+                      </div>
+                    </div>
+                    <div className="mt-2">
+                      <p className="text-xs text-red-800 font-medium">Status: {bankAnalytics?.analysisStatus}</p>
+                    </div>
+                    <div className="mt-3 text-xs text-red-700">
+                      <p><strong>Required Setup:</strong></p>
+                      <div className="mt-1 space-y-1">
+                        {bankAnalytics?.analysisStatus.includes('OAuth') && (
+                          <div className="p-2 bg-yellow-100 rounded border border-yellow-300">
+                            <p className="text-yellow-800 font-semibold">🔑 OAuth Token Issue Detected</p>
+                          </div>
+                        )}
+                        <div className="pl-2">
+                          <ul className="list-disc text-xs space-y-1">
+                            <li><strong>Visit:</strong> <a href="/api/auth/google" className="text-blue-600 underline hover:text-blue-800">/api/auth/google</a> to re-authenticate</li>
+                            <li>Grant access to Google Sheets in the authorization flow</li>
+                            <li>Ensure your Google account has access to the expense spreadsheet</li>
+                          </ul>
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="text-lg font-bold text-gray-800">Category Breakdown</h3>
-                    <p className="text-sm text-gray-600">All categories with debit/credit tracking</p>
-                  </div>
+                )}
+              </div>
+            </div>
+          </ModernCard>
+
+          {/* Category Breakdown */}
+          <ModernCard gradient="none" blur="lg" className={cardHoverEffects}>
+            <div className="p-4">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-2 bg-gradient-to-br from-purple-500 to-pink-600 rounded-xl">
+                  <PieChart className="h-5 w-5 text-white" />
                 </div>
-                
-                {loading ? (
-                  <div className="space-y-2">
-                    {[1, 2, 3, 4, 5, 6].map((i) => (
-                      <div key={i} className="animate-pulse">
-                        <div className="flex justify-between items-center mb-1">
+                <div>
+                  <h3 className="text-lg font-bold text-gray-800">Category Breakdown</h3>
+                  <p className="text-sm text-gray-600">All categories with debit credit tracking</p>
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                {Object.keys(analyticsData.categories.expensesByCategory).length === 0 ? (
+                  <div className="animate-pulse space-y-2">
+                    {[1, 2, 3, 4, 5].map(i => (
+                      <div key={i} className="space-y-1">
+                        <div className="p-2 bg-gray-100 rounded-lg">
                           <div className="h-3 bg-gray-200 rounded w-20"></div>
                           <div className="h-3 bg-gray-200 rounded w-12"></div>
                         </div>
@@ -998,7 +870,7 @@ export default function TrackingPage() {
                   <div className="space-y-2 max-h-80 overflow-y-auto">
                     {Object.entries(separateBankCategories(analyticsData.categories.expensesByCategory)).map(([category, amount]) => {
                       const total = Object.values(separateBankCategories(analyticsData.categories.expensesByCategory)).reduce((a, b) => Math.abs(a) + Math.abs(b), 0);
-                      const percentage = total > 0 ? (Math.abs(amount) / total) * 100 : 0;
+                      const percentage = total > 0 ? (Math.abs(amount) * 100) / total : 0;
                       const isNegative = amount < 0;
                       
                       return (
@@ -1011,805 +883,426 @@ export default function TrackingPage() {
                           </div>
                           <div className="w-full bg-gray-200 rounded-full h-1.5">
                             <div 
-                              className={`h-1.5 rounded-full ${isNegative ? 'bg-red-500' : 'bg-green-500'}`} 
+                              className={`h-1.5 rounded-full ${isNegative ? 'bg-red-500' : 'bg-green-500'}`}
                               style={{ width: `${Math.min(percentage, 100)}%` }}
                             ></div>
                           </div>
-                          <div className="text-xs text-gray-600 mt-1">{percentage.toFixed(1)}% of total</div>
+                          <div className="text-xs text-gray-600 mt-1">{(percentage || 0).toFixed(1)}% of total</div>
                         </div>
                       );
                     })}
                   </div>
                 )}
               </div>
-            </ModernCard>
-          </div>
+            </div>
+          </ModernCard>
 
-          {/* Column 3 - Bank-wise Analyzing & Smart Insights */}
-          <div className="space-y-4">
-            {/* Bank-wise Analyzing */}
-            <ModernCard gradient="none" blur="lg" className={cardHoverEffects}>
-              <div className="p-4">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="p-2 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl shadow-md">
-                    <Brain className="h-5 w-5 text-white" />
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-bold text-gray-800">🧠 Bank-wise Analyzing</h3>
-                    <p className="text-sm text-gray-600">AI-powered bank insights</p>
-                  </div>
-                </div>
-                
-                <div className="space-y-4">
-                  {/* AI Analysis Summary */}
-                  <div className="p-3 bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200 rounded-xl">
-                    <div className="flex items-center gap-2 mb-2">
-                      <div className="w-2 h-2 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-full animate-pulse"></div>
-                      <h4 className="text-sm font-bold text-indigo-800">AI Analysis Status</h4>
-                    </div>
-                    <p className="text-xs text-indigo-700 mb-2">
-                      {bankAnalytics ? 
-                        `🤖 ${bankAnalytics.analysisStatus}` : 
-                        '🤖 Gemini AI analyzing bank transactions from Google Sheets...'
-                      }
-                    </p>
-                    <div className="w-full bg-indigo-200 rounded-full h-2">
-                      <div 
-                        className="bg-gradient-to-r from-indigo-400 to-purple-500 h-2 rounded-full animate-pulse" 
-                        style={{ width: bankAnalytics ? '100%' : '75%' }}
-                      ></div>
-                    </div>
-                    <p className="text-xs text-indigo-600 mt-1">
-                      {bankAnalytics ? 'Analysis completed' : 'Analysis 75% complete'}
-                    </p>
-                  </div>
-                  
-                  {/* Top Spending Bank */}
-                  <div className="p-3 bg-gradient-to-r from-red-50 to-rose-50 border border-red-200 rounded-xl">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-2">
-                        <TrendingUp className="h-4 w-4 text-red-600" />
-                        <h4 className="text-sm font-bold text-red-800">Highest Spending Account</h4>
-                      </div>
-                      <span className="px-2 py-1 bg-red-100 text-red-700 text-xs rounded-full font-semibold">Alert</span>
-                    </div>
-                    <p className="text-sm text-red-700 font-semibold">
-                      {bankAnalytics ? `💳 ${bankAnalytics.topSpendingBank}` : '💳 Ahli Bank Main Credit Card'}
-                    </p>
-                    <p className="text-xs text-red-600">
-                      {bankAnalytics ? 
-                        formatCurrency(Math.abs(bankAnalytics.bankAnalysis.find(b => b.bankType === bankAnalytics.topSpendingBank)?.amount || 0)) + ' this month' :
-                        `-${formatCurrency(Math.abs(analyticsData.trends.expensesThisMonth * 0.30))} this month`
-                      }
-                    </p>
-                    <div className="mt-2 p-2 bg-red-100 rounded-lg">
-                      <p className="text-xs text-red-800">
-                        💡 AI Insight: {bankAnalytics ? 
-                          bankAnalytics.bankAnalysis.find(b => b.bankType === bankAnalytics.topSpendingBank)?.insights || 'High spending activity detected' :
-                          'Credit card usage increased 15% vs last month'
-                        }
-                      </p>
-                    </div>
-                  </div>
-                  
-                  {/* Most Active Bank */}
-                  <div className="p-3 bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200 rounded-xl">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-2">
-                        <Activity className="h-4 w-4 text-yellow-600" />
-                        <h4 className="text-sm font-bold text-yellow-800">Most Active Account</h4>
-                      </div>
-                      <span className="px-2 py-1 bg-yellow-100 text-yellow-700 text-xs rounded-full font-semibold">High</span>
-                    </div>
-                    <p className="text-sm text-yellow-700 font-semibold">
-                      🏦 {bankAnalytics ? bankAnalytics.mostActiveBank : 'Ahli Bank Saving Debit Account'}
-                    </p>
-                    <p className="text-xs text-yellow-600">
-                      {bankAnalytics ? 
-                        `${bankAnalytics.bankAnalysis.find(b => b.bankType === bankAnalytics.mostActiveBank)?.transactionCount || 0} transactions this month` :
-                        '85 transactions this month'
-                      }
-                    </p>
-                    <div className="mt-2 p-2 bg-yellow-100 rounded-lg">
-                      <p className="text-xs text-yellow-800">
-                        💡 AI Insight: {bankAnalytics ? 
-                          bankAnalytics.bankAnalysis.find(b => b.bankType === bankAnalytics.mostActiveBank)?.insights || 'High transaction activity' :
-                          'Primary account for daily expenses'
-                        }
-                      </p>
-                    </div>
-                  </div>
-                  
-                  {/* Best Performing Account */}
-                  <div className="p-3 bg-gradient-to-r from-emerald-50 to-green-50 border border-emerald-200 rounded-xl">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-2">
-                        <Star className="h-4 w-4 text-emerald-600" />
-                        <h4 className="text-sm font-bold text-emerald-800">Best Performing</h4>
-                      </div>
-                      <span className="px-2 py-1 bg-emerald-100 text-emerald-700 text-xs rounded-full font-semibold">Excellent</span>
-                    </div>
-                    <p className="text-sm text-emerald-700 font-semibold">
-                      💰 {bankAnalytics ? bankAnalytics.bestPerformingBank : 'Ahli (Wafrah)'}
-                    </p>
-                    <p className="text-xs text-emerald-600">
-                      {bankAnalytics ? 
-                        `Health Score: ${bankAnalytics.bankAnalysis.find(b => b.bankType === bankAnalytics.bestPerformingBank)?.healthScore || 0}/100` :
-                        `+${formatCurrency(Math.abs(analyticsData.trends.expensesThisMonth * 0.15))} growth`
-                      }
-                    </p>
-                    <div className="mt-2 p-2 bg-emerald-100 rounded-lg">
-                      <p className="text-xs text-emerald-800">
-                        💡 AI Insight: {bankAnalytics ? 
-                          bankAnalytics.bankAnalysis.find(b => b.bankType === bankAnalytics.bestPerformingBank)?.insights || 'Excellent performance' :
-                          'Consistent savings growth pattern'
-                        }
-                      </p>
-                    </div>
-                  </div>
-                  
-                  {/* Bank Health Score */}
-                  <div className="p-3 bg-gradient-to-r from-blue-50 to-cyan-50 border border-blue-200 rounded-xl">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Award className="h-4 w-4 text-blue-600" />
-                      <h4 className="text-sm font-bold text-blue-800">Overall Bank Health Score</h4>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <div className="flex-1">
-                        <div className="w-full bg-blue-200 rounded-full h-3">
-                          <div 
-                            className="bg-gradient-to-r from-blue-400 to-cyan-500 h-3 rounded-full" 
-                            style={{ width: `${bankAnalytics ? bankAnalytics.overallHealthScore : 78}%` }}
-                          ></div>
-                        </div>
-                      </div>
-                      <span className="text-lg font-bold text-blue-700">
-                        {bankAnalytics ? bankAnalytics.overallHealthScore : 78}/100
-                      </span>
-                    </div>
-                    <div className="mt-2 grid grid-cols-2 gap-2 text-xs">
-                      <div className="p-1 bg-blue-100 rounded text-center">
-                        <div className="font-semibold text-blue-800">Liquidity</div>
-                        <div className="text-blue-600">Good</div>
-                      </div>
-                      <div className="p-1 bg-blue-100 rounded text-center">
-                        <div className="font-semibold text-blue-800">Spending Control</div>
-                        <div className="text-blue-600">Fair</div>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  {/* AI Recommendations */}
-                  <div className="p-3 bg-gradient-to-r from-purple-50 to-violet-50 border border-purple-200 rounded-xl">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Brain className="h-4 w-4 text-purple-600" />
-                      <h4 className="text-sm font-bold text-purple-800">AI Recommendations</h4>
-                    </div>
-                    <div className="space-y-2">
-                      {bankAnalytics && bankAnalytics.aiRecommendations.length > 0 ? (
-                        bankAnalytics.aiRecommendations.map((recommendation, index) => (
-                          <div key={index} className="p-2 bg-purple-100 rounded-lg">
-                            <p className="text-xs text-purple-800">{recommendation}</p>
-                          </div>
-                        ))
-                      ) : (
-                        <>
-                          <div className="p-2 bg-purple-100 rounded-lg">
-                            <p className="text-xs text-purple-800">🎯 Consider transferring more to Wafrah savings account</p>
-                          </div>
-                          <div className="p-2 bg-purple-100 rounded-lg">
-                            <p className="text-xs text-purple-800">⚠️ Monitor credit card spending - approaching limit</p>
-                          </div>
-                          <div className="p-2 bg-purple-100 rounded-lg">
-                            <p className="text-xs text-purple-800">📊 Optimize overdraft usage for better financial health</p>
-                          </div>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </ModernCard>
-            
-            {/* Smart Insights */}
-            <ModernCard gradient="none" blur="lg" className={cardHoverEffects}>
-              <div className="p-6">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="p-2 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-xl">
-                  <Brain className="h-6 w-6 text-white" />
+          {/* Smart Insights */}
+          <ModernCard gradient="none" blur="lg" className={cardHoverEffects}>
+            <div className="p-4">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-2 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl">
+                  <Brain className="h-5 w-5 text-white" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-bold text-gray-800">Smart Insights</h3>
-                  <p className="text-gray-600">AI-powered analysis</p>
+                  <h3 className="text-lg font-bold text-gray-800">Smart Insights</h3>
+                  <p className="text-sm text-gray-600">AI-powered analysis</p>
                 </div>
               </div>
               
               <div className="space-y-4">
-                {/* Time Analysis */}
-                <div>
-                  <h4 className="font-semibold text-black mb-3">{t('analytics')}</h4>
-                  <div className="space-y-3">
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-black">{t('analytics')}</span>
-                      <span className="font-bold text-primary">{analyticsData.overview.totalEvents > 0 ? '10:00 AM' : 'N/A'}</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-black">{t('analytics')}</span>
-                      <span className="font-bold text-black">{analyticsData.overview.totalEvents > 0 ? '3:00 PM' : 'N/A'}</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-black">{t('overview')}</span>
-                      <span className="font-bold text-green-600">{analyticsData.overview.totalEvents > 0 ? 'Tuesday' : 'N/A'}</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Efficiency Metrics */}
-                <div>
-                  <h4 className="font-semibold text-black mb-3">{t('statistics')}</h4>
-                  <div className="space-y-3">
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-black">{t('statistics')}</span>
-                      <span className="font-bold text-green-600">{analyticsData.productivity.completionRate > 0 ? Math.round(analyticsData.productivity.completionRate) + '%' : 'N/A'}</span>
-                    </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div className="bg-green-600 h-2 rounded-full" style={{ width: `${Math.min(analyticsData.productivity.completionRate, 100)}%` }}></div>
-                    </div>
-                    
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-black">{t('loading')}</span>
-                      <span className="font-bold text-blue-600">{analyticsData.overview.totalEmails > 0 ? '1.2h avg' : 'N/A'}</span>
-                    </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div className="bg-blue-600 h-2 rounded-full" style={{ width: `${analyticsData.overview.totalEmails > 0 ? '85' : '0'}%` }}></div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Goals Progress */}
-                <div>
-                  <h4 className="font-semibold text-black mb-3">{t('overview')}</h4>
-                  <div className="space-y-4">
-                    <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                      <div className="flex justify-between items-center mb-1">
-                        <span className="text-sm font-medium text-blue-800">{t('events')}</span>
-                        <span className="text-xs text-blue-600">{dynamicMetrics.eventsGoalProgress}</span>
-                      </div>
-                      <div className="w-full bg-blue-200 rounded-full h-1.5">
-                        <div className="bg-blue-600 h-1.5 rounded-full" style={{ width: `${Math.min((analyticsData.trends.eventsThisMonth / Math.max(analyticsData.trends.eventsThisMonth + 5, 10)) * 100, 100)}%` }}></div>
-                      </div>
-                    </div>
-                    
-                    <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
-                      <div className="flex justify-between items-center mb-1">
-                        <span className="text-sm font-medium text-green-800">{t('budgetTitle')}</span>
-                        <span className="text-xs text-green-600">{dynamicMetrics.budgetProgress}</span>
-                      </div>
-                      <div className="w-full bg-green-200 rounded-full h-1.5">
-                        <div className="bg-green-600 h-1.5 rounded-full" style={{ width: `${Math.min((analyticsData.trends.expensesThisMonth / Math.max(analyticsData.trends.expensesThisMonth * 1.2, 200)) * 100, 100)}%` }}></div>
-                      </div>
-                    </div>
-                    
-                    <div className="p-3 bg-purple-50 border border-purple-200 rounded-lg">
-                      <div className="flex justify-between items-center mb-1">
-                        <span className="text-sm font-medium text-purple-800">{t('contacts')}</span>
-                        <span className="text-xs text-purple-600">{dynamicMetrics.contactsProgress}</span>
-                      </div>
-                      <div className="w-full bg-purple-200 rounded-full h-1.5">
-                        <div className="bg-purple-600 h-1.5 rounded-full" style={{ width: `${Math.min((analyticsData.overview.totalContacts / Math.max(analyticsData.overview.totalContacts + 3, 15)) * 100, 100)}%` }}></div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Quick Stats */}
-                <div>
-                  <h4 className="font-semibold text-black mb-3">{t('statistics')}</h4>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="text-center p-2 bg-blue-50 rounded-lg border border-blue-200 hover:shadow-sm transition-all">
-                      <Calendar className="h-4 w-4 mx-auto mb-1 text-blue-600" />
-                      <div className="text-lg font-bold text-blue-700">{analyticsData.overview.totalEvents > 0 ? Math.max(new Date().getDate(), 1) : 0}</div>
-                      <div className="text-xs text-blue-600">{t('overview')}</div>
-                    </div>
-                    <div className="text-center p-2 bg-purple-50 rounded-lg border border-purple-200 hover:shadow-sm transition-all">
-                      <Zap className="h-4 w-4 mx-auto mb-1 text-purple-600" />
-                      <div className="text-lg font-bold text-purple-700">{analyticsData.overview.totalEvents + analyticsData.overview.totalEmails}</div>
-                      <div className="text-xs text-purple-600">{t('overview')}</div>
-                    </div>
-                    <div className="text-center p-2 bg-green-50 rounded-lg border border-green-200 hover:shadow-sm transition-all">
-                      <Award className="h-4 w-4 mx-auto mb-1 text-green-600" />
-                      <div className="text-lg font-bold text-green-700">{analyticsData.overview.totalEvents > 0 ? dynamicMetrics.efficiencyScore : 'N/A'}</div>
-                      <div className="text-xs text-green-600">{t('overview')}</div>
-                    </div>
-                    <div className="text-center p-2 bg-orange-50 rounded-lg border border-orange-200 hover:shadow-sm transition-all">
-                      <Target className="h-4 w-4 mx-auto mb-1 text-orange-600" />
-                      <div className="text-lg font-bold text-orange-700">{analyticsData.overview.totalEvents > 0 ? dynamicMetrics.userRating : 'N/A'}</div>
-                      <div className="text-xs text-orange-600">{t('overview')}</div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Platform Analytics */}
-                <div>
-                  <h4 className="font-semibold text-black mb-3">{t('analytics')}</h4>
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between p-2 bg-red-50 rounded-lg">
-                      <div className="flex items-center">
-                        <Youtube className="h-4 w-4 mr-2 text-red-600" />
-                        <span className="text-sm text-red-800">{t('youtube')}</span>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-sm font-bold text-red-700">{dynamicMetrics.youtubeViews}</div>
-                        <div className="text-xs text-red-600">{t('overview')}</div>
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
-                      <div className="flex items-center">
-                        <BookOpen className="h-4 w-4 mr-2 text-gray-600" />
-                        <span className="text-sm text-gray-800">{t('diary')}</span>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-sm font-bold text-gray-700">{analyticsData.overview.totalEvents > 0 ? Math.floor(new Date().getDate() * 0.8) : 0}</div>
-                        <div className="text-xs text-gray-600">{t('overview')}</div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Business Metrics */}
-                <div>
-                  <h4 className="font-semibold text-black mb-3">{t('analytics')}</h4>
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between p-2 bg-green-50 rounded-lg border border-green-200">
-                      <div className="flex items-center">
-                        <Briefcase className="h-4 w-4 mr-2 text-green-600" />
-                        <span className="text-sm text-green-800">{t('budgetTitle')}</span>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-sm font-bold text-green-700">{Math.max(Math.floor(analyticsData.overview.totalExpenses / 50), 0)}</div>
-                        <div className="text-xs text-green-600">{t('overview')}</div>
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-center justify-between p-2 bg-indigo-50 rounded-lg border border-indigo-200">
-                      <div className="flex items-center">
-                        <Building2 className="h-4 w-4 mr-2 text-indigo-600" />
-                        <span className="text-sm text-indigo-800">{t('hotelExpensesTitle')}</span>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-sm font-bold text-indigo-700">{Math.floor(analyticsData.trends.eventsThisMonth / 10) || 0}</div>
-                        <div className="text-xs text-indigo-600">{t('overview')}</div>
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-center justify-between p-2 bg-yellow-50 rounded-lg border border-yellow-200">
-                      <div className="flex items-center">
-                        <Users className="h-4 w-4 mr-2 text-yellow-600" />
-                        <span className="text-sm text-yellow-800">{t('contacts')}</span>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-sm font-bold text-yellow-700">{analyticsData.overview.totalContacts}</div>
-                        <div className="text-xs text-yellow-600">{t('overview')}</div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              </div>
-            </ModernCard>
-
-            {/* Performance Indicators & Recommendations Card */}
-            <ModernCard gradient="none" blur="lg" className={cardHoverEffects}>
-              <div className="p-6">
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="p-2 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl">
-                    <Star className="h-6 w-6 text-white" />
-                  </div>
-                  <div>
-                    <h3 className="text-xl font-bold text-gray-800">Performance Insights</h3>
-                    <p className="text-gray-600">Key indicators and smart recommendations</p>
-                  </div>
-                </div>
-                
-                {/* Performance Indicators */}
-                <div className="mb-6">
-                  <h4 className="font-semibold text-gray-800 mb-4">Performance Scores</h4>
-                  <div className="space-y-4">
-                    <div className="p-4 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl">
-                      <div className="flex items-center justify-between mb-3">
-                        <div className="flex items-center">
-                          <TrendingUp className="h-5 w-5 mr-2 text-green-600" />
-                          <span className="text-sm font-semibold text-green-800">Overall Performance</span>
-                        </div>
-                        <span className="text-2xl font-bold text-green-700">{dynamicMetrics.overallScore}</span>
-                      </div>
-                      <div className="w-full bg-green-200 rounded-full h-3">
-                        <div className="bg-gradient-to-r from-green-500 to-emerald-600 h-3 rounded-full shadow-sm" style={{ width: `${dynamicMetrics.overallScore}%` }}></div>
-                      </div>
-                      <p className="text-xs text-green-700 mt-2 font-medium">↗ +8% from last week</p>
-                    </div>
-                    
-                    <div className="p-4 bg-gradient-to-r from-blue-50 to-cyan-50 border border-blue-200 rounded-xl">
-                      <div className="flex items-center justify-between mb-3">
-                        <div className="flex items-center">
-                          <Eye className="h-5 w-5 mr-2 text-blue-600" />
-                          <span className="text-sm font-semibold text-blue-800">Engagement Rate</span>
-                        </div>
-                        <span className="text-2xl font-bold text-blue-700">{dynamicMetrics.engagementRate}%</span>
-                      </div>
-                      <div className="w-full bg-blue-200 rounded-full h-3">
-                        <div className="bg-gradient-to-r from-blue-500 to-cyan-600 h-3 rounded-full shadow-sm" style={{ width: `${dynamicMetrics.engagementRate}%` }}></div>
-                      </div>
-                      <p className="text-xs text-blue-700 mt-2 font-medium">↗ +12% from last week</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Smart Recommendations */}
-                <div>
-                  <h4 className="font-semibold text-gray-800 mb-4">Smart Recommendations</h4>
-                  <div className="space-y-3">
-                    <div className="p-3 bg-gradient-to-r from-yellow-50 to-amber-50 border-l-4 border-yellow-400 rounded-lg">
-                      <p className="text-sm text-yellow-800 font-medium">📈 Schedule more events in the afternoon for better productivity</p>
-                    </div>
-                    <div className="p-3 bg-gradient-to-r from-blue-50 to-indigo-50 border-l-4 border-blue-400 rounded-lg">
-                      <p className="text-sm text-blue-800 font-medium">💡 Consider batching similar tasks on Tuesdays</p>
-                    </div>
-                    <div className="p-3 bg-gradient-to-r from-green-50 to-emerald-50 border-l-4 border-green-400 rounded-lg">
-                      <p className="text-sm text-green-800 font-medium">✨ Great job maintaining your expense budget!</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </ModernCard>
-
-          </div>
-        </div>
-
-        {/* Monthly Trends - Full Width */}
-        <ModernCard gradient="none" blur="lg" className={cardHoverEffects}>
-          <div className="p-4">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="p-2 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl">
-                <TrendingUp className="h-5 w-5 text-white" />
-              </div>
-              <div>
-                <h3 className="text-lg font-bold text-gray-800">Monthly Trends & Extended Categories</h3>
-                <p className="text-sm text-gray-600">Performance comparison and additional expense categories</p>
-              </div>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="p-4 bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl border border-blue-200">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-semibold text-blue-700 uppercase tracking-wider">Events</p>
-                    <p className="text-3xl font-bold text-blue-800 mt-1">{analyticsData.trends.eventsThisMonth}</p>
-                    <div className="flex items-center mt-2">
-                      <span className={`text-sm font-medium flex items-center gap-1 ${
-                        calculateChange(analyticsData.trends.eventsThisMonth, analyticsData.trends.lastMonthEvents) >= 0 
-                          ? 'text-green-600' 
-                          : 'text-red-600'
-                      }`}>
-                        {calculateChange(analyticsData.trends.eventsThisMonth, analyticsData.trends.lastMonthEvents) >= 0 
-                          ? <TrendingUp className="h-3 w-3" /> 
-                          : <TrendingDown className="h-3 w-3" />
-                        }
-                        {formatPercentage(calculateChange(
-                          analyticsData.trends.eventsThisMonth, 
-                          analyticsData.trends.lastMonthEvents
-                        ))}
-                      </span>
-                    </div>
-                  </div>
-                  <Calendar className="h-12 w-12 text-blue-500" />
-                </div>
-              </div>
-              
-              <div className="p-4 bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl border border-green-200">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-semibold text-green-700 uppercase tracking-wider">Emails</p>
-                    <p className="text-3xl font-bold text-green-800 mt-1">{analyticsData.trends.emailsThisMonth}</p>
-                    <div className="flex items-center mt-2">
-                      <span className={`text-sm font-medium flex items-center gap-1 ${
-                        calculateChange(analyticsData.trends.emailsThisMonth, analyticsData.trends.lastMonthEmails) >= 0 
-                          ? 'text-green-600' 
-                          : 'text-red-600'
-                      }`}>
-                        {calculateChange(analyticsData.trends.emailsThisMonth, analyticsData.trends.lastMonthEmails) >= 0 
-                          ? <TrendingUp className="h-3 w-3" /> 
-                          : <TrendingDown className="h-3 w-3" />
-                        }
-                        {formatPercentage(calculateChange(
-                          analyticsData.trends.emailsThisMonth, 
-                          analyticsData.trends.lastMonthEmails
-                        ))}
-                      </span>
-                    </div>
-                  </div>
-                  <Mail className="h-12 w-12 text-green-500" />
-                </div>
-              </div>
-              
-              <div className="p-4 bg-gradient-to-br from-orange-50 to-red-50 rounded-xl border border-orange-200">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-semibold text-orange-700 uppercase tracking-wider">Expenses</p>
-                    <p className="text-2xl font-bold text-orange-800 mt-1">{formatCurrency(analyticsData.trends.expensesThisMonth)}</p>
-                    <div className="flex items-center mt-2">
-                      <span className={`text-sm font-medium flex items-center gap-1 ${
-                        calculateChange(analyticsData.trends.expensesThisMonth, analyticsData.trends.lastMonthExpenses) >= 0 
-                          ? 'text-red-600' 
-                          : 'text-green-600'
-                      }`}>
-                        {calculateChange(analyticsData.trends.expensesThisMonth, analyticsData.trends.lastMonthExpenses) >= 0 
-                          ? <TrendingUp className="h-3 w-3" /> 
-                          : <TrendingDown className="h-3 w-3" />
-                        }
-                        {formatPercentage(calculateChange(
-                          analyticsData.trends.expensesThisMonth, 
-                          analyticsData.trends.lastMonthExpenses
-                        ))}
-                      </span>
-                    </div>
-                  </div>
-                  <DollarSign className="h-12 w-12 text-orange-500" />
-                </div>
-              </div>
-              
-              <div className="p-4 bg-gradient-to-br from-purple-50 to-indigo-50 rounded-xl border border-purple-200">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-semibold text-purple-700 uppercase tracking-wider">🍽️ Food</p>
-                    <p className="text-2xl font-bold text-purple-800 mt-1">-{formatCurrency(Math.abs(analyticsData.trends.expensesThisMonth * 0.25))}</p>
-                    <div className="flex items-center mt-2">
-                      <span className="text-sm font-medium flex items-center gap-1 text-red-600">
-                        <TrendingUp className="h-3 w-3" />
-                        +8.5%
-                      </span>
-                    </div>
-                  </div>
-                  <div className="text-3xl">🍽️</div>
-                </div>
-              </div>
-              
-              <div className="p-4 bg-gradient-to-br from-cyan-50 to-blue-50 rounded-xl border border-cyan-200">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-semibold text-cyan-700 uppercase tracking-wider">🚗 Transport</p>
-                    <p className="text-2xl font-bold text-cyan-800 mt-1">-{formatCurrency(Math.abs(analyticsData.trends.expensesThisMonth * 0.15))}</p>
-                    <div className="flex items-center mt-2">
-                      <span className="text-sm font-medium flex items-center gap-1 text-green-600">
-                        <TrendingDown className="h-3 w-3" />
-                        -12.3%
-                      </span>
-                    </div>
-                  </div>
-                  <div className="text-3xl">🚗</div>
-                </div>
-              </div>
-              
-              <div className="p-4 bg-gradient-to-br from-emerald-50 to-green-50 rounded-xl border border-emerald-200">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-semibold text-emerald-700 uppercase tracking-wider">🛍️ Shopping</p>
-                    <p className="text-2xl font-bold text-emerald-800 mt-1">-{formatCurrency(Math.abs(analyticsData.trends.expensesThisMonth * 0.20))}</p>
-                    <div className="flex items-center mt-2">
-                      <span className="text-sm font-medium flex items-center gap-1 text-red-600">
-                        <TrendingUp className="h-3 w-3" />
-                        +15.2%
-                      </span>
-                    </div>
-                  </div>
-                  <div className="text-3xl">🛍️</div>
-                </div>
-              </div>
-              
-              <div className="p-4 bg-gradient-to-br from-yellow-50 to-amber-50 rounded-xl border border-yellow-200">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-semibold text-yellow-700 uppercase tracking-wider">🔌 Utilities</p>
-                    <p className="text-2xl font-bold text-yellow-800 mt-1">-{formatCurrency(Math.abs(analyticsData.trends.expensesThisMonth * 0.10))}</p>
-                    <div className="flex items-center mt-2">
-                      <span className="text-sm font-medium flex items-center gap-1 text-green-600">
-                        <TrendingDown className="h-3 w-3" />
-                        -3.1%
-                      </span>
-                    </div>
-                  </div>
-                  <div className="text-3xl">🔌</div>
-                </div>
-              </div>
-              
-              <div className="p-4 bg-gradient-to-br from-pink-50 to-rose-50 rounded-xl border border-pink-200">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-semibold text-pink-700 uppercase tracking-wider">🎬 Entertainment</p>
-                    <p className="text-2xl font-bold text-pink-800 mt-1">-{formatCurrency(Math.abs(analyticsData.trends.expensesThisMonth * 0.08))}</p>
-                    <div className="flex items-center mt-2">
-                      <span className="text-sm font-medium flex items-center gap-1 text-red-600">
-                        <TrendingUp className="h-3 w-3" />
-                        +25.7%
-                      </span>
-                    </div>
-                  </div>
-                  <div className="text-3xl">🎬</div>
-                </div>
-              </div>
-              
-              <div className="p-4 bg-gradient-to-br from-teal-50 to-cyan-50 rounded-xl border border-teal-200">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-semibold text-teal-700 uppercase tracking-wider">⚕️ Healthcare</p>
-                    <p className="text-2xl font-bold text-teal-800 mt-1">-{formatCurrency(Math.abs(analyticsData.trends.expensesThisMonth * 0.05))}</p>
-                    <div className="flex items-center mt-2">
-                      <span className="text-sm font-medium flex items-center gap-1 text-green-600">
-                        <TrendingDown className="h-3 w-3" />
-                        -18.9%
-                      </span>
-                    </div>
-                  </div>
-                  <div className="text-3xl">⚕️</div>
-                </div>
-              </div>
-              
-              <div className="p-4 bg-gradient-to-br from-slate-50 to-gray-50 rounded-xl border border-slate-200">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-semibold text-slate-700 uppercase tracking-wider">📱 Subscriptions</p>
-                    <p className="text-2xl font-bold text-slate-800 mt-1">-{formatCurrency(Math.abs(analyticsData.trends.expensesThisMonth * 0.03))}</p>
-                    <div className="flex items-center mt-2">
-                      <span className="text-sm font-medium flex items-center gap-1 text-red-600">
-                        <TrendingUp className="h-3 w-3" />
-                        +5.4%
-                      </span>
-                    </div>
-                  </div>
-                  <div className="text-3xl">📱</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </ModernCard>
-
-        {/* Calendar Widget */}
-        {!calendarLoading && calendarData && (
-          <ModernCard gradient="none" blur="lg" className="mt-8 border-gray-200">
-            <div className="p-6">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="p-2 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-xl">
-                  <CalendarDays className="h-6 w-6 text-white" />
-                </div>
-                <div>
-                  <h3 className="text-xl font-bold text-gray-800">Calendar Overview</h3>
-                  <p className="text-gray-600">Mahboob AlBulushi - Birthdays, Tasks & Oman Holidays</p>
-                </div>
-              </div>
-
-              {/* Statistics Row */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                <div className="bg-blue-50 p-3 rounded-lg border border-blue-200">
-                  <div className="flex items-center gap-2 mb-1">
-                    <CalendarDays className="h-4 w-4 text-blue-600" />
-                    <span className="text-sm font-medium text-blue-800">Total Events</span>
-                  </div>
-                  <p className="text-2xl font-bold text-blue-700">{calendarData.statistics.totalEvents}</p>
-                </div>
-
-                <div className="bg-purple-50 p-3 rounded-lg border border-purple-200">
-                  <div className="flex items-center gap-2 mb-1">
-                    <CheckSquare className="h-4 w-4 text-purple-600" />
-                    <span className="text-sm font-medium text-purple-800">Pending Tasks</span>
-                  </div>
-                  <p className="text-2xl font-bold text-purple-700">{calendarData.statistics.pendingTasks}</p>
-                </div>
-
-                <div className="bg-pink-50 p-3 rounded-lg border border-pink-200">
-                  <div className="flex items-center gap-2 mb-1">
-                    <Gift className="h-4 w-4 text-pink-600" />
-                    <span className="text-sm font-medium text-pink-800">Birthdays</span>
-                  </div>
-                  <p className="text-2xl font-bold text-pink-700">{calendarData.statistics.upcomingBirthdays}</p>
-                </div>
-
-                <div className="bg-red-50 p-3 rounded-lg border border-red-200">
-                  <div className="flex items-center gap-2 mb-1">
-                    <Flag className="h-4 w-4 text-red-600" />
-                    <span className="text-sm font-medium text-red-800">Oman Holidays</span>
-                  </div>
-                  <p className="text-2xl font-bold text-red-700">{calendarData.statistics.upcomingHolidays}</p>
-                </div>
-              </div>
-
-              {/* Events List */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Today's Events */}
-                <div>
-                  <h4 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
-                    <Clock className="h-4 w-4" />
-                    Today's Events
-                  </h4>
+                <div className="p-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200">
+                  <h4 className="font-semibold text-gray-800 mb-3">Performance Metrics</h4>
                   <div className="space-y-2">
-                    {calendarData.todayEvents.length > 0 ? (
-                      calendarData.todayEvents.slice(0, 3).map((event, index) => (
-                        <div key={event.id} className="flex items-center gap-3 p-2 bg-gray-50 rounded-lg">
-                          <div className="flex-shrink-0">
-                            {event.type === 'birthday' && <PartyPopper className="h-4 w-4 text-pink-500" />}
-                            {event.type === 'task' && <CheckSquare className="h-4 w-4 text-blue-500" />}
-                            {event.type === 'holiday' && <Flag className="h-4 w-4 text-red-500" />}
-                            {event.type === 'event' && <CalendarDays className="h-4 w-4 text-purple-500" />}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="font-medium text-gray-800 text-sm truncate">{event.title}</p>
-                            {event.description && (
-                              <p className="text-xs text-gray-600 truncate">{event.description}</p>
-                            )}
-                          </div>
-                          {event.priority === 'high' && (
-                            <Star className="h-3 w-3 text-yellow-500" />
-                          )}
-                        </div>
-                      ))
-                    ) : (
-                      <div className="text-center py-4">
-                        <Clock className="h-8 w-8 text-gray-300 mx-auto mb-2" />
-                        <p className="text-gray-500 text-sm">No events today</p>
-                      </div>
-                    )}
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-gray-600">Peak Time</span>
+                      <span className="font-bold text-blue-600">
+                        {analyticsData.overview.totalEvents > 0 ? '10:00 AM' : 'N/A'}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-gray-600">Efficiency</span>
+                      <span className="font-bold text-green-600">
+                        {analyticsData.productivity.completionRate > 0 ? `${Math.round(analyticsData.productivity.completionRate)}%` : 'N/A'}
+                      </span>
+                    </div>
                   </div>
                 </div>
 
-                {/* Upcoming Events */}
-                <div>
-                  <h4 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
-                    <TrendingUp className="h-4 w-4" />
-                    Upcoming Events
-                  </h4>
-                  <div className="space-y-2">
-                    {calendarData.upcomingEvents.length > 0 ? (
-                      calendarData.upcomingEvents.slice(0, 3).map((event, index) => (
-                        <div key={event.id} className="flex items-center gap-3 p-2 bg-gray-50 rounded-lg">
-                          <div className="flex-shrink-0">
-                            {event.type === 'birthday' && <PartyPopper className="h-4 w-4 text-pink-500" />}
-                            {event.type === 'task' && <CheckSquare className="h-4 w-4 text-blue-500" />}
-                            {event.type === 'holiday' && <Flag className="h-4 w-4 text-red-500" />}
-                            {event.type === 'event' && <CalendarDays className="h-4 w-4 text-purple-500" />}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="font-medium text-gray-800 text-sm truncate">{event.title}</p>
-                            <p className="text-xs text-gray-600">
-                              {new Date(event.date).toLocaleDateString('en-US', { 
-                                weekday: 'short', 
-                                month: 'short', 
-                                day: 'numeric' 
-                              })}
-                            </p>
-                            {event.location && (
-                              <p className="text-xs text-gray-500 flex items-center gap-1 truncate">
-                                <MapPin className="h-2 w-2" />
-                                {event.location}
-                              </p>
-                            )}
-                          </div>
-                          {event.priority === 'high' && (
-                            <Star className="h-3 w-3 text-yellow-500" />
-                          )}
-                        </div>
-                      ))
-                    ) : (
-                      <div className="text-center py-4">
-                        <CalendarDays className="h-8 w-8 text-gray-300 mx-auto mb-2" />
-                        <p className="text-gray-500 text-sm">No upcoming events</p>
+                <div className="p-3 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border border-green-200">
+                  <h4 className="font-semibold text-gray-800 mb-3">Monthly Trends</h4>
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-semibold text-green-700">📧 Email Activity</p>
+                        <p className="text-xs text-green-600">This month: {analyticsData.trends.emailsThisMonth}</p>
                       </div>
-                    )}
+                      <TrendingUp className="h-4 w-4 text-green-600" />
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-semibold text-blue-700">📅 Event Planning</p>
+                        <p className="text-xs text-blue-600">This month: {analyticsData.trends.eventsThisMonth}</p>
+                      </div>
+                      <Activity className="h-4 w-4 text-blue-600" />
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
           </ModernCard>
-        )}
+        </div>
+
+        {/* Bank-wise Analytics Section */}
+        <ModernCard gradient="none" blur="xl" className={`${cardHoverEffects} mt-6`}>
+          <div className="p-6">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="p-3 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl shadow-lg">
+                <BarChart3 className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-gray-800">Bank-wise Analytics</h3>
+                <p className="text-sm text-gray-600">Detailed financial performance across all accounts</p>
+              </div>
+            </div>
+            
+            {bankAnalytics && bankAnalytics.bankAnalysis.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {bankAnalytics.bankAnalysis.map((bank, index) => {
+                  const colors = getBankColors(bank.bankType);
+                  const isHighDebitCount = bank.transactionCount > 10;
+                  const debitEmoji = isHighDebitCount ? '😢' : '😊';
+                  
+                  return (
+                    <div key={bank.bankType} className={`p-4 bg-gradient-to-br ${colors.bg} border-2 ${colors.border} rounded-xl shadow-lg ${colors.shadow} hover:shadow-xl transition-all duration-300`}>
+                      <div className="flex items-center gap-3 mb-3">
+                        <div className={`p-2 bg-gradient-to-r ${colors.icon} rounded-lg shadow-md`}>
+                          <Building2 className="h-5 w-5 text-white" />
+                        </div>
+                        <div className="flex-1">
+                          <h4 className={`text-sm font-bold ${colors.text} flex items-center gap-1`}>
+                            {bank.bankType.includes('Wafrah') && '💰 '}
+                            {bank.bankType.includes('Credit Card') && '💳 '}
+                            {bank.bankType.includes('Bank Muscat') && '🏛️ '}
+                            {bank.bankType.includes('Debit') && '💸 '}
+                            {bank.bankType.includes('General') && '🏦 '}
+                            {bank.bankType}
+                            <span className="ml-1">{debitEmoji}</span>
+                          </h4>
+                        </div>
+                      </div>
+                      
+                      <div className="space-y-3">
+                        <div className="flex justify-between items-center">
+                          <span className="text-xs font-medium opacity-80">Total Amount</span>
+                          <span className={`text-lg font-bold ${colors.text}`}>
+                            {formatCurrency(Math.abs(bank.amount))}
+                          </span>
+                        </div>
+                        
+                        <div className="flex justify-between items-center">
+                          <span className="text-xs font-medium opacity-80">Available Balance</span>
+                          <span className={`text-sm font-bold ${colors.text}`}>
+                            {bank.availableBalance ? formatCurrency(bank.availableBalance) : 'Loading...'}
+                          </span>
+                        </div>
+                        
+                        <div className="flex justify-between items-center">
+                          <span className="text-xs font-medium opacity-80">Transactions</span>
+                          <span className={`text-sm font-bold ${colors.text}`}>
+                            {bank.transactionCount}
+                          </span>
+                        </div>
+                        
+                        <div className="flex justify-between items-center">
+                          <span className="text-xs font-medium opacity-80">Health Score</span>
+                          <span className={`text-sm font-bold ${bank.healthScore >= 70 ? 'text-green-700' : bank.healthScore >= 40 ? 'text-yellow-700' : 'text-red-700'}`}>
+                            {bank.healthScore}/100
+                          </span>
+                        </div>
+                        
+                        <div className="w-full bg-white/50 rounded-full h-2 shadow-inner">
+                          <div 
+                            className={`bg-gradient-to-r ${colors.icon} h-2 rounded-full shadow-sm`}
+                            style={{ width: `${Math.min(bank.percentage, 100)}%` }}
+                          ></div>
+                        </div>
+                        
+                        <p className="text-xs opacity-80 font-medium mt-2">{bank.insights}</p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="p-6 bg-gradient-to-r from-yellow-100 to-amber-100 border-2 border-yellow-300 rounded-xl">
+                <div className="text-center">
+                  <AlertCircle className="h-8 w-8 text-yellow-600 mx-auto mb-2" />
+                  <h4 className="text-lg font-bold text-yellow-800">No Bank Analytics Available</h4>
+                  <p className="text-yellow-700 mt-1">Connect your Google Sheets to view detailed bank analytics</p>
+                </div>
+              </div>
+            )}
+          </div>
+        </ModernCard>
+
+        {/* Calendar Reminders Section - CMB Colorblind Friendly */}
+        <ModernCard gradient="none" blur="xl" className={`${cardHoverEffects} mt-6`}>
+          <div className="p-6">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="p-3 bg-gradient-to-br from-rose-500 to-pink-600 rounded-xl shadow-lg">
+                <Calendar className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-gray-800">Calendar Reminders</h3>
+                <p className="text-sm text-gray-600">Upcoming events, holidays, and birthdays</p>
+              </div>
+            </div>
+            
+            {calendarLoading ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {[1, 2, 3, 4, 5, 6].map(i => (
+                  <div key={i} className="p-4 bg-gray-100 rounded-xl shadow-lg animate-pulse">
+                    <div className="h-6 bg-gray-200 rounded mb-3"></div>
+                    <div className="space-y-2">
+                      <div className="h-4 bg-gray-200 rounded"></div>
+                      <div className="h-4 bg-gray-200 rounded"></div>
+                      <div className="h-4 bg-gray-200 rounded"></div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : calendarData ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {/* Omani Holidays - CMB Friendly */}
+                {(() => {
+                  const holidays = calendarData.upcomingEvents.filter(event => 
+                    event.type === 'holiday' && (
+                      event.title.includes('National') || 
+                      event.title.includes('Renaissance') || 
+                      event.title.includes('New Year')
+                    )
+                  ).slice(0, 3);
+                  
+                  if (holidays.length > 0) {
+                    return (
+                      <div className="p-4 bg-gradient-to-br from-blue-100 to-blue-200 border-l-8 border-blue-600 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300">
+                        <div className="flex items-center gap-3 mb-3">
+                          <div className="p-2 bg-blue-600 rounded-lg shadow-md">
+                            <Flag className="h-5 w-5 text-white" />
+                          </div>
+                          <div>
+                            <h4 className="text-sm font-bold text-blue-900">🇴🇲 Omani Holidays</h4>
+                            <p className="text-xs text-blue-700 font-medium">National celebrations</p>
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          {holidays.map(holiday => (
+                            <div key={holiday.id} className="p-2 bg-blue-50 border border-blue-300 rounded-lg">
+                              <div className="flex justify-between items-center">
+                                <span className="text-xs font-semibold text-blue-800">{holiday.title}</span>
+                                <span className="text-xs text-blue-600">
+                                  {new Date(holiday.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                                </span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  }
+                  return null;
+                })()}
+
+                {/* Birthdays - CMB Friendly */}
+                {(() => {
+                  const birthdays = calendarData.upcomingEvents.filter(event => event.type === 'birthday').slice(0, 3);
+                  
+                  if (birthdays.length > 0) {
+                    return (
+                      <div className="p-4 bg-gradient-to-br from-purple-100 to-purple-200 border-l-8 border-purple-600 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300">
+                        <div className="flex items-center gap-3 mb-3">
+                          <div className="p-2 bg-purple-600 rounded-lg shadow-md">
+                            <Users className="h-5 w-5 text-white" />
+                          </div>
+                          <div>
+                            <h4 className="text-sm font-bold text-purple-900">🎂 Birthdays</h4>
+                            <p className="text-xs text-purple-700 font-medium">Friends & family</p>
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          {birthdays.map(birthday => (
+                            <div key={birthday.id} className="p-2 bg-purple-50 border-2 border-dashed border-purple-300 rounded-lg">
+                              <div className="flex justify-between items-center">
+                                <span className="text-xs font-semibold text-purple-800">{birthday.title}</span>
+                                <span className="text-xs text-purple-600">
+                                  {new Date(birthday.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                                </span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  }
+                  return null;
+                })()}
+
+                {/* Regular Events - CMB Friendly */}
+                {(() => {
+                  const events = calendarData.upcomingEvents.filter(event => 
+                    event.type === 'event' && !event.title.toLowerCase().includes('task')
+                  ).slice(0, 3);
+                  
+                  if (events.length > 0) {
+                    return (
+                      <div className="p-4 bg-gradient-to-br from-green-100 to-green-200 border-r-8 border-green-600 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300">
+                        <div className="flex items-center gap-3 mb-3">
+                          <div className="p-2 bg-green-600 rounded-lg shadow-md">
+                            <Clock className="h-5 w-5 text-white" />
+                          </div>
+                          <div>
+                            <h4 className="text-sm font-bold text-green-900">⏰ Upcoming Events</h4>
+                            <p className="text-xs text-green-700 font-medium">Personal & work</p>
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          {events.map(event => (
+                            <div key={event.id} className="p-2 bg-green-50 border-t-4 border-green-400 rounded-lg">
+                              <div className="flex justify-between items-center">
+                                <span className="text-xs font-semibold text-green-800">{event.title}</span>
+                                <span className="text-xs text-green-600">
+                                  {new Date(event.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                                </span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  }
+                  return null;
+                })()}
+
+                {/* Islamic Events - CMB Friendly */}
+                {(() => {
+                  const islamicEvents = calendarData.upcomingEvents.filter(event => 
+                    event.type === 'holiday' && (
+                      event.title.includes('Eid') || 
+                      event.title.includes('Ramadan') ||
+                      event.title.includes('Hijri') ||
+                      event.title.includes('Prophet') ||
+                      event.title.includes('Isra')
+                    )
+                  ).slice(0, 3);
+                  
+                  if (islamicEvents.length > 0) {
+                    return (
+                      <div className="p-4 bg-gradient-to-br from-orange-100 to-orange-200 border-b-8 border-orange-600 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300">
+                        <div className="flex items-center gap-3 mb-3">
+                          <div className="p-2 bg-orange-600 rounded-lg shadow-md">
+                            <Star className="h-5 w-5 text-white" />
+                          </div>
+                          <div>
+                            <h4 className="text-sm font-bold text-orange-900">☪️ Islamic Events</h4>
+                            <p className="text-xs text-orange-700 font-medium">Religious observances</p>
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          {islamicEvents.map(event => (
+                            <div key={event.id} className="p-2 bg-orange-50 border border-orange-400 rounded-lg shadow-sm">
+                              <div className="flex justify-between items-center">
+                                <span className="text-xs font-semibold text-orange-800">{event.title}</span>
+                                <span className="text-xs text-orange-600">
+                                  {new Date(event.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                                </span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  }
+                  return null;
+                })()}
+
+                {/* Tasks - CMB Friendly */}
+                {(() => {
+                  const tasks = calendarData.upcomingEvents.filter(event => event.type === 'task').slice(0, 3);
+                  
+                  if (tasks.length > 0) {
+                    return (
+                      <div className="p-4 bg-gradient-to-br from-red-100 to-red-200 border-l-8 border-r-4 border-red-600 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300">
+                        <div className="flex items-center gap-3 mb-3">
+                          <div className="p-2 bg-red-600 rounded-lg shadow-md">
+                            <Target className="h-5 w-5 text-white" />
+                          </div>
+                          <div>
+                            <h4 className="text-sm font-bold text-red-900">💼 Tasks</h4>
+                            <p className="text-xs text-red-700 font-medium">Things to do</p>
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          {tasks.map(task => (
+                            <div key={task.id} className="p-2 bg-red-50 border-l-4 border-red-500 rounded-lg">
+                              <div className="flex justify-between items-center">
+                                <span className="text-xs font-semibold text-red-800">{task.title}</span>
+                                <span className="text-xs text-red-600">
+                                  {new Date(task.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                                </span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  }
+                  return null;
+                })()}
+
+                {/* Today's Events - CMB Friendly */}
+                {(() => {
+                  const todayEvents = calendarData.todayEvents.slice(0, 3);
+                  
+                  if (todayEvents.length > 0) {
+                    return (
+                      <div className="p-4 bg-gradient-to-br from-teal-100 to-teal-200 border-4 border-dotted border-teal-600 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300">
+                        <div className="flex items-center gap-3 mb-3">
+                          <div className="p-2 bg-teal-600 rounded-lg shadow-md">
+                            <Eye className="h-5 w-5 text-white" />
+                          </div>
+                          <div>
+                            <h4 className="text-sm font-bold text-teal-900">📅 Today's Events</h4>
+                            <p className="text-xs text-teal-700 font-medium">Happening today</p>
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          {todayEvents.map(event => (
+                            <div key={event.id} className="p-2 bg-teal-50 border-2 border-teal-400 rounded-lg">
+                              <div className="flex justify-between items-center">
+                                <span className="text-xs font-semibold text-teal-800">{event.title}</span>
+                                <span className="text-xs text-teal-600">Today</span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  }
+                  return null;
+                })()}
+              </div>
+            ) : (
+              <div className="p-6 bg-gradient-to-r from-yellow-100 to-amber-100 border-2 border-yellow-300 rounded-xl">
+                <div className="text-center">
+                  <AlertCircle className="h-8 w-8 text-yellow-600 mx-auto mb-2" />
+                  <h4 className="text-lg font-bold text-yellow-800">No Calendar Data Available</h4>
+                  <p className="text-yellow-700 mt-1">Connect your Google Calendar to view reminders</p>
+                </div>
+              </div>
+            )}
+          </div>
+        </ModernCard>
       </div>
     </div>
   );

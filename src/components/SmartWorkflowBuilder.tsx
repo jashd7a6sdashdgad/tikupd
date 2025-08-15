@@ -219,13 +219,17 @@ export default function SmartWorkflowBuilder({ className }: WorkflowBuilderProps
       setStatus('🔧 Deploying workflow to N8N...');
       setError('');
       
+      const requestBody = {
+        action: 'create',
+        workflow: workflow
+      };
+      
+      console.log('📋 Deployment request body:', JSON.stringify(requestBody, null, 2));
+      
       const response = await fetch('/api/workflows', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'create',
-          workflow: workflow
-        })
+        body: JSON.stringify(requestBody)
       });
       
       const result = await response.json();

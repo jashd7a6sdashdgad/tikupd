@@ -50,6 +50,14 @@ async function getGoogleTokensFromMultipleSources(request: NextRequest) {
     if (refreshToken && refreshToken.includes('%')) {
       refreshToken = decodeURIComponent(refreshToken);
     }
+    
+    console.log('🔑 Environment tokens status:', {
+      hasAccessToken: !!accessToken,
+      accessTokenLength: accessToken?.length || 0,
+      hasRefreshToken: !!refreshToken,
+      refreshTokenLength: refreshToken?.length || 0,
+      refreshTokenPreview: refreshToken ? refreshToken.substring(0, 20) + '...' : 'N/A'
+    });
   }
   
   return accessToken ? { access_token: accessToken, refresh_token: refreshToken } : null;
@@ -141,13 +149,45 @@ export async function GET(request: NextRequest) {
     // Only fetch Google data if we have tokens
     if (googleTokens?.access_token) {
       try {
-        // Create authenticated OAuth2 client
-        const auth = getAuthenticatedClient({
-          access_token: googleTokens.access_token,
-          refresh_token: googleTokens.refresh_token
-        });
-
         console.log('🔄 Fetching data directly from Google APIs using OAuth2...');
+        
+        // Test the access token first with a simple API call
+        const tokenTestResponse = await fetch(
+          'https://www.googleapis.com/oauth2/v1/tokeninfo?access_token=' + googleTokens.access_token
+        );
+        
+        if (!tokenTestResponse.ok) {
+          console.log('🔄 Access token expired, attempting refresh...');
+          
+          if (googleTokens.refresh_token) {
+            try {
+              const refreshResponse = await fetch('https://oauth2.googleapis.com/token', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: new URLSearchParams({
+                  client_id: process.env.GOOGLE_CLIENT_ID || '',
+                  client_secret: process.env.GOOGLE_CLIENT_SECRET || '',
+                  refresh_token: googleTokens.refresh_token,
+                  grant_type: 'refresh_token',
+                }),
+              });
+              
+              if (refreshResponse.ok) {
+                const refreshData = await refreshResponse.json();
+                googleTokens.access_token = refreshData.access_token;
+                console.log('✅ Token refreshed successfully');
+              } else {
+                console.error('❌ Token refresh failed:', await refreshResponse.text());
+              }
+            } catch (refreshError) {
+              console.error('❌ Token refresh error:', refreshError);
+            }
+          }
+        } else {
+          console.log('✅ Access token is valid');
+        }
 
         // Fetch data directly from Google APIs using direct fetch calls
         const [calendarResults, emailResults, expensesResults] = await Promise.all([
@@ -310,6 +350,28 @@ export async function GET(request: NextRequest) {
       }
     } else {
       console.log('⚠️ No Google OAuth2 tokens found - user needs to authenticate');
+      console.log('Token search results:', {
+        fromCookies: {
+          accessToken: !!request.cookies.get('google_access_token')?.value,
+          refreshToken: !!request.cookies.get('google_refresh_token')?.value
+        },
+        fromHeaders: {
+          accessToken: !!(request.headers.get('x-google-access-token') || 
+                         request.headers.get('x-goog-access-token') || 
+                         request.headers.get('x-gapi-access-token')),
+          refreshToken: !!(request.headers.get('x-google-refresh-token') || 
+                          request.headers.get('x-goog-refresh-token') || 
+                          request.headers.get('x-gapi-refresh-token'))
+        },
+        fromEnvironment: {
+          accessToken: !!process.env.GOOGLE_ACCESS_TOKEN,
+          refreshToken: !!process.env.GOOGLE_REFRESH_TOKEN,
+          accessTokenPreview: process.env.GOOGLE_ACCESS_TOKEN ? 
+            process.env.GOOGLE_ACCESS_TOKEN.substring(0, 20) + '...' : 'Not found',
+          refreshTokenPreview: process.env.GOOGLE_REFRESH_TOKEN ? 
+            process.env.GOOGLE_REFRESH_TOKEN.substring(0, 20) + '...' : 'Not found'
+        }
+      });
     }
 
     console.log('📊 Raw API responses:', {

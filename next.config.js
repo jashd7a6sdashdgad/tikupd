@@ -107,12 +107,16 @@ module.exports = {
       }
     ]
   },
-  // Enable offline support
+  // Enable offline support and static music serving
   async rewrites() {
     return [
       {
         source: '/offline',
         destination: '/offline.html'
+      },
+      {
+        source: '/Music/:path*',
+        destination: '/api/music/serve/:path*'
       }
     ]
   }

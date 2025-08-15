@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { GoogleGenerativeAI } from '@google/generative-ai';
-
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
+// Code-based expense sorting (no external API)
 
 export async function POST(request: NextRequest) {
   try {
@@ -90,48 +88,52 @@ export async function POST(request: NextRequest) {
 
 async function aiSmartSort(expenses: any[]): Promise<any[]> {
   try {
-    const expenseData = expenses.map((expense, index) => ({
-      index,
-      amount: (expense.creditAmount || 0) + (expense.debitAmount || 0),
-      category: expense.category || 'General',
-      description: expense.description || '',
-      from: expense.from || '',
-      date: expense.date,
-      isCredit: (expense.creditAmount || 0) > 0
-    }));
-
-    const prompt = `
-Analyze these expense transactions and sort them by financial importance and impact. Consider:
-1. Large amounts that significantly impact budget
-2. Essential vs non-essential categories  
-3. Unusual or suspicious transactions
-4. Credit vs debit implications
-5. Recent vs older transactions
-
-Expenses data: ${JSON.stringify(expenseData)}
-
-Return a JSON array with the original expense indices in order of importance (most important first):
-{
-  "sortedIndices": [3, 1, 7, 2, 5, ...]
-}
-
-Prioritize:
-- Large amounts (over $100)
-- Essential categories (food, medical, utilities)
-- Recent credit transactions  
-- Unusual spending patterns
-`;
-
-    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const text = response.text();
-
-    const parsed = JSON.parse(text.replace(/```json|```/g, '').trim());
-    const sortedIndices = parsed.sortedIndices || expenses.map((_, i) => i);
-
-    // Return expenses in AI-determined order
-    return sortedIndices.map((index: number) => expenses[index]).filter(Boolean);
+    console.log('🔄 Using code-based smart sorting...');
+    
+    // Code-based smart sorting algorithm
+    const expensesWithPriority = expenses.map((expense, index) => {
+      const amount = Math.abs((expense.creditAmount || 0) + (expense.debitAmount || 0));
+      const category = expense.category || 'General';
+      const isCredit = (expense.creditAmount || 0) > 0;
+      const date = new Date(expense.date);
+      const daysOld = Math.floor((Date.now() - date.getTime()) / (1000 * 60 * 60 * 24));
+      
+      let priority = 0;
+      
+      // Amount priority (40% weight)
+      if (amount > 1000) priority += 40;
+      else if (amount > 500) priority += 30;
+      else if (amount > 100) priority += 20;
+      else priority += 10;
+      
+      // Category priority (30% weight)
+      const essentialCategories = ['Medical', 'Utilities', 'Food', 'Transportation'];
+      const importantCategories = ['Business', 'Education', 'Travel'];
+      if (essentialCategories.includes(category)) priority += 30;
+      else if (importantCategories.includes(category)) priority += 20;
+      else if (category.includes('Credit')) priority += 25;
+      else priority += 10;
+      
+      // Recency priority (20% weight)
+      if (daysOld <= 7) priority += 20;
+      else if (daysOld <= 30) priority += 15;
+      else priority += 5;
+      
+      // Transaction type priority (10% weight)
+      if (isCredit && amount > 500) priority += 10; // Large credits need attention
+      else if (!isCredit && amount > 200) priority += 8; // Large debits
+      else priority += 5;
+      
+      return { ...expense, originalIndex: index, priority, amount };
+    });
+    
+    // Sort by priority (highest first)
+    const sortedExpenses = expensesWithPriority
+      .sort((a, b) => b.priority - a.priority)
+      .map(({ originalIndex, priority, ...expense }) => expense);
+    
+    console.log('✅ Code-based smart sorting completed');
+    return sortedExpenses;
 
   } catch (error) {
     console.error('AI smart sort failed:', error);
@@ -146,62 +148,85 @@ Prioritize:
 
 async function aiRecategorize(expenses: any[]): Promise<any[]> {
   try {
-    const expenseData = expenses.map((expense, index) => ({
-      index,
-      description: expense.description || '',
-      from: expense.from || '',
-      amount: (expense.creditAmount || 0) + (expense.debitAmount || 0),
-      currentCategory: expense.category || 'General'
-    }));
-
-    const categories = [
-      '1. Credit', '2. Debit', 'Food', 'Transportation', 'Business', 'Medical',
-      'Entertainment', 'Shopping', 'Utilities', 'Travel', 'Education', 'Banks', 'General'
-    ];
-
-    const prompt = `
-Re-categorize these expense transactions based on their descriptions and sources. Use these exact categories: ${categories.join(', ')}
-
-Expense data: ${JSON.stringify(expenseData)}
-
-Return JSON with each expense index and its suggested category:
-{
-  "categorizations": [
-    {"index": 0, "category": "Food"},
-    {"index": 1, "category": "Transportation"},
-    ...
-  ]
-}
-
-Rules:
-- Use "1. Credit" for credit card transactions
-- Use "2. Debit" for debit card transactions  
-- Categorize based on description and merchant name
-- Be specific (Food for restaurants/groceries, Transportation for gas/Uber, etc.)
-`;
-
-    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const text = response.text();
-
-    const parsed = JSON.parse(text.replace(/```json|```/g, '').trim());
-    const categorizations = parsed.categorizations || [];
-
-    // Apply AI categorizations
-    const updatedExpenses = expenses.map((expense, index) => {
-      const aiCategorization = categorizations.find((cat: any) => cat.index === index);
-      if (aiCategorization) {
-        return {
-          ...expense,
-          category: aiCategorization.category,
-          aiCategorized: true
-        };
+    console.log('🔄 Using code-based recategorization...');
+    
+    const categoryRules = {
+      'Food': {
+        keywords: ['restaurant', 'cafe', 'food', 'grocery', 'supermarket', 'mcdonald', 'kfc', 'pizza', 'starbucks', 'dining'],
+        patterns: [/restaurant|cafe|food|grocery|supermarket|dining/i]
+      },
+      'Transportation': {
+        keywords: ['uber', 'taxi', 'gas', 'fuel', 'petrol', 'parking', 'bus', 'metro', 'airline', 'flight'],
+        patterns: [/uber|taxi|gas|fuel|transport|parking|airline/i]
+      },
+      'Medical': {
+        keywords: ['hospital', 'clinic', 'pharmacy', 'doctor', 'medical', 'health', 'medicine'],
+        patterns: [/hospital|clinic|pharmacy|medical|health/i]
+      },
+      'Shopping': {
+        keywords: ['amazon', 'store', 'shop', 'mall', 'retail', 'clothing', 'electronics'],
+        patterns: [/amazon|shop|store|mall|retail/i]
+      },
+      'Utilities': {
+        keywords: ['electricity', 'water', 'internet', 'phone', 'utility', 'telecom'],
+        patterns: [/electric|water|internet|phone|utility/i]
+      },
+      'Entertainment': {
+        keywords: ['movie', 'cinema', 'netflix', 'spotify', 'game', 'entertainment'],
+        patterns: [/movie|cinema|netflix|spotify|entertainment/i]
+      },
+      'Business': {
+        keywords: ['office', 'business', 'professional', 'service', 'software', 'license'],
+        patterns: [/office|business|professional|software/i]
       }
-      return expense;
+    };
+    
+    const categorizedExpenses = expenses.map((expense) => {
+      const description = (expense.description || '').toLowerCase();
+      const from = (expense.from || '').toLowerCase();
+      const searchText = `${description} ${from}`;
+      
+      // Check if it's a credit/debit transaction
+      if (expense.creditAmount > 0) {
+        return { ...expense, category: '1. Credit', aiCategorized: true };
+      } else if (expense.debitAmount > 0) {
+        return { ...expense, category: '2. Debit', aiCategorized: true };
+      }
+      
+      // Find best category match
+      let bestMatch = { category: 'General', score: 0 };
+      
+      for (const [category, rules] of Object.entries(categoryRules)) {
+        let score = 0;
+        
+        // Check keywords
+        for (const keyword of rules.keywords) {
+          if (searchText.includes(keyword)) {
+            score += 1;
+          }
+        }
+        
+        // Check patterns
+        for (const pattern of rules.patterns) {
+          if (pattern.test(searchText)) {
+            score += 2;
+          }
+        }
+        
+        if (score > bestMatch.score) {
+          bestMatch = { category, score };
+        }
+      }
+      
+      return {
+        ...expense,
+        category: bestMatch.score > 0 ? bestMatch.category : (expense.category || 'General'),
+        aiCategorized: bestMatch.score > 0
+      };
     });
-
-    return updatedExpenses;
+    
+    console.log('✅ Code-based recategorization completed');
+    return categorizedExpenses;
 
   } catch (error) {
     console.error('AI recategorization failed:', error);

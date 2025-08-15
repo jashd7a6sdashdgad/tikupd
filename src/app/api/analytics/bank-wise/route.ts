@@ -1,11 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { google } from 'googleapis';
-import { GoogleGenerativeAI } from '@google/generative-ai';
-
-
-
-// Initialize Gemini AI
-const genAI = process.env.GEMINI_API_KEY ? new GoogleGenerativeAI(process.env.GEMINI_API_KEY) : null;
+// Code-based AI insights (no external API)
 
 interface BankAnalysis {
   bankType: string;
@@ -15,6 +10,7 @@ interface BankAnalysis {
   insights: string;
   trend: 'up' | 'down' | 'stable';
   healthScore: number;
+  availableBalance: number;
 }
 
 interface BankAnalyticsResponse {
@@ -145,13 +141,10 @@ export async function GET(request: NextRequest): Promise<NextResponse<BankAnalyt
     console.log('📊 Fetching REAL expense data from Google Sheets...');
     let response;
     
-    // Try different sheet names and ranges
+    // Try different sheet names and ranges (same as balance-report)
     const possibleRanges = [
-      'Expenses!A:H',  // Preferred sheet name
-      'Sheet1!A:H',    // Default sheet name
-      'Expenses!A:Z',  // Extended range
-      'Sheet1!A:Z',    // Extended range
-      'A:H',           // Without sheet name
+      'Expenses!A:Z',  // Extended range - preferred
+      'Sheet1!A:Z',    // Extended range - default sheet
       'A:Z'            // Extended without sheet name
     ];
     
@@ -292,16 +285,113 @@ function analyzeBankData(expenseData: any[][], headers: string[]) {
   const creditAmountIndex = headers.findIndex(h => h && h.toLowerCase().includes('credit amount'));
   const debitAmountIndex = headers.findIndex(h => h && h.toLowerCase().includes('debit amount'));
   
+  // Find balance columns (same logic as balance-report)
+  const dateIndex = headers.findIndex(h => h && (
+    h.toLowerCase().includes('date') ||
+    h.toLowerCase().includes('timestamp')
+  ));
+  
+  const creditCardBalanceIndex = headers.findIndex(h => h && (
+    h.toLowerCase().includes('credit card balance') ||
+    h.toLowerCase().trim() === 'credit card balance' ||
+    h.trim() === 'Credit Card Balance'
+  ));
+  
+  const debitCardBalanceIndex = headers.findIndex(h => h && (
+    h.toLowerCase().includes('debit card balance') ||
+    h.toLowerCase().trim() === 'debit card balance' ||
+    h.trim() === 'Debit Card Balance'
+  ));
+  
+  console.log('💰 Balance columns detection:');
+  console.log(`   All headers: [${headers.map((h, i) => `${i}:"${h}"`).join(', ')}]`);
+  console.log(`   Date: ${dateIndex} (${headers[dateIndex] || 'NOT FOUND'})`);
+  console.log(`   Credit Card Balance: ${creditCardBalanceIndex} (${headers[creditCardBalanceIndex] || 'NOT FOUND'})`);
+  console.log(`   Debit Card Balance: ${debitCardBalanceIndex} (${headers[debitCardBalanceIndex] || 'NOT FOUND'})`);
+  
+  // Debug: Check each header for balance patterns
+  headers.forEach((header, index) => {
+    if (header && (header.toLowerCase().includes('balance') || header.toLowerCase().includes('card'))) {
+      console.log(`   🔍 Found balance/card related header at ${index}: "${header}"`);
+    }
+  });
+  
   // Fallback to generic amount column if specific ones not found
   const amountIndex = creditAmountIndex !== -1 || debitAmountIndex !== -1 ? -1 : 
                     headers.findIndex(h => h && h.toLowerCase().includes('amount'));
 
-  const bankData: { [key: string]: { amount: number; count: number; transactions: any[] } } = {};
+  const bankData: { [key: string]: { amount: number; count: number; transactions: any[]; availableBalance: number } } = {};
   let totalExpenses = 0;
 
   // Initialize bank data
   bankTypes.forEach(bank => {
-    bankData[bank] = { amount: 0, count: 0, transactions: [] };
+    bankData[bank] = { amount: 0, count: 0, transactions: [], availableBalance: 0 };
+  });
+  
+  // Process balance data first (same logic as balance-report)
+  const balanceData: { [key: string]: { balance: number; lastUpdatedRow: number; rowIndex: number } } = {};
+  
+  console.log('💰 Starting balance data processing...');
+  console.log(`   Processing ${expenseData.length} rows for balance data`);
+  console.log(`   Looking for balance columns: Credit(${creditCardBalanceIndex}), Debit(${debitCardBalanceIndex})`);
+  
+  expenseData.forEach((row, rowIndex) => {
+    const bankName = row[bankIndex] || '';
+    if (!bankName.trim()) return;
+    
+    const actualRowNumber = rowIndex + 2; // +2 because of header row and 0-based index
+    
+    // Check for balance in appropriate columns
+    let balance = 0;
+    
+    // Try Credit Card Balance column first
+    if (creditCardBalanceIndex !== -1) {
+      const rawValue = row[creditCardBalanceIndex];
+      if (rawValue !== undefined && rawValue !== '' && rawValue !== null) {
+        const parsed = parseFloat(String(rawValue).replace(/[^0-9.-]/g, ''));
+        if (!isNaN(parsed) && parsed !== 0) {
+          balance = parsed;
+        }
+      }
+    }
+    
+    // If no credit card balance found, try Debit Card Balance column
+    if (balance === 0 && debitCardBalanceIndex !== -1) {
+      const rawValue = row[debitCardBalanceIndex];
+      if (rawValue !== undefined && rawValue !== '' && rawValue !== null) {
+        const parsed = parseFloat(String(rawValue).replace(/[^0-9.-]/g, ''));
+        if (!isNaN(parsed) && parsed !== 0) {
+          balance = parsed;
+        }
+      }
+    }
+    
+    // Debug: Log balance processing for first few rows
+    if (rowIndex < 5) {
+      console.log(`   🔍 Row ${actualRowNumber}: Bank="${bankName}", Credit="${row[creditCardBalanceIndex]}", Debit="${row[debitCardBalanceIndex]}", Balance=${balance}`);
+    }
+    
+    // Update balance data if this is a newer row with valid balance
+    if (balance !== 0) {
+      const existingEntry = balanceData[bankName];
+      
+      if (!existingEntry || actualRowNumber > existingEntry.lastUpdatedRow) {
+        balanceData[bankName] = {
+          balance: balance,
+          lastUpdatedRow: actualRowNumber,
+          rowIndex: rowIndex
+        };
+        
+        console.log(`💰 Latest balance for "${bankName}": ${balance} OMR (Row ${actualRowNumber})`);
+      }
+    }
+  });
+
+  // Log balance processing results
+  console.log('💰 Balance processing completed:');
+  console.log(`   Found ${Object.keys(balanceData).length} unique banks with balances`);
+  Object.entries(balanceData).forEach(([bank, data]) => {
+    console.log(`   📊 "${bank}": ${data.balance} OMR (Row ${data.lastUpdatedRow})`);
   });
 
   // Track unmatched banks for debugging
@@ -452,11 +542,52 @@ function analyzeBankData(expenseData: any[][], headers: string[]) {
     });
   }
 
+  // Assign available balances to matched bank types
+  console.log('💰 Assigning available balances to bank types...');
+  Object.entries(balanceData).forEach(([bankName, balanceInfo]) => {
+    // Find which bank type this balance belongs to (same matching logic as transactions)
+    let matchedBankType: string | null = null;
+    const normalizedBankName = bankName.toLowerCase().trim();
+    
+    // Use the same matching patterns as transaction processing
+    if (normalizedBankName === 'debit card (wafrah)') {
+      matchedBankType = 'Ahli (Wafrah)';
+    } else if (normalizedBankName === 'overdraft current account') {
+      matchedBankType = 'Ahli Bank Overdraft Current Account';
+    } else if (normalizedBankName === 'credit card') {
+      matchedBankType = 'Ahli Bank Main Credit Card';
+    } else if (normalizedBankName === 'saving debit account (tofer)') {
+      matchedBankType = 'Ahli Bank Saving Debit Account';
+    } else if (normalizedBankName.includes('bank muscat') && normalizedBankName.includes('ibky')) {
+      matchedBankType = 'Bank Muscat Main Debit Account';
+    } else {
+      // Fallback patterns
+      if (normalizedBankName.includes('wafrah') || normalizedBankName.includes('wafra')) {
+        matchedBankType = 'Ahli (Wafrah)';
+      } else if (normalizedBankName.includes('overdraft')) {
+        matchedBankType = 'Ahli Bank Overdraft Current Account';
+      } else if (normalizedBankName.includes('credit') && normalizedBankName.includes('card')) {
+        matchedBankType = 'Ahli Bank Main Credit Card';
+      } else if (normalizedBankName.includes('muscat')) {
+        matchedBankType = 'Bank Muscat Main Debit Account';
+      } else if (normalizedBankName.includes('tofer') || (normalizedBankName.includes('saving') && normalizedBankName.includes('debit'))) {
+        matchedBankType = 'Ahli Bank Saving Debit Account';
+      }
+    }
+    
+    if (matchedBankType && bankData[matchedBankType]) {
+      bankData[matchedBankType].availableBalance = balanceInfo.balance;
+      console.log(`💰 Assigned balance ${balanceInfo.balance} OMR to "${matchedBankType}" from "${bankName}"`);
+    } else {
+      console.log(`⚠️ Could not match balance for "${bankName}" to any bank type`);
+    }
+  });
+
   // Log summary of matched banks
   console.log('✅ Bank matching summary:');
   bankTypes.forEach(bank => {
     const data = bankData[bank];
-    console.log(`  ${bank}: ${data.count} transactions, ${data.amount.toFixed(2)} OMR`);
+    console.log(`  ${bank}: ${data.count} transactions, ${data.amount.toFixed(2)} OMR, Available: ${data.availableBalance.toFixed(2)} OMR`);
   });
 
   // Calculate percentages and create analysis
@@ -471,7 +602,8 @@ function analyzeBankData(expenseData: any[][], headers: string[]) {
       transactionCount: data.count,
       insights: generateBankInsight(bank, data.amount, data.count),
       trend: determineTrend(data.amount, data.count),
-      healthScore: calculateHealthScore(data.amount, data.count, bank)
+      healthScore: calculateHealthScore(data.amount, data.count, bank),
+      availableBalance: data.availableBalance
     };
   });
 
@@ -503,15 +635,9 @@ function analyzeBankData(expenseData: any[][], headers: string[]) {
 }
 
 async function generateAIInsights(bankAnalysis: any, expenseData: any[][]): Promise<{ aiRecommendations: string[] }> {
-  console.log('🤖 Generating AI insights...');
+  console.log('🤖 Generating code-based insights...');
   
-  if (!process.env.GEMINI_API_KEY || !genAI) {
-    console.error('❌ GEMINI_API_KEY not configured');
-    throw new Error('Gemini API key not configured');
-  }
-
   try {
-    const model = genAI?.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
     // Prepare REAL data for analysis
     const totalTransactions = expenseData.length;
@@ -556,35 +682,22 @@ Requirements:
 - Use general financial advice principles
 - Start each with the specified emoji`;
 
-    console.log('🔄 Sending real data to Gemini for analysis...');
-    const result = await model?.generateContent(prompt);
-    const response = await result?.response;
-    const text = response?.text();
-
-    console.log('📝 Raw Gemini response:', text);
-
-    // Parse recommendations from response
-    const lines = text?.split('\n').filter(line => {
-      const trimmed = line.trim();
-      return trimmed && (trimmed.includes('🎯') || trimmed.includes('⚠️') || trimmed.includes('📊'));
-    });
+    console.log('🔄 Analyzing spending patterns with code logic...');
     
-    const recommendations = lines?.slice(0, 3).map(line => {
-      // Clean up the recommendation text
-      return line.trim().replace(/^\d+\.\s*/, ''); // Remove numbering if present
-    });
+    // Code-based analysis logic
+    const recommendations = generateCodeBasedRecommendations(bankAnalysis, expenseData);
 
     // Validate we have 3 recommendations
     if (recommendations && recommendations.length >= 3) {
-      console.log('✅ Real AI recommendations generated successfully:', recommendations);
+      console.log('✅ Code-based recommendations generated successfully:', recommendations);
       return { aiRecommendations: recommendations };
     } else {
-      console.error('❌ AI response incomplete - only got', recommendations?.length, 'recommendations');
-      throw new Error(`Gemini returned only ${recommendations?.length} recommendations instead of 3`);
+      console.error('❌ Code analysis incomplete - only got', recommendations?.length, 'recommendations');
+      throw new Error(`Code analysis returned only ${recommendations?.length} recommendations instead of 3`);
     }
 
   } catch (error: any) {
-    console.error('❌ Gemini AI analysis failed:', error);
+    console.error('❌ Code-based analysis failed:', error);
     throw error;
   }
 }
@@ -627,4 +740,53 @@ function calculateHealthScore(amount: number, transactionCount: number, bankType
   return Math.max(0, Math.min(100, score));
 }
 
-// Mock data function removed - using REAL data only
+// Code-based recommendation engine
+function generateCodeBasedRecommendations(bankAnalysis: any, expenseData: any[][]): string[] {
+  const recommendations: string[] = [];
+  const { bankAnalysis: banks, totalExpenses, topSpendingBank, mostActiveBank } = bankAnalysis;
+  
+  // Analysis 1: High spending analysis
+  const highSpendingBank = banks.find((bank: any) => Math.abs(bank.amount) > 2000);
+  if (highSpendingBank) {
+    recommendations.push(`🎯 High spending detected on ${highSpendingBank.bankType} - Consider setting monthly limits`);
+  } else {
+    recommendations.push(`🎯 Spending levels are manageable - Continue current budgeting approach`);
+  }
+  
+  // Analysis 2: Credit card usage warning
+  const creditCardBank = banks.find((bank: any) => bank.bankType.includes('Credit Card'));
+  if (creditCardBank && Math.abs(creditCardBank.amount) > 1500) {
+    recommendations.push(`⚠️ High credit card usage (${Math.abs(creditCardBank.amount).toFixed(0)} OMR) - Pay down balance`);
+  } else if (creditCardBank && Math.abs(creditCardBank.amount) > 500) {
+    recommendations.push(`⚠️ Monitor credit card spending - Currently at ${Math.abs(creditCardBank.amount).toFixed(0)} OMR`);
+  } else {
+    recommendations.push(`⚠️ Credit usage is controlled - Good financial discipline maintained`);
+  }
+  
+  // Analysis 3: Savings and debit optimization
+  const savingsBank = banks.find((bank: any) => bank.bankType.includes('Saving') || bank.bankType.includes('Wafrah'));
+  const debitBanks = banks.filter((bank: any) => bank.bankType.includes('Debit'));
+  
+  if (savingsBank && savingsBank.amount > 0) {
+    recommendations.push(`📊 Positive savings growth in ${savingsBank.bankType} - Keep building emergency fund`);
+  } else if (debitBanks.length > 0 && debitBanks.some((bank: any) => Math.abs(bank.amount) > 1000)) {
+    recommendations.push(`📊 Heavy debit usage detected - Consider automated savings transfers`);
+  } else {
+    recommendations.push(`📊 Balance spending across accounts - Optimize cash flow management`);
+  }
+  
+  // Analysis 4: Account activity patterns
+  const veryActiveBank = banks.find((bank: any) => bank.transactionCount > 50);
+  if (veryActiveBank) {
+    recommendations.push(`💳 ${veryActiveBank.bankType} is very active (${veryActiveBank.transactionCount} transactions) - Review for unnecessary fees`);
+  }
+  
+  // Analysis 5: Overdraft warning
+  const overdraftBank = banks.find((bank: any) => bank.bankType.includes('Overdraft'));
+  if (overdraftBank && Math.abs(overdraftBank.amount) > 800) {
+    recommendations.push(`🚨 High overdraft usage (${Math.abs(overdraftBank.amount).toFixed(0)} OMR) - Urgent attention needed`);
+  }
+  
+  // Return top 3 most relevant recommendations
+  return recommendations.slice(0, 3);
+}

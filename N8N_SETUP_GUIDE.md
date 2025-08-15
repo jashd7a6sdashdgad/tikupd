@@ -1,14 +1,67 @@
-# 🚀 N8N Setup Guide for Mahboob Personal Assistant
+# 🚀 Analytics API Fix Guide for N8N
 
-This guide will help you set up N8N integration with your Personal Assistant to enable workflow automation.
+## Problem
+The `/api/analytics/tracking` endpoint returns zeros because Google OAuth tokens are expired.
 
-## 📋 Prerequisites
+## Root Cause
+- ✅ API endpoint works correctly
+- ✅ Token fetching logic works  
+- ❌ Tokens are expired (401 errors from Google APIs)
+- ❌ Refresh token is also invalid ("unauthorized_client")
 
-- N8N instance (self-hosted or cloud)
-- Access to your deployment environment variables
-- Basic understanding of webhooks and APIs
+## Quick Fix
 
-## 🔧 Quick Setup
+### Method 1: Browser Re-authentication (Easiest)
+1. Open in your browser: `http://localhost:3001/api/auth/google`
+2. Complete Google OAuth flow
+3. Fresh tokens will be saved automatically
+4. N8N will now get real data from the API
+
+### Method 2: Manual Environment Update
+Update your `.env.local` with fresh tokens from Google OAuth Playground:
+1. Go to [Google OAuth 2.0 Playground](https://developers.google.com/oauthplayground/)
+2. Select scopes: Calendar API v3, Gmail API v1, Google Sheets API v4
+3. Authorize and get tokens
+4. Update environment:
+```env
+GOOGLE_ACCESS_TOKEN=ya29.a0AX9GBd...
+GOOGLE_REFRESH_TOKEN=1//05_Z9gp0...
+```
+
+### Method 3: N8N Header Method
+Send tokens directly in N8N HTTP requests:
+```http
+GET /api/analytics/tracking
+Authorization: Bearer YOUR_JWT_TOKEN
+X-Google-Access-Token: YOUR_FRESH_GOOGLE_ACCESS_TOKEN
+```
+
+## Expected Result After Fix
+```json
+{
+  "success": true,
+  "data": {
+    "overview": {
+      "totalEvents": 25,
+      "totalEmails": 150, 
+      "totalExpenses": 2500.50,
+      "totalContacts": 48
+    },
+    "debug": {
+      "hasRealData": true,
+      "apiResponses": {
+        "calendar": {"success": true, "count": 25},
+        "email": {"success": true, "count": 150},
+        "expenses": {"success": true, "count": 45}
+      }
+    }
+  }
+}
+```
+
+---
+
+# Original N8N Setup Guide
 
 ### Step 1: N8N Instance Setup
 

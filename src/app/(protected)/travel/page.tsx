@@ -415,44 +415,121 @@ export default function TravelCompanionPage() {
       return;
     }
     
+    setTranslatedText('Translating...');
+    
     try {
-      // Mock translation with more comprehensive examples
-      const translations: Record<string, Record<string, string>> = {
-        'Hello': {
-          ar: 'مرحبا', es: 'Hola', fr: 'Bonjour', de: 'Hallo', it: 'Ciao', 
-          pt: 'Olá', ru: 'Привет', ja: 'こんにちは', ko: '안녕하세요', zh: '你好'
+      // Use our local Vercel translation API
+      const response = await fetch('/api/translate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
         },
-        'Thank you': {
-          ar: 'شكرا لك', es: 'Gracias', fr: 'Merci', de: 'Danke', it: 'Grazie',
-          pt: 'Obrigado', ru: 'Спасибо', ja: 'ありがとう', ko: '감사합니다', zh: '谢谢'
-        },
-        'Where is the airport?': {
-          ar: 'أين المطار؟', es: '¿Dónde está el aeropuerto?', fr: 'Où est l\'aéroport?',
-          de: 'Wo ist der Flughafen?', it: 'Dov\'è l\'aeroporto?', pt: 'Onde fica o aeroporto?'
-        },
-        'How much does this cost?': {
-          ar: 'كم يكلف هذا؟', es: '¿Cuánto cuesta esto?', fr: 'Combien ça coûte?',
-          de: 'Wie viel kostet das?', it: 'Quanto costa?', pt: 'Quanto custa isto?'
-        },
-        'I need help': {
-          ar: 'أحتاج المساعدة', es: 'Necesito ayuda', fr: 'J\'ai besoin d\'aide',
-          de: 'Ich brauche Hilfe', it: 'Ho bisogno di aiuto', pt: 'Preciso de ajuda'
-        },
-        'Where is the hotel?': {
-          ar: 'أين الفندق؟', es: '¿Dónde está el hotel?', fr: 'Où est l\'hôtel?',
-          de: 'Wo ist das Hotel?', it: 'Dov\'è l\'hotel?', pt: 'Onde fica o hotel?'
+        body: JSON.stringify({
+          text: textToTranslate,
+          source: translateFrom,
+          target: translateTo
+        })
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.translatedText) {
+          setTranslatedText(data.translatedText);
+          return;
         }
-      };
-      
-      const result = translations[textToTranslate]?.[translateTo] || 
-                    `Translation from ${languages.find(l => l.code === translateFrom)?.name} to ${languages.find(l => l.code === translateTo)?.name} not available for "${textToTranslate}"`;
-      
-      setTranslatedText(result);
+      }
     } catch (error) {
-      setTranslatedText('Translation failed. Please try again.');
+      console.error('Local translation API error:', error);
+    }
+    
+    // Fallback to enhanced offline translations
+    const fallback = getFallbackTranslation(textToTranslate, translateTo);
+    if (fallback) {
+      setTranslatedText(fallback);
+    } else {
+      setTranslatedText(`Unable to translate "${textToTranslate}" from ${languages.find(l => l.code === translateFrom)?.name} to ${languages.find(l => l.code === translateTo)?.name}. LibreTranslate service is currently unavailable.`);
     }
   };
-  
+
+  const getFallbackTranslation = (text: string, targetLang: string): string | null => {
+    const fallbackTranslations: Record<string, Record<string, string>> = {
+      'Hello': {
+        ar: 'مرحبا', es: 'Hola', fr: 'Bonjour', de: 'Hallo', it: 'Ciao', 
+        pt: 'Olá', ru: 'Привет', ja: 'こんにちは', ko: '안녕하세요', zh: '你好',
+        th: 'สวัสดี', hi: 'नमस्ते', tr: 'Merhaba', pl: 'Cześć', nl: 'Hallo'
+      },
+      'hello': {
+        ar: 'مرحبا', es: 'hola', fr: 'bonjour', de: 'hallo', it: 'ciao', 
+        pt: 'olá', ru: 'привет', ja: 'こんにちは', ko: '안녕하세요', zh: '你好',
+        th: 'สวัสดี', hi: 'नमस्ते', tr: 'merhaba', pl: 'cześć', nl: 'hallo'
+      },
+      'Thank you': {
+        ar: 'شكرا لك', es: 'Gracias', fr: 'Merci', de: 'Danke', it: 'Grazie',
+        pt: 'Obrigado', ru: 'Спасибо', ja: 'ありがとう', ko: '감사합니다', zh: '谢谢',
+        th: 'ขอบคุณ', hi: 'धन्यवाद', tr: 'Teşekkür ederim', pl: 'Dziękuję', nl: 'Dank je'
+      },
+      'Good morning': {
+        ar: 'صباح الخير', es: 'Buenos días', fr: 'Bonjour', de: 'Guten Morgen', it: 'Buongiorno',
+        pt: 'Bom dia', ru: 'Доброе утро', ja: 'おはよう', ko: '좋은 아침', zh: '早上好',
+        th: 'สวัสดีตอนเช้า', hi: 'शुभ प्रभात', tr: 'Günaydın', pl: 'Dzień dobry', nl: 'Goedemorgen'
+      },
+      'Excuse me': {
+        ar: 'عذراً', es: 'Disculpe', fr: 'Excusez-moi', de: 'Entschuldigung', it: 'Scusi',
+        pt: 'Com licença', ru: 'Извините', ja: 'すみません', ko: '실례합니다', zh: '不好意思',
+        th: 'ขอโทษ', hi: 'माफ करें', tr: 'Özür dilerim', pl: 'Przepraszam', nl: 'Excuseer me'
+      },
+      'Please': {
+        ar: 'من فضلك', es: 'Por favor', fr: 'S\'il vous plaît', de: 'Bitte', it: 'Per favore',
+        pt: 'Por favor', ru: 'Пожалуйста', ja: 'お願いします', ko: '제발', zh: '请',
+        th: 'กรุณา', hi: 'कृपया', tr: 'Lütfen', pl: 'Proszę', nl: 'Alsjeblieft'
+      },
+      'Where is the airport?': {
+        ar: 'أين المطار؟', es: '¿Dónde está el aeropuerto?', fr: 'Où est l\'aéroport?',
+        de: 'Wo ist der Flughafen?', it: 'Dov\'è l\'aeroporto?', pt: 'Onde fica o aeroporto?',
+        th: 'สนามบินอยู่ที่ไหน?', hi: 'हवाई अड्डा कहाँ है?', tr: 'Havaalanı nerede?'
+      },
+      'How much does this cost?': {
+        ar: 'كم يكلف هذا؟', es: '¿Cuánto cuesta esto?', fr: 'Combien ça coûte?',
+        de: 'Wie viel kostet das?', it: 'Quanto costa?', pt: 'Quanto custa isto?',
+        th: 'นี่ราคาเท่าไหร่?', hi: 'यह कितना खर्च करता है?', tr: 'Bu ne kadar?'
+      },
+      'I need help': {
+        ar: 'أحتاج المساعدة', es: 'Necesito ayuda', fr: 'J\'ai besoin d\'aide',
+        de: 'Ich brauche Hilfe', it: 'Ho bisogno di aiuto', pt: 'Preciso de ajuda',
+        th: 'ฉันต้องการความช่วยเหลือ', hi: 'मुझे मदद चाहिए', tr: 'Yardıma ihtiyacım var'
+      },
+      'Where is the hotel?': {
+        ar: 'أين الفندق؟', es: '¿Dónde está el hotel?', fr: 'Où est l\'hôtel?',
+        de: 'Wo ist das Hotel?', it: 'Dov\'è l\'hotel?', pt: 'Onde fica o hotel?',
+        th: 'โรงแรมอยู่ที่ไหน?', hi: 'होटल कहाँ है?', tr: 'Otel nerede?'
+      },
+      'Do you speak English?': {
+        ar: 'هل تتحدث الإنجليزية؟', es: '¿Hablas inglés?', fr: 'Parlez-vous anglais?',
+        de: 'Sprechen Sie Englisch?', it: 'Parli inglese?', pt: 'Você fala inglês?',
+        th: 'คุณพูดภาษาอังกฤษได้ไหม?', hi: 'क्या आप अंग्रेजी बोलते हैं?', tr: 'İngilizce biliyor musunuz?'
+      }
+    };
+    
+    // Try exact match first
+    if (fallbackTranslations[text]?.[targetLang]) {
+      return fallbackTranslations[text][targetLang];
+    }
+    
+    // Try case-insensitive match
+    const lowerText = text.toLowerCase();
+    if (fallbackTranslations[lowerText]?.[targetLang]) {
+      return fallbackTranslations[lowerText][targetLang];
+    }
+    
+    // Try capitalized version
+    const capitalizedText = text.charAt(0).toUpperCase() + text.slice(1).toLowerCase();
+    if (fallbackTranslations[capitalizedText]?.[targetLang]) {
+      return fallbackTranslations[capitalizedText][targetLang];
+    }
+    
+    return null;
+  };
+
   // Document management functions
   const addDocument = () => {
     if (!newDocument.name.trim()) return;
@@ -1320,6 +1397,7 @@ export default function TravelCompanionPage() {
             <Card className="bg-white/70 backdrop-blur-xl border-2 border-white/30 rounded-3xl shadow-xl">
               <CardHeader>
                 <CardTitle className="text-2xl text-gray-800">Language Translation</CardTitle>
+                <p className="text-sm text-gray-600">Multiple free services with offline fallbacks</p>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
@@ -1383,6 +1461,22 @@ export default function TravelCompanionPage() {
                       Thank you
                     </Button>
                     <Button 
+                      onClick={() => setTextToTranslate('Good morning')}
+                      variant="outline" 
+                      size="sm" 
+                      className="text-xs"
+                    >
+                      Good morning
+                    </Button>
+                    <Button 
+                      onClick={() => setTextToTranslate('Excuse me')}
+                      variant="outline" 
+                      size="sm" 
+                      className="text-xs"
+                    >
+                      Excuse me
+                    </Button>
+                    <Button 
                       onClick={() => setTextToTranslate('Where is the airport?')}
                       variant="outline" 
                       size="sm" 
@@ -1413,6 +1507,22 @@ export default function TravelCompanionPage() {
                       className="text-xs"
                     >
                       Hotel?
+                    </Button>
+                    <Button 
+                      onClick={() => setTextToTranslate('Please')}
+                      variant="outline" 
+                      size="sm" 
+                      className="text-xs"
+                    >
+                      Please
+                    </Button>
+                    <Button 
+                      onClick={() => setTextToTranslate('Do you speak English?')}
+                      variant="outline" 
+                      size="sm" 
+                      className="text-xs"
+                    >
+                      Speak English?
                     </Button>
                   </div>
                 </div>

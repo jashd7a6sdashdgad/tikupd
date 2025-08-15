@@ -323,11 +323,10 @@ export async function DELETE(request: NextRequest) {
       const dataRows = rows.slice(1);
       let targetRowIndex = -1;
       
-      for (let i = 0; i < dataRows.length; i++) {
-        if (i.toString() === id) {
-          targetRowIndex = i + 2; // +2 because: +1 for header row, +1 for 1-based indexing
-          break;
-        }
+      // ID is 1-based index from frontend, so we need to find the corresponding row
+      const itemIndex = parseInt(id) - 1; // Convert to 0-based
+      if (itemIndex >= 0 && itemIndex < dataRows.length) {
+        targetRowIndex = itemIndex + 2; // +2 because: +1 for header row, +1 for 1-based indexing
       }
 
       if (targetRowIndex === -1) {
