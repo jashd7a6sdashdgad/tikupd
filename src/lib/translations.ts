@@ -15,7 +15,6 @@ export const translations: Record<string, Translation> = {
     weather: "Weather",
     chat: "Chat",
     settings: "Settings",
-    webScraper: "Web Scraper",
     facebook: "Facebook",
     instagram: "Instagram",
     messenger: "Messenger",
@@ -25,6 +24,19 @@ export const translations: Record<string, Translation> = {
     hotelExpenses: "Hotel Expenses",
     shoppingList: "Shopping List",
     signOut: "Sign out",
+    security: "Security",
+    photos: "Photos",
+    workflowBuilder: "Workflow Builder",
+    islamicSettings: "Islamic Settings",
+    customization: "Customization",
+    apiTokens: "API Tokens",
+    accessibility: "Accessibility",
+    balanceReport: "Balance Report",
+    featuresDemo: "Features Demo",
+    emailIntelligence: "Email Intelligence",
+    emailSummary: "Email Summary",
+    imageGeneration: "Image Generation",
+    thinking: "Thinking",
     
     // Common
     save: "Save",
@@ -166,7 +178,6 @@ export const translations: Record<string, Translation> = {
     tags: "Tags",
     
     // Photos
-    photos: "Photos",
     manageYourPhotoAlbum: "Manage your photo album",
     uploadPhotos: "Upload Photos",
     uploading: "Uploading...",
@@ -316,7 +327,6 @@ export const translations: Record<string, Translation> = {
     voiceAdd: "Voice Add",
     
     // Web Scraper
-    webScraperTitle: "Web Scraper",
     url: "URL",
     scrapeData: "Scrape Data",
     scrapeWebsite: "Scrape Website",
@@ -633,7 +643,6 @@ export const translations: Record<string, Translation> = {
     chatClose: "Close",
     youSaid: "You said",
     startListening: "Start Listening",
-    thinking: "Thinking",
     textVoiceAutoPlay: "Text + Voice • Auto-play:",
     on: "On",
     off: "Off",
@@ -662,7 +671,6 @@ export const translations: Record<string, Translation> = {
     weather: "الطقس",
     chat: "المحادثة",
     settings: "الإعدادات",
-    webScraper: "مستخرج الويب",
     facebook: "فيسبوك",
     instagram: "إنستغرام",
     messenger: "ماسنجر",
@@ -672,6 +680,19 @@ export const translations: Record<string, Translation> = {
     hotelExpenses: "مصروفات الفنادق",
     shoppingList: "قائمة التسوق",
     signOut: "تسجيل الخروج",
+    security: "الأمان",
+    photos: "الصور",
+    workflowBuilder: "منشئ سير العمل",
+    islamicSettings: "الإعدادات الإسلامية",
+    customization: "التخصيص",
+    apiTokens: "رموز API",
+    accessibility: "إمكانية الوصول",
+    balanceReport: "تقرير الرصيد",
+    featuresDemo: "عرض الميزات",
+    emailIntelligence: "ذكاء البريد الإلكتروني",
+    emailSummary: "ملخص البريد الإلكتروني",
+    imageGeneration: "إنشاء الصور",
+    thinking: "التفكير",
     
     // Common
     save: "حفظ",
@@ -813,7 +834,6 @@ export const translations: Record<string, Translation> = {
     tags: "العلامات",
     
     // Photos
-    photos: "الصور",
     manageYourPhotoAlbum: "إدارة ألبوم الصور الخاص بك",
     uploadPhotos: "رفع الصور",
     uploading: "جاري الرفع...",
@@ -963,7 +983,6 @@ export const translations: Record<string, Translation> = {
     voiceAdd: "إضافة صوتية",
     
     // Web Scraper
-    webScraperTitle: "مستخرج الويب",
     url: "رابط الموقع",
     scrapeData: "استخراج البيانات",
     scrapeWebsite: "استخراج الموقع",
@@ -1242,7 +1261,6 @@ export const translations: Record<string, Translation> = {
     closeVoiceAssistant: "إغلاق",
     youSaid: "قلت",
     startListening: "بدء الاستماع",
-    thinking: "أفكر",
     textVoiceAutoPlay: "نص + صوت • التشغيل التلقائي:",
     on: "مفعل",
     off: "مغلق",

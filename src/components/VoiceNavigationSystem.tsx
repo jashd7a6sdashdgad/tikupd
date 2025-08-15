@@ -246,13 +246,6 @@ export const VoiceNavigationSystem: React.FC<VoiceNavigationSystemProps> = ({
       category: 'navigation'
     },
     {
-      pattern: ['web scraper', 'scraper', 'web crawl'],
-      action: () => router.push('/web-scraper'),
-      description: 'Open Web Scraper',
-      icon: <Command className="h-4 w-4" />,
-      category: 'navigation'
-    },
-    {
       pattern: ['budget', 'budgeting', 'financial planning'],
       action: () => router.push('/budget'),
       description: 'Open Budget',
@@ -264,13 +257,6 @@ export const VoiceNavigationSystem: React.FC<VoiceNavigationSystemProps> = ({
       action: () => router.push('/hotel-expenses'),
       description: 'Open Hotel Expenses',
       icon: <DollarSign className="h-4 w-4" />,
-      category: 'navigation'
-    },
-    {
-      pattern: ['music', 'songs', 'spotify', 'audio', 'player'],
-      action: () => router.push('/music'),
-      description: 'Open Music Player',
-      icon: <Music className="h-4 w-4" />,
       category: 'navigation'
     },
     {
@@ -722,7 +708,7 @@ export const VoiceNavigationSystem: React.FC<VoiceNavigationSystemProps> = ({
               <p className="text-indigo-700 font-semibold">"Help"</p>
             </div>
             <div className="bg-white/70 p-3 rounded-xl border border-indigo-200">
-              <p className="text-indigo-700 font-semibold">"Play music"</p>
+              <p className="text-indigo-700 font-semibold">"Open travel"</p>
             </div>
             <div className="bg-white/70 p-3 rounded-xl border border-indigo-200">
               <p className="text-indigo-700 font-semibold">"Go back"</p>

@@ -147,7 +147,7 @@ export async function GET(request: NextRequest) {
     }
     
     // Get Google authentication from multiple sources
-    let googleTokens = getGoogleAuth(request);
+    const googleTokens = getGoogleAuth(request);
     
     if (!googleTokens?.access_token) {
       return NextResponse.json({ 
@@ -351,7 +351,7 @@ export async function POST(request: NextRequest) {
     }
     
     // Get Google authentication from multiple sources
-    let googleTokens = getGoogleAuth(request);
+    const googleTokens = getGoogleAuth(request);
     
     if (!googleTokens?.access_token) {
       return NextResponse.json({ 
@@ -468,7 +468,7 @@ export async function DELETE(request: NextRequest) {
     }
     
     // Get Google authentication from multiple sources
-    let googleTokens = getGoogleAuth(request);
+    const googleTokens = getGoogleAuth(request);
     
     if (!googleTokens?.access_token) {
       return NextResponse.json({ 

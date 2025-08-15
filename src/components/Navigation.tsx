@@ -65,7 +65,7 @@ const getNavigation = (t: (key: string) => string): NavigationItem[] => [
   },
   {
     key: 'workflow-builder',
-    name: 'Workflow Builder',
+    name: t('workflowBuilder'),
     href: '/workflow-builder',
     icon: Brain
   },
@@ -124,26 +124,14 @@ const getNavigation = (t: (key: string) => string): NavigationItem[] => [
     icon: Stethoscope
   },
   {
-    key: 'music',
-    name: t('music') || 'Music',
-    href: '/music',
-    icon: Music
-  },
-  {
     key: 'weather',
     name: t('weather'),
     href: '/weather',
     icon: Sun
   },
   {
-    key: 'webScraper',
-    name: t('webScraper'),
-    href: '/web-scraper',
-    icon: Globe
-  },
-  {
     key: 'islamic-settings',
-    name: 'Islamic Settings',
+    name: t('islamicSettings'),
     href: '/islamic-settings',
     icon: Moon
   },
@@ -155,19 +143,19 @@ const getNavigation = (t: (key: string) => string): NavigationItem[] => [
   },
   {
     key: 'travel',
-    name: t('travel') || 'Travel Companion',
+    name: t('travel'),
     href: '/travel',
     icon: Compass
   },
   {
     key: 'customization',
-    name: 'Customization',
+    name: t('customization'),
     href: '/customization',
     icon: Palette
   },
   {
     key: 'api-tokens',
-    name: 'API Tokens',
+    name: t('apiTokens'),
     href: '/api-tokens',
     icon: Key
   },
