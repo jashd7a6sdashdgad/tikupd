@@ -291,45 +291,37 @@ export async function GET(request: NextRequest) {
           expenses: { success: expensesData.success, count: expensesData.data?.length || 0 }
         });
 
-        let internalToken: string = "";
-        // Fetch bank-wise data from the existing API
+        // Analyze bank-wise data directly from expenses data
         try {
-          console.log('🏦 Fetching bank-wise analytics...');
-          // Create a proper JWT token for internal API call
-          internalToken = jwt.sign(
+          console.log('🏦 Analyzing bank-wise data directly...');
+          if (expensesData.success && expensesData.data && Array.isArray(expensesData.data) && expensesData.data.length > 1) {
+            const bankAnalysis = analyzeBankDataDirect(expensesData.data);
+            bankWiseData = { success: true, data: bankAnalysis };
+            console.log('✅ Bank-wise data analyzed successfully');
+          } else {
+            console.log('⚠️ No expenses data available for bank analysis');
+            bankWiseData = { success: false, data: null, error: 'No expenses data available' };
+          }
+        } catch (error) {
+          console.error('❌ Bank-wise analysis error:', error);
+          bankWiseData = { success: false, data: null, error: error instanceof Error ? error.message : 'Bank-wise analysis error' };
+        }
+
+        // Fetch workflow data  
+        try {
+          console.log('🔧 Fetching workflow analytics...');
+          
+          // Create internal token for workflow API
+          const jwt = require('jsonwebtoken');
+          const workflowToken = jwt.sign(
             { userId: '1', username: 'analytics-system', email: 'system@analytics.com', type: 'website-jwt' },
             process.env.JWT_SECRET || 'punz',
             { expiresIn: '1h' }
           );
           
-          const bankWiseResponse = await fetch(`${deploymentConfig.baseUrl}/api/analytics/bank-wise`, {
-            headers: {
-              'Authorization': `Bearer ${internalToken}`,
-              'x-google-access-token': googleTokens.access_token,
-              'x-google-refresh-token': googleTokens.refresh_token || '',
-              'Content-Type': 'application/json'
-            }
-          });
-          
-          if (bankWiseResponse.ok) {
-            const bankWiseResult = await bankWiseResponse.json();
-            bankWiseData = { success: true, data: bankWiseResult.data };
-            console.log('✅ Bank-wise data fetched successfully');
-          } else {
-            console.error('❌ Bank-wise API error:', bankWiseResponse.status);
-            bankWiseData = { success: false, data: null, error: `Bank-wise API error: ${bankWiseResponse.status}` };
-          }
-        } catch (error) {
-          console.error('❌ Bank-wise fetch error:', error);
-          bankWiseData = { success: false, data: null, error: error instanceof Error ? error.message : 'Bank-wise error' };
-        }
-
-        // Fetch workflow data
-        try {
-          console.log('🔧 Fetching workflow analytics...');
           const workflowResponse = await fetch(`${deploymentConfig.baseUrl}/api/workflows`, {
             headers: {
-              'Authorization': `Bearer ${internalToken}`,
+              'Authorization': `Bearer ${workflowToken}`,
               'Content-Type': 'application/json'
             }
           });
@@ -350,9 +342,17 @@ export async function GET(request: NextRequest) {
         // Fetch music library data
         try {
           console.log('🎵 Fetching music analytics...');
+          
+          // Create internal token for music API
+          const musicToken = jwt.sign(
+            { userId: '1', username: 'analytics-system', email: 'system@analytics.com', type: 'website-jwt' },
+            process.env.JWT_SECRET || 'punz',
+            { expiresIn: '1h' }
+          );
+          
           const musicResponse = await fetch(`${deploymentConfig.baseUrl}/api/music/library`, {
             headers: {
-              'Authorization': `Bearer ${internalToken}`,
+              'Authorization': `Bearer ${musicToken}`,
               'Content-Type': 'application/json'
             }
           });
@@ -927,4 +927,326 @@ function extractOmaniEvents(events: any[]): any[] {
     date: event.start.dateTime,
     type: 'omani_cultural'
   }));
+}
+
+// Bank analysis function (copied from bank-wise API)
+function analyzeBankDataDirect(expenseData: any[][]) {
+  const bankTypes = [
+    'Ahli Bank Saving Debit Account',
+    'Ahli (Wafrah)', 
+    'Ahli Bank Overdraft Current Account',
+    'Ahli Bank Main Credit Card',
+    'Bank Muscat Main Debit Account'
+  ];
+
+  const headers = expenseData[0] || [];
+  const dataRows = expenseData.slice(1);
+
+  const bankIndex = headers.findIndex(h => h && (
+    h.toLowerCase().includes('account type') || 
+    h.toLowerCase().includes('account name') ||
+    h.toLowerCase().includes('account type/name') ||
+    h.toLowerCase().includes('bank')
+  ));
+  const creditAmountIndex = headers.findIndex(h => h && h.toLowerCase().includes('credit amount'));
+  const debitAmountIndex = headers.findIndex(h => h && h.toLowerCase().includes('debit amount'));
+  
+  // Find balance columns
+  const creditCardBalanceIndex = headers.findIndex(h => h && (
+    h.toLowerCase().includes('credit card balance') ||
+    h.toLowerCase().trim() === 'credit card balance' ||
+    h.trim() === 'Credit Card Balance'
+  ));
+  
+  const debitCardBalanceIndex = headers.findIndex(h => h && (
+    h.toLowerCase().includes('debit card balance') ||
+    h.toLowerCase().trim() === 'debit card balance' ||
+    h.trim() === 'Debit Card Balance'
+  ));
+  
+  console.log('🏦 Bank analysis setup:', {
+    bankIndex,
+    creditAmountIndex,
+    debitAmountIndex,
+    creditCardBalanceIndex,
+    debitCardBalanceIndex,
+    headersCount: headers.length,
+    dataRowsCount: dataRows.length
+  });
+
+  const bankData: { [key: string]: { 
+    amount: number; 
+    count: number; 
+    transactions: any[]; 
+    availableBalance: number;
+    creditAmount: number;
+    debitAmount: number;
+  } } = {};
+  let totalExpenses = 0;
+
+  // Initialize bank data
+  bankTypes.forEach(bank => {
+    bankData[bank] = { 
+      amount: 0, 
+      count: 0, 
+      transactions: [], 
+      availableBalance: 0,
+      creditAmount: 0,
+      debitAmount: 0
+    };
+  });
+  
+  // Process balance data first
+  const balanceData: { [key: string]: { balance: number; lastUpdatedRow: number } } = {};
+  
+  dataRows.forEach((row, rowIndex) => {
+    const bankName = row[bankIndex] || '';
+    if (!bankName.trim()) return;
+    
+    // Check for balance in appropriate columns
+    let balance = 0;
+    
+    if (creditCardBalanceIndex !== -1) {
+      const rawValue = row[creditCardBalanceIndex];
+      if (rawValue !== undefined && rawValue !== '' && rawValue !== null) {
+        const parsed = parseFloat(String(rawValue).replace(/[^0-9.-]/g, ''));
+        if (!isNaN(parsed) && parsed !== 0) {
+          balance = parsed;
+        }
+      }
+    }
+    
+    if (balance === 0 && debitCardBalanceIndex !== -1) {
+      const rawValue = row[debitCardBalanceIndex];
+      if (rawValue !== undefined && rawValue !== '' && rawValue !== null) {
+        const parsed = parseFloat(String(rawValue).replace(/[^0-9.-]/g, ''));
+        if (!isNaN(parsed) && parsed !== 0) {
+          balance = parsed;
+        }
+      }
+    }
+    
+    if (balance !== 0) {
+      const existingEntry = balanceData[bankName];
+      const actualRowNumber = rowIndex + 2;
+      
+      if (!existingEntry || actualRowNumber > existingEntry.lastUpdatedRow) {
+        balanceData[bankName] = {
+          balance: balance,
+          lastUpdatedRow: actualRowNumber
+        };
+      }
+    }
+  });
+
+  // Process transactions
+  dataRows.forEach(row => {
+    const bankName = row[bankIndex] || '';
+    
+    let creditAmount = 0;
+    let debitAmount = 0;
+    
+    if (creditAmountIndex !== -1 && debitAmountIndex !== -1) {
+      creditAmount = parseFloat(row[creditAmountIndex] || '0');
+      debitAmount = parseFloat(row[debitAmountIndex] || '0');
+    }
+
+    // Match bank names
+    let matchedBank: string | null = null;
+    const normalizedBankName = bankName.toLowerCase().trim();
+    
+    // Exact matches first
+    if (normalizedBankName === 'debit card (wafrah)') {
+      matchedBank = 'Ahli (Wafrah)';
+    } else if (normalizedBankName === 'overdraft current account') {
+      matchedBank = 'Ahli Bank Overdraft Current Account';
+    } else if (normalizedBankName === 'credit card') {
+      matchedBank = 'Ahli Bank Main Credit Card';
+    } else if (normalizedBankName === 'saving debit account (tofer)') {
+      matchedBank = 'Ahli Bank Saving Debit Account';
+    } else if (normalizedBankName.includes('bank muscat') && normalizedBankName.includes('ibky')) {
+      matchedBank = 'Bank Muscat Main Debit Account';
+    } else {
+      // Fallback patterns
+      if (normalizedBankName.includes('wafrah') || normalizedBankName.includes('wafra')) {
+        matchedBank = 'Ahli (Wafrah)';
+      } else if (normalizedBankName.includes('overdraft')) {
+        matchedBank = 'Ahli Bank Overdraft Current Account';
+      } else if (normalizedBankName.includes('credit') && normalizedBankName.includes('card')) {
+        matchedBank = 'Ahli Bank Main Credit Card';
+      } else if (normalizedBankName.includes('muscat')) {
+        matchedBank = 'Bank Muscat Main Debit Account';
+      } else if (normalizedBankName.includes('tofer') || (normalizedBankName.includes('saving') && normalizedBankName.includes('debit'))) {
+        matchedBank = 'Ahli Bank Saving Debit Account';
+      }
+    }
+
+    if (matchedBank && (creditAmount !== 0 || debitAmount !== 0)) {
+      const totalAmount = Math.abs(creditAmount) + Math.abs(debitAmount);
+      bankData[matchedBank].amount += totalAmount;
+      bankData[matchedBank].count += 1;
+      bankData[matchedBank].transactions.push(row);
+      bankData[matchedBank].creditAmount += creditAmount;
+      bankData[matchedBank].debitAmount += Math.abs(debitAmount);
+      
+      if (debitAmount > 0) {
+        totalExpenses += debitAmount;
+      }
+    }
+  });
+  
+  // Assign available balances to matched bank types
+  Object.entries(balanceData).forEach(([bankName, balanceInfo]) => {
+    let matchedBankType: string | null = null;
+    const normalizedBankName = bankName.toLowerCase().trim();
+    
+    // Same matching logic as transactions
+    if (normalizedBankName === 'debit card (wafrah)') {
+      matchedBankType = 'Ahli (Wafrah)';
+    } else if (normalizedBankName === 'overdraft current account') {
+      matchedBankType = 'Ahli Bank Overdraft Current Account';
+    } else if (normalizedBankName === 'credit card') {
+      matchedBankType = 'Ahli Bank Main Credit Card';
+    } else if (normalizedBankName === 'saving debit account (tofer)') {
+      matchedBankType = 'Ahli Bank Saving Debit Account';
+    } else if (normalizedBankName.includes('bank muscat') && normalizedBankName.includes('ibky')) {
+      matchedBankType = 'Bank Muscat Main Debit Account';
+    } else {
+      // Fallback patterns
+      if (normalizedBankName.includes('wafrah') || normalizedBankName.includes('wafra')) {
+        matchedBankType = 'Ahli (Wafrah)';
+      } else if (normalizedBankName.includes('overdraft')) {
+        matchedBankType = 'Ahli Bank Overdraft Current Account';
+      } else if (normalizedBankName.includes('credit') && normalizedBankName.includes('card')) {
+        matchedBankType = 'Ahli Bank Main Credit Card';
+      } else if (normalizedBankName.includes('muscat')) {
+        matchedBankType = 'Bank Muscat Main Debit Account';
+      } else if (normalizedBankName.includes('tofer') || (normalizedBankName.includes('saving') && normalizedBankName.includes('debit'))) {
+        matchedBankType = 'Ahli Bank Saving Debit Account';
+      }
+    }
+    
+    if (matchedBankType && bankData[matchedBankType]) {
+      bankData[matchedBankType].availableBalance = balanceInfo.balance;
+    }
+  });
+
+  // Create bank analysis
+  const bankAnalysis = bankTypes.map(bank => {
+    const data = bankData[bank];
+    const percentage = totalExpenses > 0 ? (data.debitAmount / totalExpenses) * 100 : 0;
+    
+    return {
+      bankType: bank,
+      amount: data.amount,
+      creditAmount: data.creditAmount,
+      debitAmount: data.debitAmount,
+      percentage: percentage,
+      transactionCount: data.count,
+      availableBalance: data.availableBalance,
+      insights: generateBankInsightDirect(bank, data.amount, data.count),
+      trend: determineTrendDirect(data.amount, data.count),
+      healthScore: calculateHealthScoreDirect(data.amount, data.count, bank)
+    };
+  });
+
+  const topSpendingBank = bankAnalysis.reduce((max, bank) => 
+    bank.debitAmount > max.debitAmount ? bank : max
+  ).bankType;
+
+  const mostActiveBank = bankAnalysis.reduce((max, bank) => 
+    bank.transactionCount > max.transactionCount ? bank : max
+  ).bankType;
+
+  const bestPerformingBank = bankAnalysis.reduce((max, bank) => 
+    bank.healthScore > max.healthScore ? bank : max
+  ).bankType;
+
+  const overallHealthScore = Math.round(
+    bankAnalysis.reduce((sum, bank) => sum + bank.healthScore, 0) / bankAnalysis.length
+  );
+
+  console.log('🏦 Bank analysis completed:', {
+    totalBanks: bankAnalysis.length,
+    totalExpenses,
+    topSpendingBank,
+    mostActiveBank,
+    bankSummary: bankAnalysis.map(b => ({ 
+      bank: b.bankType, 
+      debit: b.debitAmount, 
+      credit: b.creditAmount, 
+      balance: b.availableBalance,
+      transactions: b.transactionCount 
+    }))
+  });
+
+  return {
+    bankAnalysis,
+    totalExpenses,
+    overallHealthScore,
+    topSpendingBank,
+    mostActiveBank,
+    bestPerformingBank,
+    aiRecommendations: generateSimpleRecommendations(bankAnalysis, totalExpenses)
+  };
+}
+
+function generateBankInsightDirect(bankType: string, amount: number, transactionCount: number): string {
+  if (bankType.includes('Credit Card')) {
+    return amount > 1000 ? 'High credit usage this month' : 'Moderate credit card activity';
+  } else if (bankType.includes('Wafrah')) {
+    return amount > 0 ? 'Positive savings activity' : 'Consider increasing savings contributions';
+  } else if (bankType.includes('Overdraft')) {
+    return Math.abs(amount) > 500 ? 'High overdraft usage detected' : 'Controlled overdraft usage';
+  } else if (bankType.includes('Saving')) {
+    return transactionCount > 50 ? 'Very active primary account' : 'Regular account usage';
+  } else {
+    return 'Standard account activity';
+  }
+}
+
+function determineTrendDirect(amount: number, count: number): 'up' | 'down' | 'stable' {
+  if (Math.abs(amount) > 1000) return 'up';
+  if (Math.abs(amount) < 100) return 'down';
+  return 'stable';
+}
+
+function calculateHealthScoreDirect(amount: number, transactionCount: number, bankType: string): number {
+  let score = 50;
+  
+  if (bankType.includes('Wafrah') && amount > 0) score += 30;
+  if (bankType.includes('Credit Card') && Math.abs(amount) > 2000) score -= 20;
+  if (bankType.includes('Overdraft') && Math.abs(amount) > 1000) score -= 15;
+  
+  if (transactionCount > 0 && transactionCount < 100) score += 10;
+  if (transactionCount > 100) score -= 5;
+  
+  return Math.max(0, Math.min(100, score));
+}
+
+function generateSimpleRecommendations(bankAnalysis: any[], totalExpenses: number): string[] {
+  const recommendations: string[] = [];
+  
+  const highSpendingBank = bankAnalysis.find(bank => bank.debitAmount > 2000);
+  if (highSpendingBank) {
+    recommendations.push(`🎯 High spending on ${highSpendingBank.bankType} - Consider budget limits`);
+  } else {
+    recommendations.push(`🎯 Spending levels are manageable across all accounts`);
+  }
+  
+  const creditCardBank = bankAnalysis.find(bank => bank.bankType.includes('Credit Card'));
+  if (creditCardBank && creditCardBank.debitAmount > 1500) {
+    recommendations.push(`⚠️ High credit card usage (${creditCardBank.debitAmount.toFixed(0)} OMR) - Pay down balance`);
+  } else {
+    recommendations.push(`⚠️ Credit usage is controlled - Good financial discipline`);
+  }
+  
+  const savingsBank = bankAnalysis.find(bank => bank.bankType.includes('Saving') || bank.bankType.includes('Wafrah'));
+  if (savingsBank && savingsBank.creditAmount > 0) {
+    recommendations.push(`📊 Positive savings activity - Keep building emergency fund`);
+  } else {
+    recommendations.push(`📊 Consider automated savings transfers for better financial health`);
+  }
+  
+  return recommendations.slice(0, 3);
 }

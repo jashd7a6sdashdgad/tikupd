@@ -13,7 +13,7 @@ async function testAnalyticsTracking() {
   try {
     console.log('📡 Sending request to analytics tracking API...');
     
-    const response = await fetch('http://localhost:3001/api/analytics/tracking', {
+    const response = await fetch('http://localhost:3000/api/analytics/tracking', {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${testToken}`,
@@ -44,7 +44,16 @@ async function testAnalyticsTracking() {
       console.log('\n🏦 Bank-wise Breakdown:');
       if (result.data.bankWiseBreakdown && result.data.bankWiseBreakdown.length > 0) {
         result.data.bankWiseBreakdown.forEach(bank => {
-          console.log(`  - ${bank.bankType}: ${bank.amount} OMR (${bank.transactionCount} transactions)`);
+          console.log(`\n📊 ${bank.bankType}:`);
+          console.log(`  💰 Total Amount: ${bank.amount} OMR`);
+          console.log(`  💳 Credit Amount: ${bank.creditAmount} OMR`);
+          console.log(`  💸 Debit Amount: ${bank.debitAmount} OMR`);
+          console.log(`  📈 Percentage: ${bank.percentage.toFixed(2)}%`);
+          console.log(`  🔢 Transactions: ${bank.transactionCount}`);
+          console.log(`  💰 Available Balance: ${bank.availableBalance} OMR`);
+          console.log(`  ⚡ Health Score: ${bank.healthScore}`);
+          console.log(`  📝 Insights: ${bank.insights}`);
+          console.log(`  📊 Trend: ${bank.trend}`);
         });
       } else {
         console.log('  - No bank-wise data available');
