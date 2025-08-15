@@ -291,13 +291,12 @@ export async function GET(request: NextRequest) {
           expenses: { success: expensesData.success, count: expensesData.data?.length || 0 }
         });
 
+        let internalToken: string = "";
         // Fetch bank-wise data from the existing API
         try {
           console.log('🏦 Fetching bank-wise analytics...');
-          
           // Create a proper JWT token for internal API call
-          const jwt = require('jsonwebtoken');
-          const internalToken = jwt.sign(
+          internalToken = jwt.sign(
             { userId: '1', username: 'analytics-system', email: 'system@analytics.com', type: 'website-jwt' },
             process.env.JWT_SECRET || 'punz',
             { expiresIn: '1h' }
