@@ -312,7 +312,6 @@ export async function GET(request: NextRequest) {
           console.log('🔧 Fetching workflow analytics...');
           
           // Create internal token for workflow API
-          const jwt = require('jsonwebtoken');
           const workflowToken = jwt.sign(
             { userId: '1', username: 'analytics-system', email: 'system@analytics.com', type: 'website-jwt' },
             process.env.JWT_SECRET || 'punz',
