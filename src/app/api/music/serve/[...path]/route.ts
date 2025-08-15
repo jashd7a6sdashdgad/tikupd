@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
     const prefix = '/api/music/serve/';
     let filePath = urlPath.startsWith(prefix) ? urlPath.slice(prefix.length) : '';
     filePath = decodeURIComponent(filePath);
-    const musicDir = path.join(process.cwd(), 'Music');
+    const musicDir = path.join(process.cwd(), 'public', 'Music');
     const fullPath = path.join(musicDir, filePath);
 
     console.log('🎵 Serving music file:', filePath);

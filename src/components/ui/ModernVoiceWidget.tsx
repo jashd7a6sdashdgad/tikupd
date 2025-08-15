@@ -108,52 +108,99 @@ export function ModernVoiceWidget({
         timestamp: new Date().toISOString()
       };
 
-      const response = await fetch('/api/voice-messages', {
+      // Send directly to N8N webhook
+      const response = await fetch('https://n8n.srv903406.hstgr.cloud/webhook/990e6a3a-6881-4ae3-a345-5d5ef28f5f58', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
+        headers: { 
+          'Content-Type': 'application/json',
+          'User-Agent': 'ModernVoiceWidget/1.0'
+        },
+        body: JSON.stringify({
+          type: 'voice_message',
+          action: 'send',
+          audioBase64: audioBase64,
+          fileName: `voice_${Date.now()}.webm`,
+          mimeType: audioBlob.type,
+          duration: duration || 0,
+          size: audioBlob.size,
+          timestamp: new Date().toISOString(),
+          userId: 'modern-voice-widget',
+          userName: 'Voice User',
+          source: 'modern_voice_widget'
+        })
       });
 
       if (!response.ok) {
         throw new Error(`Failed to send message: ${response.statusText}`);
       }
 
-      const result = await response.json();
-
-      // Update user message with transcription if available
-      if (result.data?.transcription) {
+      // Handle different response types from N8N
+      const contentType = response.headers.get('content-type');
+      
+      if (contentType && contentType.includes('audio/')) {
+        // Binary audio response
+        console.log('🎵 Received binary audio response from N8N');
+        const audioBuffer = await response.arrayBuffer();
+        const audioBase64 = Buffer.from(audioBuffer).toString('base64');
+        
+        // Update user message
         setMessages(prev => prev.map(msg => 
           msg.id === userMessage.id 
-            ? { ...msg, content: result.data.transcription }
+            ? { ...msg, content: 'Voice message processed' }
             : msg
         ));
-      }
-
-      // Add AI response
-      if (result.data?.aiResponse) {
+        
+        // Add AI response with audio
         const aiMessage: VoiceMessage = {
           id: `ai-${Date.now()}`,
           type: 'assistant',
-          content: result.data.aiResponse,
+          content: 'Audio response from N8N',
           timestamp: new Date(),
-          audioUrl: result.data.audioResponse,
-          duration: result.data.responseDuration || 3
+          duration: 3
+        };
+        
+        setMessages(prev => [...prev, aiMessage]);
+        
+        // Play the audio response
+        playAudioFromBase64(audioBase64);
+        
+      } else {
+        // JSON response
+        const result = await response.json();
+        console.log('📝 N8N JSON response:', result);
+
+        // Update user message with transcription
+        const userText = result.transcription || result.text || 'Voice message processed';
+        setMessages(prev => prev.map(msg => 
+          msg.id === userMessage.id 
+            ? { ...msg, content: userText }
+            : msg
+        ));
+
+        // Add AI response
+        const aiResponseText = result.aiResponse || result.response || result.message || 'Response received from N8N';
+        const aiMessage: VoiceMessage = {
+          id: `ai-${Date.now()}`,
+          type: 'assistant',
+          content: aiResponseText,
+          timestamp: new Date(),
+          duration: 3
         };
 
         setMessages(prev => [...prev, aiMessage]);
         
-        // Automatically play audio response immediately
-        if (result.data.audioResponse) {
-          console.log('🔊 Auto-playing binary audio response from N8N');
-          playAudioFromBase64(result.data.audioResponse);
-        } else if (result.data.aiResponse) {
-          console.log('🗣️ Auto-playing text-to-speech response');
-          speakText(result.data.aiResponse);
+        // Handle audio response if available
+        if (result.audioResponse || result.audioBase64) {
+          console.log('🔊 Playing audio response from N8N');
+          playAudioFromBase64(result.audioResponse || result.audioBase64);
+        } else {
+          console.log('🗣️ Using text-to-speech for response');
+          speakText(aiResponseText);
         }
 
         // Check for workflow commands
-        if (result.data.transcription) {
-          await checkForWorkflowCommands(result.data.transcription);
+        if (userText && userText !== 'Voice message processed') {
+          await checkForWorkflowCommands(userText);
         }
       }
     } catch (err: any) {

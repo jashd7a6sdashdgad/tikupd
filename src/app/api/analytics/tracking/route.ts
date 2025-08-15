@@ -143,7 +143,9 @@ export async function GET(request: NextRequest) {
     let expensesData: any = { success: false, data: [] };
     let contactsData: any = { success: false, data: [] };
     let diaryData: any = { success: false, data: [] };
-    const facebookData = { success: false, data: null as any };
+    let bankWiseData: any = { success: false, data: null };
+    let workflowData: any = { success: false, data: [] };
+    let musicData: any = { success: false, data: [] };
 
     // Only fetch Google data if we have tokens
     if (googleTokens?.access_token) {
@@ -289,6 +291,86 @@ export async function GET(request: NextRequest) {
           expenses: { success: expensesData.success, count: expensesData.data?.length || 0 }
         });
 
+        // Fetch bank-wise data from the existing API
+        try {
+          console.log('🏦 Fetching bank-wise analytics...');
+          
+          // Create a proper JWT token for internal API call
+          const jwt = require('jsonwebtoken');
+          const internalToken = jwt.sign(
+            { userId: '1', username: 'analytics-system', email: 'system@analytics.com', type: 'website-jwt' },
+            process.env.JWT_SECRET || 'punz',
+            { expiresIn: '1h' }
+          );
+          
+          const bankWiseResponse = await fetch(`${deploymentConfig.baseUrl}/api/analytics/bank-wise`, {
+            headers: {
+              'Authorization': `Bearer ${internalToken}`,
+              'x-google-access-token': googleTokens.access_token,
+              'x-google-refresh-token': googleTokens.refresh_token || '',
+              'Content-Type': 'application/json'
+            }
+          });
+          
+          if (bankWiseResponse.ok) {
+            const bankWiseResult = await bankWiseResponse.json();
+            bankWiseData = { success: true, data: bankWiseResult.data };
+            console.log('✅ Bank-wise data fetched successfully');
+          } else {
+            console.error('❌ Bank-wise API error:', bankWiseResponse.status);
+            bankWiseData = { success: false, data: null, error: `Bank-wise API error: ${bankWiseResponse.status}` };
+          }
+        } catch (error) {
+          console.error('❌ Bank-wise fetch error:', error);
+          bankWiseData = { success: false, data: null, error: error instanceof Error ? error.message : 'Bank-wise error' };
+        }
+
+        // Fetch workflow data
+        try {
+          console.log('🔧 Fetching workflow analytics...');
+          const workflowResponse = await fetch(`${deploymentConfig.baseUrl}/api/workflows`, {
+            headers: {
+              'Authorization': `Bearer ${internalToken}`,
+              'Content-Type': 'application/json'
+            }
+          });
+          
+          if (workflowResponse.ok) {
+            const workflowResult = await workflowResponse.json();
+            workflowData = { success: true, data: workflowResult.data || [] };
+            console.log('✅ Workflow data fetched successfully');
+          } else {
+            console.log('⚠️ Workflow API not available:', workflowResponse.status);
+            workflowData = { success: false, data: [], error: `Workflow API error: ${workflowResponse.status}` };
+          }
+        } catch (error) {
+          console.log('⚠️ Workflow fetch error:', error);
+          workflowData = { success: false, data: [], error: error instanceof Error ? error.message : 'Workflow error' };
+        }
+
+        // Fetch music library data
+        try {
+          console.log('🎵 Fetching music analytics...');
+          const musicResponse = await fetch(`${deploymentConfig.baseUrl}/api/music/library`, {
+            headers: {
+              'Authorization': `Bearer ${internalToken}`,
+              'Content-Type': 'application/json'
+            }
+          });
+          
+          if (musicResponse.ok) {
+            const musicResult = await musicResponse.json();
+            musicData = { success: true, data: musicResult.data || [] };
+            console.log('✅ Music data fetched successfully');
+          } else {
+            console.log('⚠️ Music API not available:', musicResponse.status);
+            musicData = { success: false, data: [], error: `Music API error: ${musicResponse.status}` };
+          }
+        } catch (error) {
+          console.log('⚠️ Music fetch error:', error);
+          musicData = { success: false, data: [], error: error instanceof Error ? error.message : 'Music error' };
+        }
+
         // For contacts and diary, use direct Google Sheets API calls
         try {
           const contactsSpreadsheetId = process.env.CONTACTS_SPREADSHEET_ID || process.env.GOOGLE_SHEETS_ID || '1d2OgyNgTKSX-ACVkdWjarBp6WHh1mDvtflOrUO1dCNk';
@@ -399,9 +481,19 @@ export async function GET(request: NextRequest) {
         count: Array.isArray(diaryData.data) ? diaryData.data.length : 0,
         error: (diaryData as any).error || null
       },
-      facebook: { 
-        success: facebookData.success,
-        error: (facebookData as any).error || null
+      bankWise: { 
+        success: bankWiseData.success,
+        error: (bankWiseData as any).error || null
+      },
+      workflow: { 
+        success: workflowData.success, 
+        count: Array.isArray(workflowData.data) ? workflowData.data.length : 0,
+        error: (workflowData as any).error || null
+      },
+      music: { 
+        success: musicData.success, 
+        count: Array.isArray(musicData.data) ? musicData.data.length : 0,
+        error: (musicData as any).error || null
       },
     });
 
@@ -422,8 +514,14 @@ export async function GET(request: NextRequest) {
       // Diary data - array of rows from Google Sheets
       diary: diaryData.success && diaryData.data && Array.isArray(diaryData.data) ? diaryData.data : [],
       
-      // Social media data - objects (not implemented yet)
-      facebook: facebookData.success && facebookData.data ? facebookData.data : null
+      // Bank-wise data - detailed bank analysis
+      bankWise: bankWiseData.success && bankWiseData.data ? bankWiseData.data : null,
+      
+      // Workflow data - automation and workflow usage
+      workflows: workflowData.success && workflowData.data && Array.isArray(workflowData.data) ? workflowData.data : [],
+      
+      // Music data - playlists and library
+      music: musicData.success && musicData.data && Array.isArray(musicData.data) ? musicData.data : []
     };
 
     // Calculate date ranges
@@ -670,13 +768,31 @@ export async function GET(request: NextRequest) {
           Math.min((processedData.events.length / Math.max(processedData.events.length * 0.8, 1)) * 100, 100) : 0
       },
       
-      social: {
-        facebookReach: processedData.facebook ? 
-          ((processedData.facebook as any).followers_count || (processedData.facebook as any).likes || 0) > 1000 ? 
-            `${(((processedData.facebook as any).followers_count || (processedData.facebook as any).likes || 0)/1000).toFixed(1)}K` : 
-            ((processedData.facebook as any).followers_count || (processedData.facebook as any).likes || 0).toString() : '0',
+      // Removed social media data as requested
+      bankWiseBreakdown: processedData.bankWise ? processedData.bankWise.bankAnalysis || [] : [],
+      
+      upcomingEvents: {
+        birthdays: extractBirthdays(processedData.events),
+        omaniEvents: extractOmaniEvents(processedData.events),
+        totalUpcoming: processedData.events.filter((event: any) => {
+          if (!event.start?.dateTime) return false;
+          const eventDate = new Date(event.start.dateTime);
+          const nextWeek = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+          return eventDate >= now && eventDate <= nextWeek;
+        }).length
+      },
+      
+      appUsage: {
+        totalWorkflows: processedData.workflows.length,
+        totalMusicLibrary: processedData.music.length,
+        totalDiaryEntries: processedData.diary.length > 1 ? processedData.diary.length - 1 : 0, // subtract header
+        totalContacts: processedData.contacts.length > 1 ? processedData.contacts.length - 1 : 0, // subtract header
         
-        youtubeViews: '0'
+        // Calculate activity scores
+        workflowActivity: processedData.workflows.length > 0 ? 'Active' : 'Inactive',
+        musicActivity: processedData.music.length > 0 ? 'Active' : 'Inactive',
+        journalActivity: processedData.diary.length > 5 ? 'Very Active' : 
+                        processedData.diary.length > 1 ? 'Active' : 'Inactive'
       }
     };
 
@@ -685,13 +801,20 @@ export async function GET(request: NextRequest) {
       processedData.events.length > 0 || 
       processedData.emails.length > 0 || 
       processedData.expenses.length > 0 || 
-      processedData.contacts.length > 0;
+      processedData.contacts.length > 0 || 
+      processedData.diary.length > 0 || 
+      processedData.workflows.length > 0 || 
+      processedData.music.length > 0;
 
     console.log(`📊 Analytics computed. Has real data: ${hasRealData}. Data counts:`, {
       events: processedData.events.length,
       emails: processedData.emails.length,
       expenses: processedData.expenses.length,
-      contacts: processedData.contacts.length
+      contacts: processedData.contacts.length,
+      diary: processedData.diary.length,
+      workflows: processedData.workflows.length,
+      music: processedData.music.length,
+      bankWise: processedData.bankWise ? 'Available' : 'Not Available'
     });
 
     // No fallback/mock injection. If there's no real data, return zeros with hasRealData=false.
@@ -710,10 +833,10 @@ export async function GET(request: NextRequest) {
         totalContacts: analytics.overview.totalContacts,
         hasRealData: hasRealData
       },
-      social: {
-        facebookReach: analytics.social.facebookReach,
-        youtubeViews: analytics.social.youtubeViews
-      }
+      bankWiseBreakdown: analytics.bankWiseBreakdown ? analytics.bankWiseBreakdown.length : 0,
+      upcomingEvents: analytics.upcomingEvents ? analytics.upcomingEvents.totalUpcoming : 0,
+      birthdaysThisMonth: analytics.upcomingEvents ? analytics.upcomingEvents.birthdays.length : 0,
+      appUsage: analytics.appUsage || {}
     });
 
     // Return JSON data for the frontend
@@ -728,7 +851,10 @@ export async function GET(request: NextRequest) {
             email: { success: emailData.success, count: emailData.data?.length || 0 },
             expenses: { success: expensesData.success, count: Array.isArray(expensesData.data) ? expensesData.data.length : 0 },
             contacts: { success: contactsData.success, count: Array.isArray(contactsData.data) ? contactsData.data.length : 0 },
-            diary: { success: diaryData.success, count: Array.isArray(diaryData.data) ? diaryData.data.length : 0 }
+            diary: { success: diaryData.success, count: Array.isArray(diaryData.data) ? diaryData.data.length : 0 },
+            bankWise: { success: bankWiseData.success, available: !!bankWiseData.data },
+            workflows: { success: workflowData.success, count: Array.isArray(workflowData.data) ? workflowData.data.length : 0 },
+            music: { success: musicData.success, count: Array.isArray(musicData.data) ? musicData.data.length : 0 }
           }
         }
       }
@@ -742,4 +868,64 @@ export async function GET(request: NextRequest) {
       error: error.toString()
     }, { status: 500 });
   }
+}
+
+// Helper function to extract birthday events from calendar
+function extractBirthdays(events: any[]): any[] {
+  const now = new Date();
+  const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, now.getDate());
+  
+  return events.filter(event => {
+    if (!event.summary || !event.start?.dateTime) return false;
+    
+    const summary = event.summary.toLowerCase();
+    const eventDate = new Date(event.start.dateTime);
+    
+    // Check if it's a birthday event within the next month
+    const isBirthday = summary.includes('birthday') || 
+                      summary.includes('birth') || 
+                      summary.includes('bday') ||
+                      summary.includes('عيد ميلاد') || // Arabic birthday
+                      summary.includes('ميلاد');
+    
+    return isBirthday && eventDate >= now && eventDate <= nextMonth;
+  }).map(event => ({
+    title: event.summary,
+    date: event.start.dateTime,
+    type: 'birthday'
+  }));
+}
+
+// Helper function to extract Omani cultural events
+function extractOmaniEvents(events: any[]): any[] {
+  const now = new Date();
+  const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, now.getDate());
+  
+  const omaniKeywords = [
+    'national day', 'يوم الوطني', 'العيد الوطني',
+    'renaissance day', 'يوم النهضة', 'عيد النهضة',
+    'flag day', 'يوم العلم',
+    'oman', 'عمان', 'سلطنة',
+    'islamic', 'إسلامي', 'عيد', 'رمضان', 'عيد الفطر', 'عيد الأضحى',
+    'hijri', 'هجري', 'هجرية',
+    'cultural', 'ثقافي', 'تراث', 'heritage'
+  ];
+  
+  return events.filter(event => {
+    if (!event.summary || !event.start?.dateTime) return false;
+    
+    const summary = event.summary.toLowerCase();
+    const eventDate = new Date(event.start.dateTime);
+    
+    // Check if it contains Omani cultural keywords
+    const isOmaniEvent = omaniKeywords.some(keyword => 
+      summary.includes(keyword.toLowerCase())
+    );
+    
+    return isOmaniEvent && eventDate >= now && eventDate <= nextMonth;
+  }).map(event => ({
+    title: event.summary,
+    date: event.start.dateTime,
+    type: 'omani_cultural'
+  }));
 }

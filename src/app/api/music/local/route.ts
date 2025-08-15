@@ -13,7 +13,7 @@ interface LocalMusicTrack {
 
 export async function GET(request: NextRequest) {
   try {
-    const musicDir = path.join(process.cwd(), 'Music');
+    const musicDir = path.join(process.cwd(), 'public', 'Music');
     
     // Check if Music directory exists
     try {
@@ -45,7 +45,7 @@ export async function GET(request: NextRequest) {
         title,
         artist,
         filename,
-        audioUrl: `/Music/${encodeURIComponent(filename)}`,
+        audioUrl: `/api/music/serve/${encodeURIComponent(filename)}`,
         duration: '0:00' // Will be updated by frontend
       };
     });

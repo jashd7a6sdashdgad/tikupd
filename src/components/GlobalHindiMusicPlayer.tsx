@@ -30,11 +30,11 @@ interface HindiSong {
 const FALLBACK_SONGS: HindiSong[] = [
   {
     id: '1',
-    title: 'Channa Mereya',
-    artist: 'Arijit Singh',
-    album: 'Ae Dil Hai Mushkil',
-    duration: '4:49',
-    audioUrl: 'https://commondatastorage.googleapis.com/codeskulptor-demos/DDR_assets/Sevish_-__nbsp_.mp3',
+    title: 'Sample Track',
+    artist: 'Local Music',
+    album: 'Demo',
+    duration: '0:00',
+    audioUrl: 'https://www.soundjay.com/misc/sounds-of-nature/nature-sounds-1.mp3',
     imageUrl: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=400&fit=crop'
   }
 ];
@@ -57,12 +57,18 @@ export function GlobalHindiMusicPlayer() {
   useEffect(() => {
     const loadLocalMusic = async () => {
       try {
-        console.log('🎵 Loading local music from /Music folder...');
+        console.log('🎵 Loading local music from /public/Music folder...');
         const response = await fetch('/api/music/local');
-        const result = await response.json();
         
-        if (result.success && result.tracks.length > 0) {
-          console.log('✅ Loaded local music tracks:', result.tracks);
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const result = await response.json();
+        console.log('🎵 Local music API response:', result);
+        
+        if (result.success && result.tracks && result.tracks.length > 0) {
+          console.log('✅ Found local music tracks:', result.tracks.length);
           
           // Convert local tracks to HindiSong format
           const localSongs: HindiSong[] = result.tracks.map((track: any) => ({
@@ -77,14 +83,18 @@ export function GlobalHindiMusicPlayer() {
           
           setSongs(localSongs);
           setCurrentSong(localSongs[0]);
-          console.log('🎵 Hindi music player updated with local files');
+          console.log('🎵 Hindi music player updated with', localSongs.length, 'local tracks');
         } else {
-          console.log('⚠️ No local music found, using fallback songs');
+          console.log('⚠️ No local music found or invalid response:', result);
+          console.log('Using fallback songs...');
           setSongs(FALLBACK_SONGS);
+          setCurrentSong(FALLBACK_SONGS[0]);
         }
       } catch (error) {
         console.error('❌ Failed to load local music:', error);
+        console.log('Using fallback songs due to error...');
         setSongs(FALLBACK_SONGS);
+        setCurrentSong(FALLBACK_SONGS[0]);
       } finally {
         setIsLoadingMusic(false);
       }
@@ -100,10 +110,19 @@ export function GlobalHindiMusicPlayer() {
     const updateTime = () => setCurrentTime(audio.currentTime);
     const updateDuration = () => setDuration(audio.duration);
     const handleEnded = () => playNext();
+    const handlePlay = () => setIsPlaying(true);
+    const handlePause = () => setIsPlaying(false);
+    const handleError = (e: any) => {
+      console.error('❌ Audio error:', e);
+      setIsPlaying(false);
+    };
 
     audio.addEventListener('timeupdate', updateTime);
     audio.addEventListener('loadedmetadata', updateDuration);
     audio.addEventListener('ended', handleEnded);
+    audio.addEventListener('play', handlePlay);
+    audio.addEventListener('pause', handlePause);
+    audio.addEventListener('error', handleError);
 
     // Auto-play on mount (with user interaction)
     const playAudio = async () => {
@@ -121,6 +140,9 @@ export function GlobalHindiMusicPlayer() {
       audio.removeEventListener('timeupdate', updateTime);
       audio.removeEventListener('loadedmetadata', updateDuration);
       audio.removeEventListener('ended', handleEnded);
+      audio.removeEventListener('play', handlePlay);
+      audio.removeEventListener('pause', handlePause);
+      audio.removeEventListener('error', handleError);
     };
   }, [currentSong]);
 
@@ -136,12 +158,16 @@ export function GlobalHindiMusicPlayer() {
 
     if (isPlaying) {
       audio.pause();
+      // setIsPlaying will be handled by pause event listener
     } else {
+      console.log('🎵 Attempting to play:', currentSong.title, 'from', currentSong.audioUrl);
       audio.play().catch(error => {
-        console.log('Play failed:', error);
+        console.error('❌ Audio playback failed:', error);
+        console.log('Current song URL:', currentSong.audioUrl);
+        setIsPlaying(false);
       });
+      // setIsPlaying will be handled by play event listener
     }
-    setIsPlaying(!isPlaying);
   };
 
   const playNext = () => {
