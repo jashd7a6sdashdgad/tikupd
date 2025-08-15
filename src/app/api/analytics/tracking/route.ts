@@ -144,7 +144,6 @@ export async function GET(request: NextRequest) {
     let contactsData: any = { success: false, data: [] };
     let diaryData: any = { success: false, data: [] };
     const facebookData = { success: false, data: null as any };
-    const youtubeData = { success: false, data: null as any };
 
     // Only fetch Google data if we have tokens
     if (googleTokens?.access_token) {
@@ -404,10 +403,6 @@ export async function GET(request: NextRequest) {
         success: facebookData.success,
         error: (facebookData as any).error || null
       },
-      youtube: { 
-        success: youtubeData.success,
-        error: (youtubeData as any).error || null
-      }
     });
 
     // Process data with proper error handling
@@ -428,8 +423,7 @@ export async function GET(request: NextRequest) {
       diary: diaryData.success && diaryData.data && Array.isArray(diaryData.data) ? diaryData.data : [],
       
       // Social media data - objects (not implemented yet)
-      facebook: facebookData.success && facebookData.data ? facebookData.data : null,
-      youtube: youtubeData.success && youtubeData.data ? youtubeData.data : null
+      facebook: facebookData.success && facebookData.data ? facebookData.data : null
     };
 
     // Calculate date ranges
@@ -682,10 +676,7 @@ export async function GET(request: NextRequest) {
             `${(((processedData.facebook as any).followers_count || (processedData.facebook as any).likes || 0)/1000).toFixed(1)}K` : 
             ((processedData.facebook as any).followers_count || (processedData.facebook as any).likes || 0).toString() : '0',
         
-        youtubeViews: processedData.youtube ? 
-          ((processedData.youtube as any).viewCount || 0) > 1000 ? 
-            `${(((processedData.youtube as any).viewCount || 0)/1000).toFixed(1)}K` : 
-            ((processedData.youtube as any).viewCount || 0).toString() : '0'
+        youtubeViews: '0'
       }
     };
 

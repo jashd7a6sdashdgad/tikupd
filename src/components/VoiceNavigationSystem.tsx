@@ -21,7 +21,6 @@ import {
   BarChart3,
   BookOpen,
   Facebook,
-  Youtube,
   Search,
   Phone,
   ShoppingBag,
@@ -125,13 +124,6 @@ export const VoiceNavigationSystem: React.FC<VoiceNavigationSystemProps> = ({
       action: () => router.push('/facebook'),
       description: 'Open Facebook',
       icon: <Facebook className="h-4 w-4" />,
-      category: 'navigation'
-    },
-    {
-      pattern: ['youtube', 'videos', 'yt'],
-      action: () => router.push('/youtube'),
-      description: 'Open YouTube',
-      icon: <Youtube className="h-4 w-4" />,
       category: 'navigation'
     },
     {

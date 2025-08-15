@@ -17,7 +17,6 @@ export const translations: Record<string, Translation> = {
     settings: "Settings",
     webScraper: "Web Scraper",
     facebook: "Facebook",
-    youtube: "YouTube",
     instagram: "Instagram",
     messenger: "Messenger",
     thinkTool: "Think Tool",
@@ -345,7 +344,6 @@ export const translations: Record<string, Translation> = {
     // Social Media
     facebookTitle: "Facebook",
     instagramTitle: "Instagram",
-    youtubeTitle: "YouTube",
     messengerTitle: "Messenger",
     
     // MCP Tools
@@ -666,7 +664,6 @@ export const translations: Record<string, Translation> = {
     settings: "الإعدادات",
     webScraper: "مستخرج الويب",
     facebook: "فيسبوك",
-    youtube: "يوتيوب",
     instagram: "إنستغرام",
     messenger: "ماسنجر",
     thinkTool: "أداة التفكير",
@@ -994,7 +991,6 @@ export const translations: Record<string, Translation> = {
     // Social Media
     facebookTitle: "فيسبوك",
     instagramTitle: "إنستغرام",
-    youtubeTitle: "يوتيوب",
     messengerTitle: "ماسنجر",
     
     // MCP Tools

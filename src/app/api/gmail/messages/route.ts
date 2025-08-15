@@ -20,20 +20,56 @@ async function refreshAccessToken(refreshToken: string) {
   return tokenResponse.json() as Promise<{ access_token: string; expires_in?: number }>;
 }
 
-// Helper function to get Google auth from cookies
+// Helper function to get Google auth from multiple sources
 function getGoogleAuth(request: NextRequest) {
-  const accessToken = request.cookies.get('google_access_token')?.value;
+  // Source 1: Cookies (browser OAuth flow)
+  let accessToken = request.cookies.get('google_access_token')?.value;
   const rawRefreshToken = request.cookies.get('google_refresh_token')?.value;
-  const refreshToken = rawRefreshToken ? decodeURIComponent(rawRefreshToken) : undefined;
+  let refreshToken = rawRefreshToken ? decodeURIComponent(rawRefreshToken) : undefined;
   
+  // Source 2: Headers (server-to-server, e.g., N8N)
   if (!accessToken) {
-    throw new Error('Google authentication required');
+    const headerAccess =
+      request.headers.get('x-google-access-token') ||
+      request.headers.get('x-goog-access-token') ||
+      request.headers.get('x-gapi-access-token');
+    const headerRefresh =
+      request.headers.get('x-google-refresh-token') ||
+      request.headers.get('x-goog-refresh-token') ||
+      request.headers.get('x-gapi-refresh-token');
+    if (headerAccess) {
+      accessToken = headerAccess;
+      refreshToken = headerRefresh || refreshToken;
+    }
+  }
+
+  // Source 3: Query params (manual testing / integrations)
+  if (!accessToken) {
+    const url = new URL(request.url);
+    const qpAccess = url.searchParams.get('google_access_token');
+    const qpRefresh = url.searchParams.get('google_refresh_token');
+    if (qpAccess) {
+      accessToken = qpAccess;
+      refreshToken = qpRefresh || refreshToken;
+    }
+  }
+
+  // Source 4: Environment variables (system tokens)
+  if (!accessToken) {
+    accessToken = process.env.GOOGLE_ACCESS_TOKEN || undefined;
+    refreshToken = process.env.GOOGLE_REFRESH_TOKEN || refreshToken;
+    if (refreshToken && refreshToken.includes('%')) {
+      refreshToken = decodeURIComponent(refreshToken);
+    }
   }
   
-  return {
-    access_token: accessToken,
-    refresh_token: refreshToken
-  };
+  return accessToken ? { 
+    access_token: accessToken, 
+    refresh_token: refreshToken,
+    source: accessToken === process.env.GOOGLE_ACCESS_TOKEN ? 'environment' : 
+            request.headers.get('x-google-access-token') ? 'headers' :
+            request.cookies.get('google_access_token')?.value ? 'cookies' : 'query'
+  } : null;
 }
 
 export async function GET(request: NextRequest) {
@@ -110,28 +146,55 @@ export async function GET(request: NextRequest) {
       authType = 'google-oauth';
     }
     
-    // Get Google authentication, with refresh fallback
-    let googleTokens: { access_token: string; refresh_token?: string } | null = null;
-    try {
-      googleTokens = getGoogleAuth(request);
-    } catch {}
-    const refreshToken = request.cookies.get('google_refresh_token')?.value
-      ? decodeURIComponent(request.cookies.get('google_refresh_token')!.value)
-      : undefined;
-    if (!googleTokens?.access_token && refreshToken) {
-      try {
-        const refreshed = await refreshAccessToken(refreshToken);
-        googleTokens = { access_token: refreshed.access_token, refresh_token: refreshToken };
-      } catch {}
-    }
+    // Get Google authentication from multiple sources
+    let googleTokens = getGoogleAuth(request);
+    
     if (!googleTokens?.access_token) {
-      return NextResponse.json({ success: false, message: 'Google authentication required' }, { status: 401 });
+      return NextResponse.json({ 
+        success: false, 
+        message: 'Google authentication required. Please provide access token via cookies, headers, query params, or environment variables.',
+        hint: 'For N8N: Use X-Google-Access-Token header or set GOOGLE_ACCESS_TOKEN environment variable'
+      }, { status: 401 });
     }
+
+    console.log(`🔑 Using Google tokens from: ${googleTokens.source}`);
     
     // Get query parameters
     const { searchParams } = new URL(request.url);
     const query = searchParams.get('q') || '';
     const maxResults = parseInt(searchParams.get('maxResults') || '10');
+    
+    // Test the access token first with a simple API call
+    const tokenTestResponse = await fetch(
+      'https://www.googleapis.com/oauth2/v1/tokeninfo?access_token=' + googleTokens.access_token
+    );
+    
+    if (!tokenTestResponse.ok) {
+      console.log('🔄 Access token expired, attempting refresh...');
+      
+      if (googleTokens.refresh_token) {
+        try {
+          const refreshed = await refreshAccessToken(googleTokens.refresh_token);
+          googleTokens.access_token = refreshed.access_token;
+          console.log('✅ Token refreshed successfully');
+        } catch (refreshError) {
+          console.error('❌ Token refresh error:', refreshError);
+          return NextResponse.json({
+            success: false,
+            message: 'Access token expired and refresh failed. Please re-authenticate.',
+            error: 'token_refresh_failed'
+          }, { status: 401 });
+        }
+      } else {
+        return NextResponse.json({
+          success: false,
+          message: 'Access token expired and no refresh token available. Please re-authenticate.',
+          error: 'no_refresh_token'
+        }, { status: 401 });
+      }
+    } else {
+      console.log('✅ Access token is valid');
+    }
     
     // List messages - direct API call to avoid TypeScript issues
     const response = await fetch(
@@ -145,7 +208,9 @@ export async function GET(request: NextRequest) {
     );
 
     if (!response.ok) {
-      throw new Error(`Gmail API error: ${response.status} ${response.statusText}`);
+      const errorText = await response.text();
+      console.error('Gmail API error:', response.status, response.statusText, errorText);
+      throw new Error(`Gmail API error: ${response.status} ${response.statusText} - ${errorText}`);
     }
 
     const messagesData = await response.json();
@@ -200,9 +265,17 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(
       {
         success: false,
-        message: error.message || 'Failed to retrieve messages'
+        message: error.message || 'Failed to retrieve messages',
+        error: error.name || 'UnknownError',
+        authType,
+        debug: {
+          hasGoogleTokens: !!request.cookies.get('google_access_token')?.value,
+          hasAuthHeader: !!request.headers.get('authorization'),
+          hasEnvTokens: !!process.env.GOOGLE_ACCESS_TOKEN,
+          errorStack: error.stack?.split('\n')[0] // First line of stack trace
+        }
       },
-      { status: error.message?.includes('authentication') ? 401 : 500 }
+      { status: error.message?.includes('authentication') || error.message?.includes('token') ? 401 : 500 }
     );
   }
 }
@@ -277,8 +350,17 @@ export async function POST(request: NextRequest) {
       };
     }
     
-    // Get Google authentication
-    const googleTokens = getGoogleAuth(request);
+    // Get Google authentication from multiple sources
+    let googleTokens = getGoogleAuth(request);
+    
+    if (!googleTokens?.access_token) {
+      return NextResponse.json({ 
+        success: false, 
+        message: 'Google authentication required. Please provide access token via cookies, headers, query params, or environment variables.',
+        hint: 'For N8N: Use X-Google-Access-Token header or set GOOGLE_ACCESS_TOKEN environment variable'
+      }, { status: 401 });
+    }
+
     const gmail = new Gmail(googleTokens.access_token);
     
     const body = await request.json();
@@ -385,8 +467,17 @@ export async function DELETE(request: NextRequest) {
       };
     }
     
-    // Get Google authentication
-    const googleTokens = getGoogleAuth(request);
+    // Get Google authentication from multiple sources
+    let googleTokens = getGoogleAuth(request);
+    
+    if (!googleTokens?.access_token) {
+      return NextResponse.json({ 
+        success: false, 
+        message: 'Google authentication required. Please provide access token via cookies, headers, query params, or environment variables.',
+        hint: 'For N8N: Use X-Google-Access-Token header or set GOOGLE_ACCESS_TOKEN environment variable'
+      }, { status: 401 });
+    }
+
     const gmail = new Gmail(googleTokens.access_token);
     
     const body = await request.json();

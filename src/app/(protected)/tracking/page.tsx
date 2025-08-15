@@ -87,74 +87,88 @@ interface AnalyticsData {
 const getBankColors = (bankType: string) => {
   const normalizedBank = bankType.toLowerCase();
   
-  // EXTRA BRIGHT colors with pattern matching
+  // Light, harmonious colors with 30-40% opacity maintaining original hues
   if (normalizedBank.includes('wafrah') || normalizedBank.includes('wafra')) {
     return { 
-      bg: 'from-yellow-400 to-amber-500', 
-      border: 'border-yellow-600', 
-      text: 'text-yellow-950', 
-      icon: 'from-yellow-600 to-amber-700',
-      shadow: 'shadow-yellow-300'
+      bg: 'from-yellow-50/80 to-amber-100/60', 
+      border: 'border-yellow-200/80', 
+      text: 'text-yellow-800', 
+      icon: 'from-yellow-500 to-amber-600',
+      shadow: 'shadow-yellow-100/50',
+      progressBg: 'bg-yellow-100/40',
+      progressBar: 'from-yellow-400/70 to-amber-500/70'
     };
   }
   
   if (normalizedBank.includes('credit') && normalizedBank.includes('card')) {
     return { 
-      bg: 'from-blue-400 to-indigo-500', 
-      border: 'border-blue-600', 
-      text: 'text-blue-950', 
-      icon: 'from-blue-600 to-indigo-700',
-      shadow: 'shadow-blue-300'
+      bg: 'from-blue-50/80 to-indigo-100/60', 
+      border: 'border-blue-200/80', 
+      text: 'text-blue-800', 
+      icon: 'from-blue-500 to-indigo-600',
+      shadow: 'shadow-blue-100/50',
+      progressBg: 'bg-blue-100/40',
+      progressBar: 'from-blue-400/70 to-indigo-500/70'
     };
   }
   
   if (normalizedBank.includes('overdraft')) {
     return { 
-      bg: 'from-red-400 to-pink-500', 
-      border: 'border-red-600', 
-      text: 'text-red-950', 
-      icon: 'from-red-600 to-pink-700',
-      shadow: 'shadow-red-300'
+      bg: 'from-red-50/80 to-pink-100/60', 
+      border: 'border-red-200/80', 
+      text: 'text-red-800', 
+      icon: 'from-red-500 to-pink-600',
+      shadow: 'shadow-red-100/50',
+      progressBg: 'bg-red-100/40',
+      progressBar: 'from-red-400/70 to-pink-500/70'
     };
   }
   
   if (normalizedBank.includes('muscat')) {
     return { 
-      bg: 'from-green-400 to-emerald-500', 
-      border: 'border-green-600', 
-      text: 'text-green-950', 
-      icon: 'from-green-600 to-emerald-700',
-      shadow: 'shadow-green-300'
+      bg: 'from-green-50/80 to-emerald-100/60', 
+      border: 'border-green-200/80', 
+      text: 'text-green-800', 
+      icon: 'from-green-500 to-emerald-600',
+      shadow: 'shadow-green-100/50',
+      progressBg: 'bg-green-100/40',
+      progressBar: 'from-green-400/70 to-emerald-500/70'
     };
   }
   
   if (normalizedBank.includes('debit') || normalizedBank.includes('saving')) {
     return { 
-      bg: 'from-purple-400 to-violet-500', 
-      border: 'border-purple-600', 
-      text: 'text-purple-950', 
-      icon: 'from-purple-600 to-violet-700',
-      shadow: 'shadow-purple-300'
+      bg: 'from-purple-50/80 to-violet-100/60', 
+      border: 'border-purple-200/80', 
+      text: 'text-purple-800', 
+      icon: 'from-purple-500 to-violet-600',
+      shadow: 'shadow-purple-100/50',
+      progressBg: 'bg-purple-100/40',
+      progressBar: 'from-purple-400/70 to-violet-500/70'
     };
   }
   
   if (normalizedBank.includes('ahli') || normalizedBank.includes('alhli')) {
     return { 
-      bg: 'from-orange-400 to-red-500', 
-      border: 'border-orange-600', 
-      text: 'text-orange-950', 
-      icon: 'from-orange-600 to-red-700',
-      shadow: 'shadow-orange-300'
+      bg: 'from-orange-50/80 to-red-100/60', 
+      border: 'border-orange-200/80', 
+      text: 'text-orange-800', 
+      icon: 'from-orange-500 to-red-600',
+      shadow: 'shadow-orange-100/50',
+      progressBg: 'bg-orange-100/40',
+      progressBar: 'from-orange-400/70 to-red-500/70'
     };
   }
   
-  // Fallback to bright teal for any unmatched banks
+  // Fallback to light teal for any unmatched banks
   return { 
-    bg: 'from-teal-400 to-cyan-500', 
-    border: 'border-teal-600', 
-    text: 'text-teal-950', 
-    icon: 'from-teal-600 to-cyan-700',
-    shadow: 'shadow-teal-300'
+    bg: 'from-teal-50/80 to-cyan-100/60', 
+    border: 'border-teal-200/80', 
+    text: 'text-teal-800', 
+    icon: 'from-teal-500 to-cyan-600',
+    shadow: 'shadow-teal-100/50',
+    progressBg: 'bg-teal-100/40',
+    progressBar: 'from-teal-400/70 to-cyan-500/70'
   };
 };
 
@@ -786,9 +800,9 @@ export default function TrackingPage() {
                             </div>
                           </div>
                         </div>
-                        <div className="w-full bg-white/50 rounded-full h-2 shadow-inner">
+                        <div className={`w-full ${colors.progressBg || 'bg-gray-100/40'} rounded-full h-2 shadow-inner`}>
                           <div 
-                            className={`bg-gradient-to-r ${colors.icon} h-2 rounded-full shadow-sm`}
+                            className={`bg-gradient-to-r ${colors.progressBar || colors.icon} h-2 rounded-full shadow-sm`}
                             style={{ width: `${Math.min(bank.percentage, 100)}%` }}
                           ></div>
                         </div>
@@ -881,9 +895,9 @@ export default function TrackingPage() {
                               {isNegative ? '-' : '+'}{formatCurrency(Math.abs(amount))}
                             </span>
                           </div>
-                          <div className="w-full bg-gray-200 rounded-full h-1.5">
+                          <div className="w-full bg-gray-100/60 rounded-full h-1.5">
                             <div 
-                              className={`h-1.5 rounded-full ${isNegative ? 'bg-red-500' : 'bg-green-500'}`}
+                              className={`h-1.5 rounded-full ${isNegative ? 'bg-gradient-to-r from-red-400/70 to-rose-500/70' : 'bg-gradient-to-r from-green-400/70 to-emerald-500/70'}`}
                               style={{ width: `${Math.min(percentage, 100)}%` }}
                             ></div>
                           </div>
@@ -1021,9 +1035,9 @@ export default function TrackingPage() {
                           </span>
                         </div>
                         
-                        <div className="w-full bg-white/50 rounded-full h-2 shadow-inner">
+                        <div className={`w-full ${colors.progressBg || 'bg-gray-100/40'} rounded-full h-2 shadow-inner`}>
                           <div 
-                            className={`bg-gradient-to-r ${colors.icon} h-2 rounded-full shadow-sm`}
+                            className={`bg-gradient-to-r ${colors.progressBar || colors.icon} h-2 rounded-full shadow-sm`}
                             style={{ width: `${Math.min(bank.percentage, 100)}%` }}
                           ></div>
                         </div>

@@ -16,7 +16,6 @@ import {
   X,
   Facebook,
   MessageCircle,
-  Youtube,
   Globe,
   Brain,
   Sun,
@@ -123,12 +122,6 @@ const getNavigation = (t: (key: string) => string): NavigationItem[] => [
     name: t('tracking'),
     href: '/tracking',
     icon: Stethoscope
-  },
-  {
-    key: 'youtube',
-    name: t('youtube'),
-    href: '/youtube',
-    icon: Youtube
   },
   {
     key: 'music',
