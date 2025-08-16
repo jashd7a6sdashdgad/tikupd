@@ -18,7 +18,6 @@ export const translations: Record<string, Translation> = {
     facebook: "Facebook",
     instagram: "Instagram",
     messenger: "Messenger",
-    thinkTool: "Think Tool",
     tracking: "Tracking",
     budget: "Budget",
     hotelExpenses: "Hotel Expenses",
@@ -26,7 +25,6 @@ export const translations: Record<string, Translation> = {
     signOut: "Sign out",
     security: "Security",
     photos: "Photos",
-    workflowBuilder: "Workflow Builder",
     islamicSettings: "Islamic Settings",
     customization: "Customization",
     apiTokens: "API Tokens",
@@ -359,7 +357,6 @@ export const translations: Record<string, Translation> = {
     // MCP Tools
     mcpToolsTitle: "MCP Tools",
     firecrawlTitle: "Firecrawl",
-    thinkToolTitle: "Think Tool",
     thinkingTitle: "Thinking",
     trackingTitle: "Tracking",
     
@@ -674,7 +671,6 @@ export const translations: Record<string, Translation> = {
     facebook: "فيسبوك",
     instagram: "إنستغرام",
     messenger: "ماسنجر",
-    thinkTool: "أداة التفكير",
     tracking: "التتبع",
     budget: "الميزانية",
     hotelExpenses: "مصروفات الفنادق",
@@ -682,7 +678,6 @@ export const translations: Record<string, Translation> = {
     signOut: "تسجيل الخروج",
     security: "الأمان",
     photos: "الصور",
-    workflowBuilder: "منشئ سير العمل",
     islamicSettings: "الإعدادات الإسلامية",
     customization: "التخصيص",
     apiTokens: "رموز API",
@@ -1015,7 +1010,6 @@ export const translations: Record<string, Translation> = {
     // MCP Tools
     mcpToolsTitle: "أدوات MCP",
     firecrawlTitle: "Firecrawl",
-    thinkToolTitle: "أداة التفكير",
     thinkingTitle: "التفكير",
     trackingTitle: "التتبع",
     

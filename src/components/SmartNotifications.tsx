@@ -379,7 +379,7 @@ export default function SmartNotifications({ dashboardData, className = '' }: Sm
         }
         return b.timestamp.getTime() - a.timestamp.getTime();
       })
-      .slice(0, showAll ? 15 : 8);
+      .slice(0, showAll ? 15 : 6);
   };
 
   useEffect(() => {
@@ -457,7 +457,7 @@ export default function SmartNotifications({ dashboardData, className = '' }: Sm
             <Badge variant="secondary" className="text-sm px-2 py-1">{notifications.length}</Badge>
           )}
         </CardTitle>
-        {notifications.length > 8 && (
+        {notifications.length > 6 && (
           <Button 
             variant="ghost" 
             size="sm"

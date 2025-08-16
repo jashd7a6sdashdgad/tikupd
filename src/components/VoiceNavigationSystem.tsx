@@ -232,20 +232,6 @@ export const VoiceNavigationSystem: React.FC<VoiceNavigationSystemProps> = ({
       category: 'navigation'
     },
     {
-      pattern: ['workflow builder', 'workflows builder', 'automation builder'],
-      action: () => router.push('/workflow-builder'),
-      description: 'Open Workflow Builder',
-      icon: <Zap className="h-4 w-4" />,
-      category: 'navigation'
-    },
-    {
-      pattern: ['think tool', 'thinking', 'brain'],
-      action: () => router.push('/think-tool'),
-      description: 'Open Think Tool',
-      icon: <Command className="h-4 w-4" />,
-      category: 'navigation'
-    },
-    {
       pattern: ['budget', 'budgeting', 'financial planning'],
       action: () => router.push('/budget'),
       description: 'Open Budget',

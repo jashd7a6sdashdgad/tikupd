@@ -134,7 +134,7 @@ GEMINI_API_KEY=your-gemini-api-key
 ## 🧪 Testing Your Setup
 
 ### 1. Test N8N Connection
-Visit your workflow builder at `/workflow-builder` and try:
+Visit your workflows page at `/workflows` and try:
 - Loading templates (should show pre-built workflows)
 - Generating a workflow with AI
 - Deploying a simple workflow
@@ -147,7 +147,7 @@ curl -X GET "https://your-n8n-instance.com/api/v1/workflows" \
 ```
 
 ### 3. Test Workflow Deployment
-1. Go to `/workflow-builder`
+1. Go to `/workflows`
 2. Select a template (e.g., "Morning Routine Automation")
 3. Click "Deploy" - should show success message
 4. Check your N8N instance for the new workflow
@@ -318,7 +318,7 @@ docker cp ./n8n-backup n8n:/home/node/.n8n
 
 ### Mock Mode for Testing
 If you can't get N8N running immediately, use mock mode:
-1. Visit `/workflow-builder` 
+1. Visit `/workflows` 
 2. When you see the N8N error, click "Try Mock Deploy"
 3. This simulates workflow deployment for testing UI
 

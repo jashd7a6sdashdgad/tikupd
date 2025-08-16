@@ -136,6 +136,7 @@ export async function POST(request: NextRequest) {
           transcription: (n8nResponse as any).transcription,
           aiResponse: (n8nResponse as any).aiResponse,
           audioResponse: (n8nResponse as any).audioResponse,
+          mimeType: (n8nResponse as any).mimeType,
           processingTime: (n8nResponse as any).processingTime
         },
         message: 'Voice message processed successfully',

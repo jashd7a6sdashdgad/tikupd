@@ -191,7 +191,7 @@ export default function SmartQuickActions({
         id: 'afternoon-focus',
         title: 'Focus Session',
         description: 'Review priorities',
-        path: '/think-tool',
+        path: '/dashboard',
         icon: <Target className="h-4 w-4" />,
         color: 'text-violet-600 bg-violet-50',
         category: 'analyze',

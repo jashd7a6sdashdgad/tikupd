@@ -58,18 +58,6 @@ const getNavigation = (t: (key: string) => string): NavigationItem[] => [
     icon: Search
   },
   {
-    key: 'think-tool',
-    name: t('thinkTool'),
-    href: '/think-tool',
-    icon: Brain
-  },
-  {
-    key: 'workflow-builder',
-    name: t('workflowBuilder'),
-    href: '/workflow-builder',
-    icon: Brain
-  },
-  {
     key: 'calendar',
     name: t('calendar'),
     href: '/calendar',

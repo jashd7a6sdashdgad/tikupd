@@ -1,35 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getGoogleSheetsClient } from '@/lib/google';
+import { getGoogleAccessToken } from '@/lib/google/googleTokens';
 import { SPREADSHEET_ID, getSheetConfig, SheetHelpers } from '@/lib/sheets-config';
 
 const CONTACTS_CONFIG = getSheetConfig('contacts');
 
-// Helper function to get Google auth from cookies or env
-function getGoogleAuth(request: NextRequest) {
-  // Try cookies first
-  const accessToken = request.cookies.get('google_access_token')?.value;
-  const rawRefreshToken = request.cookies.get('google_refresh_token')?.value;
-  const refreshToken = rawRefreshToken ? decodeURIComponent(rawRefreshToken) : undefined;
+// Helper function to get Google auth using existing token management
+async function getGoogleAuthTokens() {
+  const accessToken = await getGoogleAccessToken();
   
-  if (accessToken) {
-    return {
-      access_token: accessToken,
-      refresh_token: refreshToken
-    };
+  if (!accessToken) {
+    throw new Error('Google authentication required - please connect your Google account');
   }
   
-  // Fallback to environment variables
-  const envAccessToken = process.env.GOOGLE_ACCESS_TOKEN;
-  const envRefreshToken = process.env.GOOGLE_REFRESH_TOKEN;
-  
-  if (envAccessToken) {
-    return {
-      access_token: envAccessToken,
-      refresh_token: envRefreshToken
-    };
-  }
-  
-  throw new Error('Google authentication required');
+  return {
+    access_token: accessToken
+  };
 }
 
 export async function GET(request: NextRequest) {
@@ -38,11 +24,10 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get('search');
     
     // Get Google authentication
-    const googleTokens = getGoogleAuth(request);
+    const googleTokens = await getGoogleAuthTokens();
 
     const sheets = await getGoogleSheetsClient({
-      access_token: googleTokens.access_token,
-      refresh_token: googleTokens.refresh_token
+      access_token: googleTokens.access_token
     });
     
     try {
@@ -65,14 +50,36 @@ export async function GET(request: NextRequest) {
 
       // Skip header row and convert to structured data
       const dataRows = rows.slice(1);
-      let contacts = dataRows.map((row, index) => ({
-        id: (index + 1).toString(),
+      
+      // Create contacts with original row indices for proper deletion
+      const allContacts = dataRows.map((row, index) => ({
+        originalRowIndex: index + 1, // +1 for header row
+        sheetRowIndex: index + 2, // +2 for header row (1-based indexing)
         name: row[0] || '',
         email: row[1] || '',
         phone: row[2] || '',
         company: row[3] || '',
         notes: row[4] || '',
         dateAdded: row[5] || ''
+      }));
+      
+      // Filter out empty rows (no name and no email and no phone)
+      const nonEmptyContacts = allContacts.filter(contact => 
+        contact.name.trim() !== '' || 
+        contact.email.trim() !== '' || 
+        contact.phone.trim() !== ''
+      );
+      
+      // Assign sequential IDs to non-empty contacts for display
+      let contacts = nonEmptyContacts.map((contact, index) => ({
+        id: contact.originalRowIndex.toString(), // Keep original row index for deletion
+        displayIndex: index + 1, // Sequential display index
+        name: contact.name,
+        email: contact.email,
+        phone: contact.phone,
+        company: contact.company,
+        notes: contact.notes,
+        dateAdded: contact.dateAdded
       }));
 
       // Apply search filter
@@ -124,11 +131,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Get Google authentication
-    const googleTokens = getGoogleAuth(request);
+    const googleTokens = await getGoogleAuthTokens();
 
     const sheets = await getGoogleSheetsClient({
-      access_token: googleTokens.access_token,
-      refresh_token: googleTokens.refresh_token
+      access_token: googleTokens.access_token
     });
     
     // Check if sheet exists, if not create it
@@ -216,11 +222,10 @@ export async function PUT(request: NextRequest) {
     }
 
     // Get Google authentication
-    const googleTokens = getGoogleAuth(request);
+    const googleTokens = await getGoogleAuthTokens();
 
     const sheets = await getGoogleSheetsClient({
-      access_token: googleTokens.access_token,
-      refresh_token: googleTokens.refresh_token
+      access_token: googleTokens.access_token
     });
     const rowIndex = parseInt(id) + 1; // +1 for header row
 
@@ -285,13 +290,12 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Get Google authentication
-    const googleTokens = getGoogleAuth(request);
+    const googleTokens = await getGoogleAuthTokens();
     
-    console.log('DELETE /api/sheets/contacts: OAuth tokens - accessToken exists:', !!googleTokens.access_token, 'refreshToken exists:', !!googleTokens.refresh_token);
+    console.log('DELETE /api/sheets/contacts: OAuth tokens - accessToken exists:', !!googleTokens.access_token);
 
     const sheets = await getGoogleSheetsClient({
-      access_token: googleTokens.access_token,
-      refresh_token: googleTokens.refresh_token
+      access_token: googleTokens.access_token
     });
     console.log('DELETE /api/sheets/contacts: Google Sheets client created successfully');
     

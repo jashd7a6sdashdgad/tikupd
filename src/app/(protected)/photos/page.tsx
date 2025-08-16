@@ -9,7 +9,7 @@ import { useTranslation } from '@/lib/translations';
 import {
   Camera, Upload, Download, Trash2, Search, Grid, List, Heart, Share2,
   Eye, Plus, Filter, ImageIcon, Mic, Brain, Sparkles, Album, Copy, Zap,
-  Tag, MapPin, Calendar, Users, Palette, X, XCircle
+  Tag, MapPin, Calendar, Users, Palette, X, XCircle, RefreshCw
 } from 'lucide-react';
 import Image from 'next/image';
 import PhotoDashboard from '@/components/PhotoDashboard';
@@ -67,13 +67,6 @@ const formatFileSize = (size: string | number | undefined) => {
   const sizes = ['Bytes', 'KB', 'MB', 'GB'];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
   return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
-};
-
-const getCookie = (name: string): string | null => {
-  const value = `; ${document.cookie}`;
-  const parts = value.split(`; ${name}=`);
-  if (parts.length === 2) return parts.pop()?.split(';').shift() || null;
-  return null;
 };
 
 // --- DriveImage Component ---
@@ -149,7 +142,6 @@ export default function PhotosPage() {
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  const [googleTokens, setGoogleTokens] = useState<any>(null);
   const [needsAuth, setNeedsAuth] = useState(false);
 
   // Smart photo features state
@@ -185,18 +177,45 @@ export default function PhotosPage() {
   }, []);
 
   // --- Data Fetching & Auth ---
-  const loadPhotosFromDrive = useCallback(async (tokens: any) => {
+  const checkGoogleAuth = useCallback(async () => {
+    try {
+      // Check if user has Google tokens by calling our auth check endpoint
+      const response = await fetch('/api/google/drive/photos');
+      const data = await response.json();
+      
+      if (data.needsAuth || response.status === 401) {
+        setNeedsAuth(true);
+        setIsLoading(false);
+        return false;
+      }
+      
+      setNeedsAuth(false);
+      return true;
+    } catch (error) {
+      console.error('Auth check failed:', error);
+      setNeedsAuth(true);
+      setIsLoading(false);
+      return false;
+    }
+  }, []);
+
+  const loadPhotosFromDrive = useCallback(async () => {
     setIsLoading(true);
     setError(null);
+    
     try {
-      const response = await fetch('/api/google/drive/photos', {
-        headers: { 'x-google-tokens': JSON.stringify(tokens) }
-      });
+      // Use the existing Google Drive API that handles token management
+      const response = await fetch('/api/google/drive/photos');
       const data = await response.json();
+      
       if (!response.ok) {
-        if (data.needsAuth) setNeedsAuth(true);
+        if (data.needsAuth || response.status === 401) {
+          setNeedsAuth(true);
+          throw new Error('Please connect your Google account using the sidebar.');
+        }
         throw new Error(data.error || 'Failed to load photos');
       }
+      
       if (data.success) {
         const loadedPhotos: Photo[] = data.photos || [];
         setPhotos(loadedPhotos);
@@ -210,6 +229,7 @@ export default function PhotosPage() {
         }));
         setPhotoMetadata(metadata);
         console.log('📸 Loaded', loadedPhotos.length, 'photos from Google Drive');
+        setNeedsAuth(false);
       }
     } catch (err: any) {
       console.error('Failed to load photos:', err);
@@ -220,79 +240,25 @@ export default function PhotosPage() {
   }, [showNotification]);
 
   const loadPhotos = useCallback(async () => {
-    if (!googleTokens) {
-      const storedTokens = localStorage.getItem('google_tokens');
-      if (storedTokens) {
-        const tokens = JSON.parse(storedTokens);
-        setGoogleTokens(tokens);
-      } else {
-        setNeedsAuth(true);
-        setIsLoading(false);
-      }
-      return;
+    const isAuthed = await checkGoogleAuth();
+    if (isAuthed) {
+      await loadPhotosFromDrive();
     }
-    await loadPhotosFromDrive(googleTokens);
-  }, [googleTokens, loadPhotosFromDrive]);
+  }, [checkGoogleAuth, loadPhotosFromDrive]);
 
   useEffect(() => {
-    if (googleTokens) {
-      loadPhotosFromDrive(googleTokens);
-    }
-  }, [googleTokens, loadPhotosFromDrive]);
-
-  useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.get('google_auth') === 'success') {
-      const accessToken = getCookie('google_access_token');
-      const refreshToken = getCookie('google_refresh_token');
-      if (accessToken) {
-        const tokens = { access_token: accessToken, refresh_token: refreshToken };
-        localStorage.setItem('google_tokens', JSON.stringify(tokens));
-        setGoogleTokens(tokens);
-        setNeedsAuth(false);
-        window.history.replaceState({}, document.title, window.location.pathname);
-        console.log('✅ Google OAuth completed successfully');
-      }
-    }
-    const authError = urlParams.get('error');
-    if (authError) {
-      showNotification('error', `Authentication failed: ${authError}`);
-      window.history.replaceState({}, document.title, window.location.pathname);
-    }
     loadPhotos();
-  }, [loadPhotos, showNotification]);
-
-  const resetGoogleAuth = useCallback(() => {
-    localStorage.removeItem('google_tokens');
-    document.cookie = 'google_access_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
-    document.cookie = 'google_refresh_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
-    setGoogleTokens(null);
-    setNeedsAuth(true);
-    setPhotos([]);
-    setError(null);
-    console.log('🔄 Google Drive permissions reset');
-  }, []);
-
-  const handleGoogleAuth = useCallback(async () => {
-    try {
-      const response = await fetch('/api/google/auth');
-      const data = await response.json();
-      if (data.success) {
-        const authUrlWithState = `${data.authUrl}&state=${encodeURIComponent('/photos')}`;
-        window.location.href = authUrlWithState;
-      }
-    } catch (err: any) {
-      console.error('OAuth error:', err);
-      showNotification('error', 'Failed to initiate authentication with Google.');
-    }
-  }, [showNotification]);
+  }, [loadPhotos]);
 
   // --- Photo Management ---
   const handleFileUpload = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (!files || files.length === 0) return;
-    if (!googleTokens?.access_token) {
-      showNotification('error', 'Authentication is required. Please connect your Google account.');
+    
+    // Check auth first
+    const isAuthed = await checkGoogleAuth();
+    if (!isAuthed) {
+      showNotification('error', 'Please connect your Google account using the sidebar first.');
       setNeedsAuth(true);
       return;
     }
@@ -308,13 +274,12 @@ export default function PhotosPage() {
 
         const response = await fetch('/api/google/drive/photos', {
           method: 'POST',
-          headers: { 'x-google-tokens': JSON.stringify(googleTokens) },
           body: formData
         });
 
         const data = await response.json();
         if (!response.ok) {
-          if (data.needsAuth) setNeedsAuth(true);
+          if (data.needsAuth || response.status === 401) setNeedsAuth(true);
           throw new Error(data.error || `Failed to upload ${file.name}`);
         }
         return data.photo;
@@ -347,22 +312,27 @@ export default function PhotosPage() {
 
     setIsUploading(false);
     if (fileInputRef.current) fileInputRef.current.value = '';
-  }, [googleTokens, showNotification]);
+  }, [checkGoogleAuth, showNotification]);
 
   const deletePhoto = useCallback(async (photoId: string) => {
-    if (!googleTokens) return showNotification('error', 'Please authenticate with Google Drive first.');
+    // Check auth first
+    const isAuthed = await checkGoogleAuth();
+    if (!isAuthed) {
+      showNotification('error', 'Please connect your Google account using the sidebar first.');
+      setNeedsAuth(true);
+      return;
+    }
 
     const originalPhotos = photos;
     setPhotos(prev => prev.filter(p => p.id !== photoId));
 
     try {
       const response = await fetch(`/api/google/drive/photos?id=${photoId}`, {
-        method: 'DELETE',
-        headers: { 'x-google-tokens': JSON.stringify(googleTokens) }
+        method: 'DELETE'
       });
       const data = await response.json();
       if (!response.ok) {
-        if (data.needsAuth) setNeedsAuth(true);
+        if (data.needsAuth || response.status === 401) setNeedsAuth(true);
         throw new Error(data.error || 'Failed to delete photo');
       }
       showNotification('success', 'Photo deleted successfully.');
@@ -371,7 +341,7 @@ export default function PhotosPage() {
       showNotification('error', err.message);
       setPhotos(originalPhotos);
     }
-  }, [googleTokens, photos, selectedPhoto, showNotification]);
+  }, [checkGoogleAuth, photos, selectedPhoto, showNotification]);
 
   const toggleFavorite = useCallback((photoId: string) => {
     setPhotos(prev =>
@@ -551,15 +521,30 @@ export default function PhotosPage() {
       {needsAuth && (
         <Card className="my-10 text-center">
           <CardHeader>
-            <CardTitle>Connect to Google Drive</CardTitle>
-            <CardDescription>To manage your photos, you need to grant access to your Google Drive account.</CardDescription>
+            <CardTitle>Google Drive Connection Required</CardTitle>
+            <CardDescription>
+              To manage your photos, please connect your Google account using the "Connect Google" button in the sidebar.
+            </CardDescription>
           </CardHeader>
           <CardContent>
-            <Button onClick={handleGoogleAuth} className="gap-2">
-              <ImageIcon className="h-4 w-4" />
-              Connect Google Drive
-            </Button>
-            <p className="text-xs text-muted-foreground mt-2">This will only access files created by this application.</p>
+            <div className="flex flex-col items-center gap-4">
+              <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                <p className="text-sm text-blue-700 mb-2">
+                  👈 Look for the <strong>"Connect Google"</strong> button in the sidebar
+                </p>
+                <p className="text-xs text-blue-600">
+                  After connecting, refresh this page to access your photos.
+                </p>
+              </div>
+              <Button 
+                onClick={() => window.location.reload()} 
+                variant="outline"
+                className="gap-2"
+              >
+                <RefreshCw className="h-4 w-4" />
+                Refresh Page
+              </Button>
+            </div>
           </CardContent>
         </Card>
       )}

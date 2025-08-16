@@ -230,6 +230,10 @@ export default function TravelCompanionPage() {
   // Voice input states
   const [isRecording, setIsRecording] = useState(false);
   const [voiceInput, setVoiceInput] = useState('');
+  const [audioEnabled, setAudioEnabled] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
+  const [audioChunks, setAudioChunks] = useState<Blob[]>([]);
   
   // Currency and exchange rates
   const [baseCurrency, setBaseCurrency] = useState('OMR');
@@ -396,16 +400,311 @@ export default function TravelCompanionPage() {
     });
   }, []);
 
-  const handleVoiceInput = () => {
-    setIsRecording(!isRecording);
-    // Voice recognition implementation would go here
-    if (!isRecording) {
+  const playAudio = async (audioPath: string) => {
+    try {
+      console.log('Attempting to play audio:', audioPath);
+      const audio = new Audio(audioPath);
+      
+      // Add event listeners for debugging
+      audio.addEventListener('loadstart', () => console.log('Audio loadstart'));
+      audio.addEventListener('canplay', () => console.log('Audio canplay'));
+      audio.addEventListener('play', () => console.log('Audio playing'));
+      audio.addEventListener('error', (e) => console.error('Audio error event:', e));
+      
+      // Preload the audio
+      audio.preload = 'auto';
+      
+      try {
+        await audio.play();
+        console.log('Audio played successfully');
+      } catch (playError) {
+        console.error('Error playing audio:', playError);
+        if (playError instanceof Error) {
+          console.error('Play error name:', playError.name);
+          console.error('Play error message:', playError.message);
+        } else if (playError && typeof playError === 'object') {
+          console.error('Play error name:', (playError as any).name);
+          console.error('Play error message:', (playError as any).message);
+        }
+        
+        // If autoplay is blocked, try to enable audio on user interaction
+        if (
+          (playError instanceof Error && playError.name === 'NotAllowedError') ||
+          (playError && typeof playError === 'object' && (playError as any).name === 'NotAllowedError')
+        ) {
+          console.log('Autoplay blocked - this is normal for first interaction');
+          // The audio will play on subsequent interactions after user allows it
+        }
+      }
+    } catch (error) {
+      console.error('Error creating audio object:', error);
+    }
+  };
+
+  const enableAudio = async () => {
+    try {
+      // Create a silent audio context to enable audio
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      await audioContext.resume();
+      setAudioEnabled(true);
+      console.log('Audio context enabled');
+    } catch (error) {
+      console.error('Error enabling audio context:', error);
+    }
+  };
+
+  const testWebhookConnection = async () => {
+    try {
+      console.log('🧪 Testing webhook connection...');
+      const response = await fetch('https://n8n.srv903406.hstgr.cloud/webhook/travel', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({
+          test: true,
+          message: 'Connection test from travel page',
+          timestamp: new Date().toISOString()
+        }),
+        mode: 'cors'
+      });
+
+      console.log('🧪 Test response status:', response.status);
+      console.log('🧪 Test response headers:', Object.fromEntries(response.headers.entries()));
+      
+      if (response.ok) {
+        const result = await response.text();
+        console.log('✅ Webhook is accessible, response:', result);
+        
+        // Only play response audio if we get exactly "Email sent successfully"
+        let parsedResult;
+        try {
+          parsedResult = JSON.parse(result);
+        } catch {
+          parsedResult = { message: result };
+        }
+        
+        if (parsedResult.message === 'Email sent successfully') {
+          console.log('🔊 Test got exact email confirmation - playing response audio...');
+          await playAudio('/travel/VOICE RESPONSE.wav');
+        }
+        
+        setVoiceInput(`Webhook test successful: ${result}`);
+        return true;
+      } else {
+        console.warn('⚠️ Webhook returned non-OK status:', response.status);
+        const errorText = await response.text();
+        console.warn('⚠️ Error response:', errorText);
+        
+        setVoiceInput(`Webhook test failed: ${response.status} ${response.statusText}`);
+        return false;
+      }
+    } catch (error) {
+      console.error('❌ Webhook connection test failed:', error);
+      let message = 'Webhook test error';
+      if (error instanceof Error) {
+        message += ': ' + error.message;
+      } else if (error && typeof error === 'object') {
+        message += ': ' + (error as any).message;
+      }
+      setVoiceInput(message);
+      return false;
+    }
+  };
+
+  const convertBlobToBase64 = (blob: Blob): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64String = reader.result as string;
+        // Remove the data URL prefix to get just the base64 data
+        const base64Data = base64String.split(',')[1];
+        resolve(base64Data);
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  };
+
+  const sendAudioToWebhook = async (base64Audio: string) => {
+    try {
+      console.log('🚀 Sending audio to n8n webhook...');
+      console.log('📊 Audio data size:', base64Audio.length, 'characters');
+      console.log('🔗 Webhook URL:', 'https://n8n.srv903406.hstgr.cloud/webhook/travel');
+      
+      const payload = {
+        audio: base64Audio,
+        timestamp: new Date().toISOString(),
+        source: 'travel-page',
+        audioFormat: 'audio/webm;codecs=opus',
+        dataSize: base64Audio.length
+      };
+      
+      console.log('📦 Payload:', {
+        ...payload,
+        audio: `${base64Audio.substring(0, 50)}...(${base64Audio.length} chars total)`
+      });
+      
+      const response = await fetch('https://n8n.srv903406.hstgr.cloud/webhook/travel', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'User-Agent': 'Travel-Voice-Assistant/1.0'
+        },
+        body: JSON.stringify(payload),
+        mode: 'cors'
+      });
+
+      console.log('📡 Response status:', response.status);
+      console.log('📡 Response headers:', Object.fromEntries(response.headers.entries()));
+
+      if (response.ok) {
+        try {
+          const result = await response.json();
+          console.log('✅ Webhook response:', result);
+          return result;
+        } catch (jsonError) {
+          console.error('❌ Failed to parse JSON response:', jsonError);
+          const textResponse = await response.text();
+          console.log('📄 Raw response text:', textResponse);
+          return { message: 'Webhook received but response was not JSON', rawResponse: textResponse };
+        }
+      } else {
+        console.error('❌ Webhook request failed:', response.status, response.statusText);
+        const errorText = await response.text();
+        console.error('❌ Error response:', errorText);
+        return null;
+      }
+    } catch (error) {
+      console.error('❌ Network error sending audio to webhook:', error);
+      let name = '', message = '', stack = '';
+      if (error instanceof Error) {
+        name = error.name;
+        message = error.message;
+        stack = error.stack || '';
+      } else if (error && typeof error === 'object') {
+        name = (error as any).name;
+        message = (error as any).message;
+        stack = (error as any).stack || '';
+      }
+      console.error('❌ Error details:', { name, message, stack });
+      return null;
+    }
+  };
+
+  const startRecording = async () => {
+    try {
+      console.log('Starting voice recording...');
+      
+      // Request microphone permission
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          sampleRate: 44100
+        } 
+      });
+
+      // Create MediaRecorder
+      const recorder = new MediaRecorder(stream, {
+        mimeType: 'audio/webm;codecs=opus'
+      });
+      
+      const chunks: Blob[] = [];
+
+      recorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          chunks.push(event.data);
+        }
+      };
+
+      recorder.onstop = async () => {
+        console.log('Recording stopped, processing audio...');
+        setIsProcessing(true);
+        
+        // Create blob from chunks
+        const audioBlob = new Blob(chunks, { type: 'audio/webm;codecs=opus' });
+        
+        // Convert to base64
+        const base64Audio = await convertBlobToBase64(audioBlob);
+        console.log('Audio converted to base64, length:', base64Audio.length);
+        
+        // Send to webhook
+        console.log('📤 About to send audio to webhook...');
+        const webhookResponse = await sendAudioToWebhook(base64Audio);
+        console.log('📥 Webhook call completed, response:', webhookResponse);
+        
+        // Only play response audio when n8n confirms email was sent with "Email sent successfully"
+        if (webhookResponse && webhookResponse.message === 'Email sent successfully') {
+          console.log('🔊 Email confirmed sent by n8n - playing response audio...');
+          await playAudio('/travel/VOICE RESPONSE.wav');
+          setVoiceInput('Email sent successfully');
+        } else if (webhookResponse !== null) {
+          console.log('⏳ Webhook responded but no email confirmation...');
+          console.log('📋 Response message:', webhookResponse.message || webhookResponse);
+          setVoiceInput(webhookResponse.message || JSON.stringify(webhookResponse) || 'Request processed');
+        } else {
+          console.log('❌ Webhook failed');
+          setVoiceInput('Voice input processed (webhook failed)');
+        }
+        
+        setIsProcessing(false);
+        
+        // Clean up stream
+        stream.getTracks().forEach(track => track.stop());
+      };
+
+      recorder.start();
+      setMediaRecorder(recorder);
+      setAudioChunks(chunks);
+      
+      console.log('Recording started successfully');
+      
+    } catch (error) {
+      console.error('Error starting recording:', error);
+      setIsRecording(false);
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorder && mediaRecorder.state === 'recording') {
+      console.log('Manually stopping recording...');
+      mediaRecorder.stop();
+    }
+  };
+
+  const handleVoiceInput = async () => {
+    // Enable audio on first user interaction if not already enabled
+    if (!audioEnabled) {
+      await enableAudio();
+    }
+    
+    if (!isRecording && !isProcessing) {
+      // Test webhook connection first
+      console.log('🔍 Testing webhook before starting recording...');
+      const webhookAvailable = await testWebhookConnection();
+      if (!webhookAvailable) {
+        console.warn('⚠️ Webhook test failed, but proceeding with recording anyway...');
+      }
+      
       // Start recording
-      console.log('Starting voice recording for itinerary planning...');
-    } else {
-      // Stop recording and process
-      console.log('Processing voice input...');
-      setVoiceInput('Sample voice input: Add visit to Gold Souk on December 16th at 2 PM');
+      setIsRecording(true);
+      console.log('🎤 Playing start audio and beginning recording...');
+      
+      // Play start audio
+      await playAudio('/travel/TRAVEL VOICE.wav');
+      
+      // Start recording after a brief delay to avoid capturing the start sound
+      setTimeout(() => {
+        startRecording();
+      }, 500);
+      
+    } else if (isRecording) {
+      // Stop recording manually
+      setIsRecording(false);
+      stopRecording();
     }
   };
 
@@ -776,10 +1075,21 @@ export default function TravelCompanionPage() {
             <div className="flex items-center gap-3">
               <Button
                 onClick={handleVoiceInput}
-                className={`${isRecording ? 'bg-red-500 hover:bg-red-600' : 'bg-gradient-to-r from-blue-500 to-cyan-600 hover:from-blue-600 hover:to-cyan-700'} text-black font-bold`}
+                disabled={isProcessing}
+                className={`${
+                  isProcessing 
+                    ? 'bg-yellow-500 hover:bg-yellow-600 animate-pulse' 
+                    : isRecording 
+                      ? 'bg-red-500 hover:bg-red-600 animate-pulse' 
+                      : 'bg-gradient-to-r from-blue-500 to-cyan-600 hover:from-blue-600 hover:to-cyan-700'
+                } text-white font-bold`}
               >
                 <Mic className="h-4 w-4 mr-2" />
-                {isRecording ? t('stopRecording') || 'Stop Recording' : t('voiceInput') || 'Voice Input'}
+                {isProcessing 
+                  ? 'Processing...' 
+                  : isRecording 
+                    ? t('stopRecording') || 'Stop Recording' 
+                    : t('voiceInput') || 'Voice Input'}
               </Button>
             </div>
           </div>
@@ -939,18 +1249,71 @@ export default function TravelCompanionPage() {
                   <CardContent className="space-y-4">
                     <Button
                       onClick={handleVoiceInput}
-                      className={`w-full h-12 ${isRecording ? 'bg-red-500 hover:bg-red-600 animate-pulse' : 'bg-gradient-to-r from-blue-500 to-cyan-600 hover:from-blue-600 hover:to-cyan-700'} text-black font-bold`}
+                      disabled={isProcessing}
+                      className={`w-full h-12 ${
+                        isProcessing 
+                          ? 'bg-yellow-500 hover:bg-yellow-600 animate-pulse' 
+                          : isRecording 
+                            ? 'bg-red-500 hover:bg-red-600 animate-pulse' 
+                            : 'bg-gradient-to-r from-blue-500 to-cyan-600 hover:from-blue-600 hover:to-cyan-700'
+                      } text-white font-bold`}
                     >
                       <Mic className="h-4 w-4 mr-2" />
-                      {isRecording ? 'Recording...' : 'Add Activity by Voice'}
+                      {isProcessing 
+                        ? 'Processing...' 
+                        : isRecording 
+                          ? 'Recording... (Click to stop)' 
+                          : 'Add Activity by Voice'}
                     </Button>
                     
-                    {voiceInput && (
+                    {(isRecording || isProcessing) && (
                       <div className="p-3 bg-white/60 rounded-lg border border-blue-200">
-                        <p className="text-sm font-medium text-blue-700">Voice Input:</p>
+                        <p className="text-sm font-medium text-blue-700">
+                          {isRecording ? '🎤 Listening... (Click button again to stop)' : '⚡ Processing audio...'}
+                        </p>
+                      </div>
+                    )}
+                    
+                    {voiceInput && !isRecording && !isProcessing && (
+                      <div className="p-3 bg-white/60 rounded-lg border border-green-200">
+                        <p className="text-sm font-medium text-green-700">Voice Input Result:</p>
                         <p className="text-sm text-gray-700">{voiceInput}</p>
                       </div>
                     )}
+
+                    {/* Debug buttons */}
+                    <div className="space-y-2">
+                      <Button
+                        onClick={testWebhookConnection}
+                        variant="outline"
+                        className="w-full h-10 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium text-sm"
+                      >
+                        🧪 Test Webhook Connection
+                      </Button>
+                      <Button
+                        onClick={async () => {
+                          console.log('🧪 Testing webhook with fake audio...');
+                          setIsProcessing(true);
+                          const fakeAudioData = btoa('fake-audio-data-for-testing');
+                          const response = await sendAudioToWebhook(fakeAudioData);
+                          console.log('🧪 Fake audio test response:', response);
+                          
+                          // Only play response audio if we get exactly "Email sent successfully"
+                          if (response && response.message === 'Email sent successfully') {
+                            console.log('🔊 Fake audio test got exact email confirmation - playing response audio...');
+                            await playAudio('/travel/VOICE RESPONSE.wav');
+                            setVoiceInput('Fake audio test: Email sent successfully');
+                          } else {
+                            setVoiceInput(response ? `Fake audio test response: ${response.message || JSON.stringify(response)}` : 'Fake audio test failed');
+                          }
+                          setIsProcessing(false);
+                        }}
+                        variant="outline"
+                        className="w-full h-10 bg-yellow-100 hover:bg-yellow-200 text-yellow-700 font-medium text-sm"
+                      >
+                        🎵 Test Webhook with Fake Audio
+                      </Button>
+                    </div>
                   </CardContent>
                 </Card>
 

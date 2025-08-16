@@ -17,7 +17,10 @@ import {
   Edit,
   Trash2,
   Mic,
-  RefreshCw
+  RefreshCw,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown
 } from 'lucide-react';
 import { useVoiceInput } from '@/hooks/useVoiceInput';
 
@@ -33,6 +36,8 @@ export default function ContactsPage() {
   const [editingContact, setEditingContact] = useState<Contact | null>(null);
   const [updating, setUpdating] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [sortBy, setSortBy] = useState<'name' | 'email' | 'company'>('name');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   
   // Form fields
   const [name, setName] = useState('');
@@ -221,7 +226,13 @@ export default function ContactsPage() {
     console.log('🗑️ Attempting to delete contact:', contactId);
     console.log('🔍 DELETE URL: /api/sheets/contacts');
 
+    // Store original contacts list for rollback if needed
+    const originalContacts = [...contacts];
+    
+    // Optimistically remove the contact from UI immediately
+    setContacts(prev => prev.filter(contact => contact.id !== contactId));
     setDeleting(contactId);
+
     try {
       const response = await fetch('/api/sheets/contacts', {
         method: 'DELETE',
@@ -241,13 +252,18 @@ export default function ContactsPage() {
       
       if (data.success) {
         console.log('✅ Contact deleted successfully');
+        // Force refresh from server to ensure consistency
         await fetchContacts();
       } else {
         console.error('❌ Failed to delete contact:', data.message);
+        // Rollback optimistic update
+        setContacts(originalContacts);
         alert(t('contactDeleteError') + ': ' + (data.message || 'Unknown error'));
       }
     } catch (error: any) {
       console.error('❌ Error deleting contact:', error);
+      // Rollback optimistic update
+      setContacts(originalContacts);
       const errorMessage = error.message || error.toString() || 'Network error';
       alert(t('contactDeleteError') + ': ' + errorMessage);
     } finally {
@@ -297,6 +313,53 @@ export default function ContactsPage() {
     return colors[index];
   };
 
+  const sortContacts = (contactsList: Contact[]) => {
+    return [...contactsList].sort((a, b) => {
+      let valueA = '';
+      let valueB = '';
+      
+      switch (sortBy) {
+        case 'name':
+          valueA = a.name.toLowerCase();
+          valueB = b.name.toLowerCase();
+          break;
+        case 'email':
+          valueA = (a.email || '').toLowerCase();
+          valueB = (b.email || '').toLowerCase();
+          break;
+        case 'company':
+          valueA = (a.company || '').toLowerCase();
+          valueB = (b.company || '').toLowerCase();
+          break;
+      }
+      
+      if (sortOrder === 'asc') {
+        return valueA.localeCompare(valueB);
+      } else {
+        return valueB.localeCompare(valueA);
+      }
+    });
+  };
+
+  const handleSort = (field: 'name' | 'email' | 'company') => {
+    if (sortBy === field) {
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortBy(field);
+      setSortOrder('asc');
+    }
+  };
+
+  const getSortIcon = (field: 'name' | 'email' | 'company') => {
+    if (sortBy !== field) {
+      return <ArrowUpDown className="h-4 w-4" />;
+    }
+    return sortOrder === 'asc' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />;
+  };
+
+  // Get sorted contacts for display
+  const sortedContacts = sortContacts(contacts);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 p-4 lg:p-8">
       <div className="max-w-7xl mx-auto">
@@ -318,7 +381,8 @@ export default function ContactsPage() {
           <div className="flex items-center space-x-4">
             <div className="text-right">
               <p className="text-sm text-black">{t('contacts')}</p>
-              <p className="text-xl font-bold text-primary">{contacts.length}</p>
+              <p className="text-xl font-bold text-primary">{sortedContacts.length}</p>
+              <p className="text-xs text-gray-500">Sorted by {sortBy} ({sortOrder === 'asc' ? 'A-Z' : 'Z-A'})</p>
             </div>
             <Button onClick={fetchContacts} variant="outline" size="sm">
               <RefreshCw className="h-4 w-4 mr-2" />
@@ -435,10 +499,10 @@ export default function ContactsPage() {
           </Card>
         )}
 
-        {/* Search */}
+        {/* Search and Sort */}
         <Card className="mb-8">
           <CardContent className="pt-6">
-            <div className="flex gap-4">
+            <div className="flex flex-col lg:flex-row gap-4">
               <div className="flex-1">
                 <Input
                   placeholder={t('search') + '...'}
@@ -447,6 +511,35 @@ export default function ContactsPage() {
                   className="text-black"
                 />
               </div>
+              
+              {/* Sort Controls */}
+              <div className="flex gap-2">
+                <Button
+                  variant={sortBy === 'name' ? 'primary' : 'outline'}
+                  size="sm"
+                  onClick={() => handleSort('name')}
+                  className="flex items-center gap-2"
+                >
+                  Name {getSortIcon('name')}
+                </Button>
+                <Button
+                  variant={sortBy === 'email' ? 'primary' : 'outline'}
+                  size="sm"
+                  onClick={() => handleSort('email')}
+                  className="flex items-center gap-2"
+                >
+                  Email {getSortIcon('email')}
+                </Button>
+                <Button
+                  variant={sortBy === 'company' ? 'primary' : 'outline'}
+                  size="sm"
+                  onClick={() => handleSort('company')}
+                  className="flex items-center gap-2"
+                >
+                  Company {getSortIcon('company')}
+                </Button>
+              </div>
+              
               <Button onClick={fetchContacts}>
                 <Search className="h-4 w-4 mr-2" />
                 {t('search')}
@@ -466,9 +559,9 @@ export default function ContactsPage() {
               </Card>
             ))}
           </div>
-        ) : contacts.length > 0 ? (
+        ) : sortedContacts.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {contacts.map((contact) => (
+            {sortedContacts.map((contact) => (
               <Card key={contact.id} className="hover:shadow-lg transition-shadow">
                 <CardContent className="p-6">
                   <div className="flex items-start space-x-4">
@@ -542,7 +635,7 @@ export default function ContactsPage() {
           </Card>
         )}
       </div>
-      </div>
+    </div>
     </div>
   );
 }

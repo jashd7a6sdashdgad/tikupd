@@ -161,14 +161,6 @@ class N8NVoiceAssistant {
   - Multi-language support
 - **Voice Commands**: "Open chat", "Start conversation", "Talk to AI"
 
-### 🧠 THINK TOOL (/think-tool)
-- **Location**: AI thinking and problem-solving
-- **Features**:
-  - Complex problem analysis
-  - Decision-making assistance
-  - Brainstorming support
-  - Strategic planning help
-- **Voice Commands**: "Help me think", "Analyze this", "Brainstorm ideas"
 
 ### 🔍 SEARCH (/search)
 - **Location**: Global search across all data

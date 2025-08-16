@@ -46,7 +46,7 @@ export default function VoiceChatInterface({
   const [isAutoPlayEnabled, setIsAutoPlayEnabled] = useState(true);
   const [currentPlayingId, setCurrentPlayingId] = useState<string | null>(null);
   const [textInput, setTextInput] = useState('');
-
+  const [autoPlayMessageId, setAutoPlayMessageId] = useState<string | null>(null);
 
   // Voice recorder state & refs
   const [isRecording, setIsRecording] = useState(false);
@@ -145,14 +145,18 @@ export default function VoiceChatInterface({
           audioBase64: result.data.audioResponse,
           duration: result.data.responseDuration || 3,
           timestamp: new Date().toISOString(),
-          mimeType: 'audio/mp3'
+          mimeType: result.data.mimeType || 'audio/mp3'
         };
 
         setTimeout(() => {
           setMessages(prev => [...prev, receivedMessage]);
           if (isAutoPlayEnabled && receivedMessage.audioBase64) {
-             // Auto-play AI response audio
-             console.log('🔊 Auto-playing AI response');
+            // Auto-play AI response audio
+            console.log('🔊 Auto-playing AI response');
+            setTimeout(() => {
+              // Set the message ID for auto-play
+              setAutoPlayMessageId(receivedMessage.id);
+            }, 100);
           }
           scrollToBottom();
         }, 1000);
@@ -430,6 +434,8 @@ export default function VoiceChatInterface({
                   key={message.id}
                   message={{ ...message, duration: message.duration || 0 }}
                   onPlayStateChange={handlePlayStateChange}
+                  autoPlay={autoPlayMessageId === message.id}
+                  onAutoPlayComplete={() => setAutoPlayMessageId(null)}
                   className="mb-3"
                 />
               ) : (

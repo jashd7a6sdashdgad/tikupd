@@ -161,7 +161,6 @@ export function SmartNarratorProvider({ children }: SmartNarratorProviderProps) 
       '/youtube': 'YouTube',
       '/weather': 'weather',
       '/tracking': 'tracking',
-      '/think-tool': 'thinking tool',
       '/shopping': 'shopping list',
       '/hotel-expenses': 'hotel expenses'
     };

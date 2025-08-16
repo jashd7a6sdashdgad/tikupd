@@ -22,12 +22,16 @@ interface VoiceMessage {
 interface VoiceMessageDisplayProps {
   message: VoiceMessage;
   onPlayStateChange?: (id: string, isPlaying: boolean) => void;
+  autoPlay?: boolean;
+  onAutoPlayComplete?: () => void;
   className?: string;
 }
 
 export default function VoiceMessageDisplay({
   message,
   onPlayStateChange,
+  autoPlay = false,
+  onAutoPlayComplete,
   className = ''
 }: VoiceMessageDisplayProps) {
   const { language, isRTL } = useSettings();
@@ -138,6 +142,30 @@ export default function VoiceMessageDisplay({
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   }, []);
 
+  // Handle auto-play
+  React.useEffect(() => {
+    if (autoPlay && (message.audioUrl || message.audioBase64)) {
+      console.log('🔊 Auto-playing message:', message.id);
+      // Delay slightly to ensure component is fully rendered
+      const timer = setTimeout(async () => {
+        try {
+          initializeAudio();
+          if (audioRef.current) {
+            await audioRef.current.play();
+            setIsPlaying(true);
+            onPlayStateChange?.(message.id, true);
+          }
+        } catch (error) {
+          console.error('Auto-play failed:', error);
+        } finally {
+          onAutoPlayComplete?.();
+        }
+      }, 200);
+
+      return () => clearTimeout(timer);
+    }
+  }, [autoPlay, message.audioUrl, message.audioBase64, message.id, initializeAudio, onPlayStateChange, onAutoPlayComplete]);
+
   // Clean up audio on unmount
   React.useEffect(() => {
     return () => {
@@ -161,11 +189,11 @@ export default function VoiceMessageDisplay({
         <div className="flex items-center mb-2 space-x-2">
           <div className={`p-2 rounded-full ${
             message.type === 'sent' ? 'bg-blue-400' : 'bg-gray-300'
-          }`}>
+          } ${autoPlay ? 'animate-pulse' : ''}`}>
             <Mic className="h-3 w-3" />
           </div>
           <span className="text-xs opacity-75">
-            {t('voiceMessage')}
+            {autoPlay ? t('autoPlaying') || 'Auto-playing...' : t('voiceMessage')}
           </span>
         </div>
 

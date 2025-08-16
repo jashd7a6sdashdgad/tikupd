@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthenticatedClient, GoogleDrive } from '@/lib/google';
-import { getServerSession } from 'next-auth';
+import { getGoogleAccessToken } from '@/lib/google/googleTokens';
 
 interface Photo {
   id: string;
@@ -19,29 +19,21 @@ export async function GET(request: NextRequest) {
   try {
     console.log('📸 Google Drive Photos API called');
     
-    // Get user session/tokens (you'll need to implement session management)
-    // For now, we'll assume tokens are stored in session or passed via headers
-    const authHeader = request.headers.get('authorization');
-    const sessionTokens = request.headers.get('x-google-tokens');
+    // Get access token from cookies using existing token management
+    const accessToken = await getGoogleAccessToken();
     
-    if (!sessionTokens && !authHeader) {
+    if (!accessToken) {
       return NextResponse.json({
         success: false,
-        error: 'Authentication required',
+        error: 'Authentication required - please connect your Google account',
         needsAuth: true
       }, { status: 401 });
     }
 
-    let tokens;
-    try {
-      tokens = sessionTokens ? JSON.parse(sessionTokens) : null;
-    } catch (error) {
-      console.error('Failed to parse tokens:', error);
-      return NextResponse.json({
-        success: false,
-        error: 'Invalid authentication tokens'
-      }, { status: 401 });
-    }
+    // Create tokens object for the authenticated client
+    const tokens = {
+      access_token: accessToken
+    };
 
     // Get authenticated Google client
     const auth = getAuthenticatedClient(tokens);
@@ -106,7 +98,6 @@ export async function POST(request: NextRequest) {
     
     const formData = await request.formData();
     const file = formData.get('photo') as File;
-    const sessionTokens = request.headers.get('x-google-tokens');
     
     console.log('📄 File info:', {
       name: file?.name,
@@ -121,24 +112,21 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    if (!sessionTokens) {
+    // Get access token from cookies using existing token management
+    const accessToken = await getGoogleAccessToken();
+    
+    if (!accessToken) {
       return NextResponse.json({
         success: false,
-        error: 'Authentication required',
+        error: 'Authentication required - please connect your Google account',
         needsAuth: true
       }, { status: 401 });
     }
 
-    let tokens;
-    try {
-      tokens = JSON.parse(sessionTokens);
-    } catch (error) {
-      console.error('Failed to parse tokens:', error);
-      return NextResponse.json({
-        success: false,
-        error: 'Invalid authentication tokens'
-      }, { status: 401 });
-    }
+    // Create tokens object for the authenticated client
+    const tokens = {
+      access_token: accessToken
+    };
 
     // Validate file type
     if (!file.type.startsWith('image/')) {
@@ -166,41 +154,6 @@ export async function POST(request: NextRequest) {
     }
     
     // Get authenticated Google client
-    console.log('🔑 Token validation:', {
-      hasAccessToken: !!tokens.access_token,
-      hasRefreshToken: !!tokens.refresh_token,
-      tokenType: typeof tokens.access_token,
-      accessTokenLength: tokens.access_token?.length,
-      accessTokenPrefix: tokens.access_token?.substring(0, 20) + '...'
-    });
-    
-    // Validate token format
-    if (!tokens.access_token || typeof tokens.access_token !== 'string') {
-      return NextResponse.json({
-        success: false,
-        error: 'Invalid access token format',
-        needsAuth: true
-      }, { status: 401 });
-    }
-    
-    try {
-      const auth = getAuthenticatedClient(tokens);
-      const drive = new GoogleDrive(auth);
-      
-      // Test authentication before proceeding
-      console.log('🔐 Testing Google Drive authentication...');
-      await drive.listFiles('', 1); // Quick auth test
-      console.log('✅ Google Drive authentication successful');
-    } catch (authError: any) {
-      console.error('❌ Authentication test failed:', authError.message);
-      return NextResponse.json({
-        success: false,
-        error: 'Google Drive authentication failed - please reconnect',
-        needsAuth: true,
-        details: authError.message
-      }, { status: 401 });
-    }
-    
     const auth = getAuthenticatedClient(tokens);
     const drive = new GoogleDrive(auth);
 
@@ -299,7 +252,6 @@ export async function DELETE(request: NextRequest) {
     
     const { searchParams } = new URL(request.url);
     const photoId = searchParams.get('id');
-    const sessionTokens = request.headers.get('x-google-tokens');
     
     if (!photoId) {
       return NextResponse.json({
@@ -308,24 +260,21 @@ export async function DELETE(request: NextRequest) {
       }, { status: 400 });
     }
 
-    if (!sessionTokens) {
+    // Get access token from cookies using existing token management
+    const accessToken = await getGoogleAccessToken();
+    
+    if (!accessToken) {
       return NextResponse.json({
         success: false,
-        error: 'Authentication required',
+        error: 'Authentication required - please connect your Google account',
         needsAuth: true
       }, { status: 401 });
     }
 
-    let tokens;
-    try {
-      tokens = JSON.parse(sessionTokens);
-    } catch (error) {
-      console.error('Failed to parse tokens:', error);
-      return NextResponse.json({
-        success: false,
-        error: 'Invalid authentication tokens'
-      }, { status: 401 });
-    }
+    // Create tokens object for the authenticated client
+    const tokens = {
+      access_token: accessToken
+    };
 
     // Get authenticated Google client
     const auth = getAuthenticatedClient(tokens);
