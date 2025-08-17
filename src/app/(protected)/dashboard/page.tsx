@@ -982,17 +982,6 @@ if (calendarResponse && calendarResponse.ok) {
                     <ArrowRight className="h-3 w-3" />
                   </Button>
                   
-                  <Button 
-                    className="w-full justify-between text-black hover:bg-gray-50 transition-all duration-200" 
-                    variant="ghost"
-                    onClick={() => router.push('/web-scraper')}
-                  >
-                    <div className="flex items-center">
-                      <Search className="h-4 w-4 mr-2" />
-                      {t('webScraper')}
-                    </div>
-                    <ArrowRight className="h-3 w-3" />
-                  </Button>
                   
                   <Button 
                     className="w-full justify-between text-black hover:bg-gray-50 transition-all duration-200" 
@@ -1018,17 +1007,6 @@ if (calendarResponse && calendarResponse.ok) {
                     <ArrowRight className="h-3 w-3" />
                   </Button>
                   
-                  <Button 
-                    className="w-full justify-between text-black hover:bg-gray-50 transition-all duration-200" 
-                    variant="ghost"
-                    onClick={() => router.push('/image-generation')}
-                  >
-                    <div className="flex items-center">
-                      <Camera className="h-4 w-4 mr-2" />
-                      AI Image Generation
-                    </div>
-                    <ArrowRight className="h-3 w-3" />
-                  </Button>
                 </div>
                 
                 {/* Social & Business Actions */}

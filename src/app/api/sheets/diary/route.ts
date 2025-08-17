@@ -52,14 +52,24 @@ export async function GET(request: NextRequest) {
 
       // Skip header row and convert to structured data
       const dataRows = rows.slice(1);
-      let entries = dataRows.map((row, index) => ({
-        id: (index + 1).toString(),
+      
+      // Create entries with actual sheet row positions for reliable deletion
+      let allEntries = dataRows.map((row, index) => ({
+        id: `row_${index + 2}`, // Use actual 1-based sheet row as ID
+        sheetRow: index + 2, // Actual 1-based row position in sheet
         date: row[0] || '',
         content: row[1] || '',
         mood: row[2] || '',
         tags: row[3] || '',
         dateTime: row[4] || ''
       }));
+      
+      // Filter out empty entries for display
+      let entries = allEntries.filter(entry => 
+        entry.date || entry.content || entry.mood || entry.tags || entry.dateTime
+      );
+      
+      console.log('📖 Found', entries.length, 'diary entries with content out of', allEntries.length, 'total rows');
 
       // Apply filters
       if (startDate || endDate) {
@@ -271,6 +281,8 @@ export async function DELETE(request: NextRequest) {
     const body = await request.json();
     const { id } = body;
     
+    console.log('🗑️ DELETE request received for diary entry ID:', id);
+    
     if (!id) {
       return NextResponse.json({
         success: false,
@@ -292,20 +304,41 @@ export async function DELETE(request: NextRequest) {
         spreadsheetId: SPREADSHEET_ID
       });
       
+      console.log('Available sheets:', spreadsheet.data.sheets?.map(s => ({ 
+        title: s.properties?.title, 
+        id: s.properties?.sheetId 
+      })));
+      
       const diarySheet = spreadsheet.data.sheets?.find(
         sheet => sheet.properties?.title === DIARY_CONFIG.name
       );
       
       if (diarySheet?.properties?.sheetId !== undefined && diarySheet.properties.sheetId !== null) {
         sheetId = diarySheet.properties.sheetId;
+        console.log('Found diary sheet with ID:', sheetId);
+      } else {
+        console.log('Diary sheet not found, using default sheetId = 0');
+        // If diary sheet doesn't exist, it might be the first/default sheet
+        if (spreadsheet.data.sheets && spreadsheet.data.sheets.length > 0) {
+          sheetId = spreadsheet.data.sheets[0].properties?.sheetId || 0;
+          console.log('Using first sheet ID:', sheetId);
+        }
       }
     } catch (sheetError) {
       console.error('Error getting sheet info:', sheetError);
       // Continue with default sheetId = 0
     }
 
-    // ID is the row index (1-based after header), so calculate the actual row
-    const rowIndex = parseInt(id);
+    // Extract sheet row from the ID format "row_X"
+    let sheetRow: number;
+    if (id.startsWith('row_')) {
+      sheetRow = parseInt(id.replace('row_', ''));
+    } else {
+      // Fallback for old ID format
+      sheetRow = parseInt(id) + 1;
+    }
+    
+    console.log('📍 Sheet row from ID:', sheetRow, '(1-based)');
     
     // First, validate that the row exists by getting current data
     const response = await sheets.spreadsheets.values.get({
@@ -315,43 +348,42 @@ export async function DELETE(request: NextRequest) {
 
     const rows = response.data.values || [];
     
-    // Check if the ID corresponds to a valid row (skipping header)
-    if (rowIndex < 1 || rowIndex >= rows.length) {
+    console.log('📊 Total rows in sheet:', rows.length, '(including header)');
+    console.log('📊 Target sheet row:', sheetRow, '(1-based)');
+    
+    // Validate sheet row exists
+    if (sheetRow < 2 || sheetRow > rows.length) {
+      console.log('❌ Invalid sheet row:', sheetRow, 'valid range: 2 to', rows.length);
       return NextResponse.json({
         success: false,
         message: 'Diary entry not found'
       }, { status: 404 });
     }
 
-    // Google Sheets API uses 0-based indexing, but we need to account for header row
-    // rowIndex is 1-based from our data, so for deleting we need it as is
-    const actualRowToDelete = rowIndex; // Keep 1-based for deletion including header
+    // Get the data that will be deleted (for logging)
+    const rowData = rows[sheetRow - 1]; // Convert to 0-based for array access
+    console.log('🎯 Row data to be cleared:', rowData);
 
     try {
-      // Delete the row (Google Sheets API uses 0-based indexing)
-      await sheets.spreadsheets.batchUpdate({
+      // Clear the row content using the direct sheet row number
+      console.log('🧹 Clearing content from sheet row:', sheetRow, '(1-based)');
+      
+      await sheets.spreadsheets.values.clear({
         spreadsheetId: SPREADSHEET_ID,
-        requestBody: {
-          requests: [{
-            deleteDimension: {
-              range: {
-                sheetId: sheetId,
-                dimension: 'ROWS',
-                startIndex: actualRowToDelete,
-                endIndex: actualRowToDelete + 1
-              }
-            }
-          }]
-        }
+        range: `${DIARY_CONFIG.name}!A${sheetRow}:E${sheetRow}`
       });
+      
+      console.log('✅ Successfully cleared row content at row:', sheetRow);
 
       return NextResponse.json({
         success: true,
-        message: 'Diary entry deleted successfully',
+        message: 'Diary entry deleted successfully (content cleared)',
         timestamp: new Date().toISOString()
       });
 
     } catch (apiError: any) {
+      console.error('Row clear failed:', apiError.message);
+      
       if (apiError.message?.includes('not been used') || apiError.message?.includes('disabled')) {
         return NextResponse.json({
           success: false,

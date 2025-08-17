@@ -10,7 +10,21 @@ export async function GET(request: NextRequest) {
     // Remove the API route prefix to get the file path
     const prefix = '/api/music/serve/';
     let filePath = urlPath.startsWith(prefix) ? urlPath.slice(prefix.length) : '';
-    filePath = decodeURIComponent(filePath);
+    
+    // Handle URL decoding more carefully
+    try {
+      filePath = decodeURIComponent(filePath);
+      // Replace common URL-encoded characters back to normal
+      filePath = filePath
+        .replace(/%27/g, "'")
+        .replace(/%28/g, "(")
+        .replace(/%29/g, ")")
+        .replace(/%23/g, "#")
+        .replace(/%26/g, "&");
+    } catch (error) {
+      console.error('❌ Failed to decode file path:', filePath);
+      return new NextResponse('Bad Request', { status: 400 });
+    }
     const musicDir = path.join(process.cwd(), 'public', 'Music');
     const fullPath = path.join(musicDir, filePath);
 

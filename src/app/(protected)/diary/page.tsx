@@ -17,7 +17,8 @@ import {
   AlertCircle,
   Mic,
   RefreshCw,
-  Calendar
+  Calendar,
+  Trash2
 } from 'lucide-react';
 import { useVoiceInput } from '@/hooks/useVoiceInput';
 
@@ -153,6 +154,39 @@ export default function DiaryPage() {
       alert(t('settingsError'));
     } finally {
       setAdding(false);
+    }
+  };
+
+  const deleteEntry = async (entryId: string) => {
+    if (!confirm(t('confirmDeleteEntry') || 'Are you sure you want to delete this diary entry?')) {
+      return;
+    }
+
+    console.log('🗑️ Deleting diary entry with ID:', entryId);
+
+    try {
+      const response = await fetch('/api/sheets/diary', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: entryId })
+      });
+
+      const data = await response.json();
+      console.log('🗑️ Delete response:', data);
+      
+      if (data.success) {
+        console.log('✅ Delete successful, refreshing entries...');
+        // Small delay to ensure Google Sheets has processed the deletion
+        setTimeout(async () => {
+          await fetchEntries();
+        }, 1000);
+      } else {
+        console.error('❌ Delete failed:', data.message);
+        alert(t('settingsError') + ': ' + data.message);
+      }
+    } catch (error) {
+      console.error('Error deleting diary entry:', error);
+      alert(t('settingsError'));
     }
   };
 
@@ -421,9 +455,20 @@ export default function DiaryPage() {
                           </p>
                         </div>
                       </div>
-                      <div className="flex items-center text-sm text-black">
-                        <Calendar className="h-4 w-4 mr-1" />
-                        {entryDate}
+                      <div className="flex items-center gap-2">
+                        <div className="flex items-center text-sm text-black">
+                          <Calendar className="h-4 w-4 mr-1" />
+                          {entryDate}
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => deleteEntry(entry.id)}
+                          className="h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+                          title="Delete entry"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </div>
                     </div>
                     

@@ -45,7 +45,12 @@ export async function GET(request: NextRequest) {
         title,
         artist,
         filename,
-        audioUrl: `/api/music/serve/${encodeURIComponent(filename)}`,
+        audioUrl: `/api/music/serve/${encodeURIComponent(filename)
+          .replace(/'/g, '%27')
+          .replace(/\(/g, '%28')
+          .replace(/\)/g, '%29')
+          .replace(/#/g, '%23')
+          .replace(/&/g, '%26')}`,
         duration: '0:00' // Will be updated by frontend
       };
     });

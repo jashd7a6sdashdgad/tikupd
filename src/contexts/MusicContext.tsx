@@ -9,6 +9,8 @@ interface MusicContextType {
   isPlaying: boolean;
   volume: number;
   setVolume: (volume: number) => void;
+  setCurrentSong: (song: string | null) => void;
+  setIsPlaying: (playing: boolean) => void;
 }
 
 const MusicContext = createContext<MusicContextType | undefined>(undefined);
@@ -48,7 +50,9 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
       currentSong,
       isPlaying,
       volume,
-      setVolume
+      setVolume,
+      setCurrentSong,
+      setIsPlaying
     }}>
       {children}
     </MusicContext.Provider>
