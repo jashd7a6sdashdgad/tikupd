@@ -33,7 +33,6 @@ export const translations: Record<string, Translation> = {
     featuresDemo: "Features Demo",
     emailIntelligence: "Email Intelligence",
     emailSummary: "Email Summary",
-    imageGeneration: "Image Generation",
     thinking: "Thinking",
     
     // Common

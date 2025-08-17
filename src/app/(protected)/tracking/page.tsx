@@ -657,7 +657,7 @@ export default function TrackingPage() {
             <div className="p-6">
               <div className="flex items-center justify-between">
                 <div className="flex-1">
-                  <p className="text-sm font-semibold text-orange-700 uppercase tracking-wider">Expenses</p>
+                  <p className="text-sm font-semibold text-orange-700 uppercase tracking-wider">Total Balance</p>
                   <p className="text-3xl font-bold text-gray-800 mt-1">
                     {formatCurrency(analyticsData.overview.totalExpenses)}
                   </p>

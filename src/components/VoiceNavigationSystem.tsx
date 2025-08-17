@@ -24,7 +24,6 @@ import {
   Search,
   Phone,
   ShoppingBag,
-  Image,
   MessageSquare,
   Briefcase,
   Camera,
@@ -243,13 +242,6 @@ export const VoiceNavigationSystem: React.FC<VoiceNavigationSystemProps> = ({
       action: () => router.push('/hotel-expenses'),
       description: 'Open Hotel Expenses',
       icon: <DollarSign className="h-4 w-4" />,
-      category: 'navigation'
-    },
-    {
-      pattern: ['image generation', 'generate image', 'create image', 'ai image'],
-      action: () => router.push('/image-generation'),
-      description: 'Open Image Generation',
-      icon: <Image className="h-4 w-4" />,
       category: 'navigation'
     },
     {

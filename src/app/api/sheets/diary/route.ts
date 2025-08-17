@@ -1,34 +1,35 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getGoogleSheetsClient } from '@/lib/google';
-import { verifyToken, COOKIE_OPTIONS } from '@/lib/auth';
+import { getGoogleAccessToken } from '@/lib/google/googleTokens';
 import { SPREADSHEET_ID, getSheetConfig, SheetHelpers } from '@/lib/sheets-config';
 
 const DIARY_CONFIG = getSheetConfig('diary');
 
+// Helper function to get Google auth using existing token management
+async function getGoogleAuthTokens() {
+  const accessToken = await getGoogleAccessToken();
+  
+  if (!accessToken) {
+    throw new Error('Google authentication required - please connect your Google account');
+  }
+  
+  return {
+    access_token: accessToken
+  };
+}
+
 export async function GET(request: NextRequest) {
   try {
-    const token = request.cookies.get(COOKIE_OPTIONS.name)?.value;
-    if (!token) {
-      return NextResponse.json({ success: false, message: 'Authentication required' }, { status: 401 });
-    }
-    
-    const user = verifyToken(token);
     const { searchParams } = new URL(request.url);
     const startDate = searchParams.get('startDate');
     const endDate = searchParams.get('endDate');
     const mood = searchParams.get('mood');
     
-    // Get OAuth tokens from cookies
-    const accessToken = request.cookies.get('google_access_token')?.value;
-    const refreshToken = request.cookies.get('google_refresh_token')?.value;
-    
-    if (!accessToken) {
-      throw new Error('Google authentication required');
-    }
+    // Get Google authentication
+    const googleTokens = await getGoogleAuthTokens();
 
     const sheets = await getGoogleSheetsClient({
-      access_token: accessToken,
-      refresh_token: refreshToken
+      access_token: googleTokens.access_token
     });
     
     try {
@@ -45,7 +46,6 @@ export async function GET(request: NextRequest) {
           success: true,
           data: [],
           message: 'No diary entries found',
-          userId: user.id,
           timestamp: new Date().toISOString()
         });
       }
@@ -81,7 +81,6 @@ export async function GET(request: NextRequest) {
         success: true,
         data: entries,
         message: 'Diary entries retrieved successfully',
-        userId: user.id,
         timestamp: new Date().toISOString()
       });
 
@@ -106,14 +105,11 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const token = request.cookies.get(COOKIE_OPTIONS.name)?.value;
-    if (!token) {
-      return NextResponse.json({ success: false, message: 'Authentication required' }, { status: 401 });
-    }
-    
-    const user = verifyToken(token);
     const body = await request.json();
-    const { content, mood = '', tags = '' } = body;
+    const { content, mood = '', tags = [] } = body;
+    
+    // Convert tags array to comma-separated string for storage
+    const tagsString = Array.isArray(tags) ? tags.join(', ') : tags || '';
     
     if (!content) {
       return NextResponse.json({
@@ -122,17 +118,11 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    // Get OAuth tokens from cookies
-    const accessToken = request.cookies.get('google_access_token')?.value;
-    const refreshToken = request.cookies.get('google_refresh_token')?.value;
-    
-    if (!accessToken) {
-      throw new Error('Google authentication required');
-    }
+    // Get Google authentication
+    const googleTokens = await getGoogleAuthTokens();
 
     const sheets = await getGoogleSheetsClient({
-      access_token: accessToken,
-      refresh_token: refreshToken
+      access_token: googleTokens.access_token
     });
     
     // Check if sheet exists, if not create it
@@ -174,7 +164,7 @@ export async function POST(request: NextRequest) {
         range: DIARY_CONFIG.range,
         valueInputOption: 'USER_ENTERED',
         requestBody: {
-          values: [SheetHelpers.diary.formatRow({ content, mood, tags })]
+          values: [SheetHelpers.diary.formatRow({ content, mood, tags: tagsString })]
         }
       });
 
@@ -186,7 +176,6 @@ export async function POST(request: NextRequest) {
           updatedRows: response.data.updates?.updatedRows
         },
         message: 'Diary entry added successfully',
-        userId: user.id,
         timestamp: new Date().toISOString()
       });
 
@@ -211,14 +200,11 @@ export async function POST(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
-    const token = request.cookies.get(COOKIE_OPTIONS.name)?.value;
-    if (!token) {
-      return NextResponse.json({ success: false, message: 'Authentication required' }, { status: 401 });
-    }
-    
-    const user = verifyToken(token);
     const body = await request.json();
     const { id, content, mood, tags } = body;
+    
+    // Convert tags array to comma-separated string for storage
+    const tagsString = Array.isArray(tags) ? tags.join(', ') : tags || '';
     
     if (!id || !content) {
       return NextResponse.json({
@@ -227,17 +213,11 @@ export async function PUT(request: NextRequest) {
       }, { status: 400 });
     }
 
-    // Get OAuth tokens from cookies
-    const accessToken = request.cookies.get('google_access_token')?.value;
-    const refreshToken = request.cookies.get('google_refresh_token')?.value;
-    
-    if (!accessToken) {
-      throw new Error('Google authentication required');
-    }
+    // Get Google authentication
+    const googleTokens = await getGoogleAuthTokens();
 
     const sheets = await getGoogleSheetsClient({
-      access_token: accessToken,
-      refresh_token: refreshToken
+      access_token: googleTokens.access_token
     });
     const rowIndex = parseInt(id) + 1; // +1 for header row
 
@@ -257,14 +237,13 @@ export async function PUT(request: NextRequest) {
         range: currentRange,
         valueInputOption: 'USER_ENTERED',
         requestBody: {
-          values: [SheetHelpers.diary.formatRow({ date: originalDate, content, mood, tags, dateTime: originalDateTime })]
+          values: [SheetHelpers.diary.formatRow({ date: originalDate, content, mood, tags: tagsString, dateTime: originalDateTime })]
         }
       });
 
       return NextResponse.json({
         success: true,
         message: 'Diary entry updated successfully',
-        userId: user.id,
         timestamp: new Date().toISOString()
       });
 
@@ -289,12 +268,6 @@ export async function PUT(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
-    const token = request.cookies.get(COOKIE_OPTIONS.name)?.value;
-    if (!token) {
-      return NextResponse.json({ success: false, message: 'Authentication required' }, { status: 401 });
-    }
-    
-    const user = verifyToken(token);
     const body = await request.json();
     const { id } = body;
     
@@ -305,17 +278,11 @@ export async function DELETE(request: NextRequest) {
       }, { status: 400 });
     }
 
-    // Get OAuth tokens from cookies
-    const accessToken = request.cookies.get('google_access_token')?.value;
-    const refreshToken = request.cookies.get('google_refresh_token')?.value;
-    
-    if (!accessToken) {
-      throw new Error('Google authentication required');
-    }
+    // Get Google authentication
+    const googleTokens = await getGoogleAuthTokens();
 
     const sheets = await getGoogleSheetsClient({
-      access_token: accessToken,
-      refresh_token: refreshToken
+      access_token: googleTokens.access_token
     });
     
     // Get sheet info to find the correct sheetId
@@ -381,7 +348,6 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({
         success: true,
         message: 'Diary entry deleted successfully',
-        userId: user.id,
         timestamp: new Date().toISOString()
       });
 

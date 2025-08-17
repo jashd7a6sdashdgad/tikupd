@@ -169,17 +169,6 @@ export default function SmartInsights({ dashboardData, weeklyStats, className = 
 
       // Test and demo insights to fill up space
       newInsights.push({
-        id: 'music-discovery',
-        type: 'suggestion',
-        priority: 'low',
-        title: 'Music Discovery',
-        description: 'Try the new music search feature! Search for your favorite songs and artists.',
-        action: { text: 'Explore Music', path: '/music' },
-        icon: <MessageSquare className="h-4 w-4" />,
-        timestamp: new Date()
-      });
-
-      newInsights.push({
         id: 'voice-navigation-test',
         type: 'optimization',
         priority: 'medium',
@@ -209,17 +198,6 @@ export default function SmartInsights({ dashboardData, weeklyStats, className = 
         description: 'Use the powerful search feature to find anything across your data. Try "restaurant expenses" or "meetings this week".',
         action: { text: 'Try Search', path: '/search' },
         icon: <Brain className="h-4 w-4" />,
-        timestamp: new Date()
-      });
-
-      newInsights.push({
-        id: 'automation-workflows',
-        type: 'suggestion',
-        priority: 'medium',
-        title: 'Workflow Automation',
-        description: 'Set up automated workflows to streamline your daily tasks and boost productivity.',
-        action: { text: 'Create Workflow', path: '/workflows' },
-        icon: <Zap className="h-4 w-4" />,
         timestamp: new Date()
       });
 

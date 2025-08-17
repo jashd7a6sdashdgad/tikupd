@@ -42,9 +42,16 @@ export default function ActivityTimeline({ dashboardData, className = '' }: Acti
     const timelineEvents: TimelineEvent[] = [];
     const now = new Date();
 
-    // Add calendar events (recent and upcoming)
-    if (dashboardData.todayEvents?.length > 0) {
-      dashboardData.todayEvents.forEach((event: any) => {
+    // Add recent calendar events (actual events from data)
+    if (dashboardData.allEvents?.length > 0) {
+      // Get events from the last 7 days
+      const recentEvents = dashboardData.allEvents.filter((event: any) => {
+        const eventTime = new Date(event.start?.dateTime || event.start?.date);
+        const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        return eventTime >= weekAgo && eventTime <= now;
+      }).slice(0, 5); // Limit to 5 recent events
+
+      recentEvents.forEach((event: any) => {
         const eventTime = new Date(event.start?.dateTime || event.start?.date);
         timelineEvents.push({
           id: `calendar-${event.id}`,
@@ -59,9 +66,10 @@ export default function ActivityTimeline({ dashboardData, className = '' }: Acti
       });
     }
 
-    // Add email activity (simulated recent activity)
+    // Add email activity (only if we have real unread emails)
     if (dashboardData.unreadEmails > 0) {
-      const emailTime = new Date(now.getTime() - Math.random() * 2 * 60 * 60 * 1000); // Within last 2 hours
+      // Use a more realistic timestamp - within the last hour
+      const emailTime = new Date(now.getTime() - 30 * 60 * 1000); // 30 minutes ago
       timelineEvents.push({
         id: 'email-recent',
         type: 'email',
@@ -74,69 +82,53 @@ export default function ActivityTimeline({ dashboardData, className = '' }: Acti
       });
     }
 
-    // Add expense entries
-    if (dashboardData.todayExpenses?.length > 0) {
-      dashboardData.todayExpenses.forEach((expense: any, index: number) => {
-        const expenseTime = new Date(now.getTime() - index * 30 * 60 * 1000); // Spread throughout day
+    // Add recent expense entries (actual expenses from data)
+    if (dashboardData.allExpenses?.length > 0) {
+      // Get expenses from the last 7 days
+      const recentExpenses = dashboardData.allExpenses
+        .filter((expense: any) => {
+          const expenseDate = new Date(expense.date);
+          const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+          return expenseDate >= weekAgo && expenseDate <= now;
+        })
+        .slice(0, 5); // Limit to 5 recent expenses
+
+      recentExpenses.forEach((expense: any, index: number) => {
+        const expenseDate = new Date(expense.date);
+        // Use actual expense date, but add some time variation for display
+        const expenseTime = new Date(expenseDate.getTime() + index * 60 * 60 * 1000);
+        
+        const creditAmount = parseFloat(String(expense.creditAmount || '0'));
+        const debitAmount = parseFloat(String(expense.debitAmount || '0'));
+        const legacyAmount = parseFloat(String(expense.amount || '0'));
+        const netAmount = (creditAmount || debitAmount) ? (debitAmount - creditAmount) : legacyAmount;
+
         timelineEvents.push({
-          id: `expense-${index}`,
+          id: `expense-${expense.id || index}`,
           type: 'expense',
           title: `Expense: ${expense.category || 'General'}`,
-          description: `$${expense.amount?.toFixed(2) || '0.00'} - ${expense.description || 'No description'}`,
+          description: `${netAmount.toFixed(2)} OMR - ${expense.description || 'No description'}`,
           timestamp: expenseTime,
           icon: <DollarSign className="h-4 w-4" />,
           color: 'text-yellow-600',
-          metadata: { amount: expense.amount, category: expense.category }
+          metadata: { amount: netAmount, category: expense.category }
         });
       });
     }
 
-    // Add system events
-    const loginTime = new Date(now.getTime() - 4 * 60 * 60 * 1000); // 4 hours ago
-    timelineEvents.push({
-      id: 'system-login',
-      type: 'system',
-      title: 'Dashboard Access',
-      description: 'Logged into personal assistant dashboard',
-      timestamp: loginTime,
-      icon: <Activity className="h-4 w-4" />,
-      color: 'text-purple-600'
-    });
-
-    // Add simulated recent activities
-    const photoTime = new Date(now.getTime() - 6 * 60 * 60 * 1000); // 6 hours ago
-    timelineEvents.push({
-      id: 'photo-upload',
-      type: 'photo',
-      title: 'Photos Uploaded',
-      description: 'Added 3 new photos to Google Drive',
-      timestamp: photoTime,
-      icon: <Camera className="h-4 w-4" />,
-      color: 'text-pink-600',
-      metadata: { count: 3 }
-    });
-
-    const journalTime = new Date(now.getTime() - 20 * 60 * 60 * 1000); // Yesterday
-    timelineEvents.push({
-      id: 'journal-entry',
-      type: 'diary',
-      title: 'Journal Entry',
-      description: 'Wrote daily reflection and goals',
-      timestamp: journalTime,
-      icon: <BookOpen className="h-4 w-4" />,
-      color: 'text-indigo-600'
-    });
-
-    const voiceTime = new Date(now.getTime() - 2 * 60 * 60 * 1000); // 2 hours ago
-    timelineEvents.push({
-      id: 'voice-interaction',
-      type: 'voice',
-      title: 'Voice Assistant',
-      description: 'Had conversation about weather and schedule',
-      timestamp: voiceTime,
-      icon: <MessageSquare className="h-4 w-4" />,
-      color: 'text-cyan-600'
-    });
+    // Only show dashboard access if we actually have recent activity
+    if (timelineEvents.length > 0) {
+      const loginTime = new Date(now.getTime() - 10 * 60 * 1000); // 10 minutes ago
+      timelineEvents.push({
+        id: 'system-login',
+        type: 'system',
+        title: 'Dashboard Access',
+        description: 'Logged into personal assistant dashboard',
+        timestamp: loginTime,
+        icon: <Activity className="h-4 w-4" />,
+        color: 'text-purple-600'
+      });
+    }
 
     // Sort by timestamp (most recent first)
     return timelineEvents.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
