@@ -54,7 +54,7 @@ export async function GET(request: NextRequest) {
       const dataRows = rows.slice(1);
       
       // Create entries with actual sheet row positions for reliable deletion
-      let allEntries = dataRows.map((row, index) => ({
+      const allEntries = dataRows.map((row, index) => ({
         id: `row_${index + 2}`, // Use actual 1-based sheet row as ID
         sheetRow: index + 2, // Actual 1-based row position in sheet
         date: row[0] || '',

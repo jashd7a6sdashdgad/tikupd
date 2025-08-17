@@ -463,7 +463,7 @@ export default function DiaryPage() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => deleteEntry(entry.id)}
+                          onClick={() => entry.id && deleteEntry(entry.id)}
                           className="h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
                           title="Delete entry"
                         >
