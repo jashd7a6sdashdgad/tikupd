@@ -20,16 +20,10 @@ import {
   Activity,
   Clock,
   Users,
-  Facebook,
-  Youtube,
-  Instagram,
-  MessageCircle,
-  Briefcase,
-  Building2,
   ArrowRight,
   Brain,
   Camera,
-  Bell
+  Briefcase
 } from 'lucide-react';
 
 // Import new smart components
@@ -38,9 +32,6 @@ import UnifiedStats from '@/components/UnifiedStats';
 import SmartNotifications from '@/components/SmartNotifications';
 import SmartQuickActions from '@/components/SmartQuickActions';
 import ActivityTimeline from '@/components/ActivityTimeline';
-import { CollapsibleSidebar } from '@/components/ui/CollapsibleSidebar';
-import { ModernCard } from '@/components/ui/ModernCard';
-import { NotificationPanel } from '@/components/ui/NotificationPanel';
 
 interface CalendarEvent {
   start?: {
@@ -83,12 +74,6 @@ export default function DashboardPage() {
   });
   const [isConnectingGoogle, setIsConnectingGoogle] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [socialMediaStats, setSocialMediaStats] = useState<{
-    facebook?: { followers: number; posts: number };
-    youtube?: { subscribers: number; videos: number };
-    instagram?: { followers: number; posts: number };
-    messenger?: { conversations: number; messages: number };
-  }>({});
   const [dataLoadingStatus, setDataLoadingStatus] = useState({
     weather: 'loading',
     calendar: 'loading',
@@ -458,83 +443,6 @@ if (calendarResponse && calendarResponse.ok) {
   }, []);
 
 
-  // Fetch social media stats
-  useEffect(() => {
-    const fetchSocialMediaStats = async () => {
-      try {
-        console.log('🔄 Fetching social media stats...');
-        
-        const [facebookResponse, youtubeResponse, instagramResponse] = await Promise.all([
-          fetch('/api/facebook', { credentials: 'include' }).catch(() => null),
-          fetch('/api/youtube?action=channel_stats', { credentials: 'include' }).catch(() => null),
-          fetch('/api/instagram', { credentials: 'include' }).catch(() => null)
-        ]);
-
-        const stats: any = {};
-
-        // Process Facebook data
-        if (facebookResponse && facebookResponse.ok) {
-          try {
-            const facebook = await facebookResponse.json();
-            if (facebook.success && facebook.data) {
-              stats.facebook = {
-                followers: facebook.data.followers_count || 0,
-                posts: facebook.data.posts_count || 0
-              };
-            }
-          } catch (error) {
-            console.log('Facebook stats error:', error);
-          }
-        }
-
-        // Process YouTube data
-        if (youtubeResponse && youtubeResponse.ok) {
-          try {
-            const youtube = await youtubeResponse.json();
-            if (youtube.success && youtube.data) {
-              stats.youtube = {
-                subscribers: youtube.data.subscriberCount || 0,
-                videos: youtube.data.videoCount || 0
-              };
-            }
-          } catch (error) {
-            console.log('YouTube stats error:', error);
-          }
-        }
-
-        // Process Instagram data
-        if (instagramResponse && instagramResponse.ok) {
-          try {
-            const instagram = await instagramResponse.json();
-            if (instagram.success && instagram.data) {
-              stats.instagram = {
-                followers: instagram.data.followers_count || 0,
-                posts: instagram.data.media_count || 0
-              };
-            }
-          } catch (error) {
-            console.log('Instagram stats error:', error);
-          }
-        }
-
-        // Add dynamic Messenger data based on email activity
-        const baseConversations = Math.max(Math.floor((dashboardData.totalEmails || 0) / 15), 15);
-        const baseMessages = Math.max((dashboardData.totalEmails || 0) * 8, 800);
-        
-        stats.messenger = {
-          conversations: Math.min(baseConversations, 50),
-          messages: Math.min(baseMessages, 2500)
-        };
-
-        setSocialMediaStats(stats);
-        console.log('✅ Social media stats loaded:', stats);
-      } catch (error) {
-        console.error('❌ Error fetching social media stats:', error);
-      }
-    };
-
-    fetchSocialMediaStats();
-  }, []);
 
   const handleGoogleConnect = async () => {
     try {
@@ -645,7 +553,7 @@ if (calendarResponse && calendarResponse.ok) {
             <UnifiedStats
               dashboardData={dashboardData}
               weeklyStats={weeklyStats}
-              socialMediaStats={socialMediaStats}
+              socialMediaStats={{}}
               className="[&>*]:!bg-transparent [&>*]:!shadow-none [&>*]:!border-none"
             />
           </div>
@@ -1132,16 +1040,6 @@ if (calendarResponse && calendarResponse.ok) {
                       className="h-12 flex flex-col items-center justify-center text-black hover:bg-purple-50 hover:text-purple-700 transition-all duration-200" 
                       variant="ghost"
                       size="sm"
-                      onClick={() => router.push('/youtube')}
-                    >
-                      <Youtube className="h-4 w-4 mb-1" />
-                      <span className="text-xs">{t('youtube')}</span>
-                    </Button>
-                    
-                    <Button 
-                      className="h-12 flex flex-col items-center justify-center text-black hover:bg-purple-50 hover:text-purple-700 transition-all duration-200" 
-                      variant="ghost"
-                      size="sm"
                       onClick={() => router.push('/budget')}
                     >
                       <Briefcase className="h-4 w-4 mb-1" />
@@ -1195,65 +1093,6 @@ if (calendarResponse && calendarResponse.ok) {
               </CardContent>
             </Card>
 
-            {/* Social Media Widget */}
-            <Card className="card-3d glass-widget p-4">
-              <CardHeader>
-                <CardTitle className="text-black">{t('socialMediaStats')}</CardTitle>
-                <CardDescription className="text-black">{t('socialPlatformInsights')}</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 gap-4">
-                  
-                  <div className="flex items-center space-x-3 p-3 bg-purple-50 rounded-lg">
-                    <Youtube className="h-6 w-6 text-purple-600" />
-                    <div>
-                      <p className="text-sm font-medium text-black">{t('youtube')}</p>
-                      <p className="text-xs text-gray-600">
-                        {socialMediaStats?.youtube?.subscribers || 'N/A'} {t('subs')}
-                      </p>
-                      <p className="text-xs text-purple-600">
-                        {socialMediaStats?.youtube?.videos || 0} {t('videos')}
-                      </p>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center space-x-3 p-3 bg-purple-50 rounded-lg">
-                    <Instagram className="h-6 w-6 text-purple-600" />
-                    <div>
-                      <p className="text-sm font-medium text-black">{t('instagram')}</p>
-                      <p className="text-xs text-gray-600">
-                        {socialMediaStats?.instagram?.followers || 'N/A'} {t('followers')}
-                      </p>
-                      <p className="text-xs text-purple-600">
-                        {socialMediaStats?.instagram?.posts || 0} {t('posts')}
-                      </p>
-                    </div>
-                  </div>
-                  
-                </div>
-                
-                <div className="mt-4 flex justify-between">
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={() => router.push('/youtube')}
-                    className="text-xs"
-                  >
-                    <Youtube className="h-3 w-3 mr-1" />
-                    {t('youtube')}
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={() => router.push('/instagram')}
-                    className="text-xs"
-                  >
-                    <Instagram className="h-3 w-3 mr-1" />
-                    {t('instagram')}
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
           </div>
         </div>
 
@@ -1287,16 +1126,6 @@ if (calendarResponse && calendarResponse.ok) {
 
       </div>
 
-      {/* Modern Collapsible Right Sidebar */}
-      <CollapsibleSidebar
-        side="right"
-        title="Smart Notifications"
-        icon={<Bell className="w-5 h-5 text-black font-bold" />}
-        defaultOpen={false}
-        className="lg:block hidden"
-      >
-        <NotificationPanel />
-      </CollapsibleSidebar>
 
 
     </div>
