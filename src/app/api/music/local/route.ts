@@ -28,15 +28,15 @@ export async function GET(request: NextRequest) {
     // Read all files in Music directory
     const files = await fs.readdir(musicDir);
     
-    // Filter for MP3 files (excluding Zone.Identifier files)
-    const mp3Files = files.filter(file => 
-      file.endsWith('.mp3') && !file.includes('Zone.Identifier')
+    // Filter for audio files (MP3 and WAV, excluding Zone.Identifier files)
+    const audioFiles = files.filter(file => 
+      (file.endsWith('.mp3') || file.endsWith('.wav')) && !file.includes('Zone.Identifier')
     );
 
-    console.log('🎵 Found MP3 files:', mp3Files);
+    console.log('🎵 Found audio files:', audioFiles);
 
-    // Convert MP3 files to track objects
-    const tracks: LocalMusicTrack[] = mp3Files.map((filename, index) => {
+    // Convert audio files to track objects
+    const tracks: LocalMusicTrack[] = audioFiles.map((filename, index) => {
       // Extract title and artist from filename
       const { title, artist } = parseFilename(filename);
       
@@ -74,8 +74,35 @@ export async function GET(request: NextRequest) {
 }
 
 function parseFilename(filename: string): { title: string; artist: string } {
-  // Remove .mp3 extension
-  const nameWithoutExt = filename.replace('.mp3', '');
+  // Remove audio file extensions
+  const nameWithoutExt = filename.replace(/\.(mp3|wav)$/i, '');
+  
+  // Special cases for known tracks (check these first!)
+  if (nameWithoutExt.toLowerCase().includes('channa mereya')) {
+    return { artist: 'Arijit Singh', title: 'Channa Mereya' };
+  } else if (nameWithoutExt.includes('حسين الجسمي') || nameWithoutExt.includes('امي جنة')) {
+    return { artist: 'Hussain Al Jassmi', title: 'Ommi Jannah' };
+  } else if (nameWithoutExt.toLowerCase().includes('lag jaa gale')) {
+    return { artist: 'SANAM', title: 'Lag Jaa Gale - Acoustic' };
+  } else if (nameWithoutExt.toLowerCase().includes('mahboob')) {
+    return { artist: 'Original', title: "Mahboob's Madness" };
+  } else if (nameWithoutExt.toLowerCase().includes('big sis mariya') && nameWithoutExt.toLowerCase().includes('birthday flex')) {
+    return { artist: 'Original', title: "Big Sis Mariya's Birthday Flex" };
+  } else if (nameWithoutExt.toLowerCase().includes('big sis mariya') && nameWithoutExt.toLowerCase().includes('birthday')) {
+    return { artist: 'Original', title: "Big Sis Mariya's Birthday" };
+  } else if (nameWithoutExt.toLowerCase().includes('carry the name')) {
+    return { artist: 'Original', title: 'Carry the Name' };
+  } else if (nameWithoutExt.toLowerCase().includes('forever us')) {
+    return { artist: 'Original', title: 'Forever Us' };
+  } else if (nameWithoutExt.toLowerCase().includes('tom cruise') && nameWithoutExt.toLowerCase().includes('vault')) {
+    return { artist: 'Behind The Scenes', title: 'How Tom Cruise Mastered the Vault Scene' };
+  } else if (nameWithoutExt.toLowerCase().includes('manaf') && nameWithoutExt.toLowerCase().includes('hustle')) {
+    return { artist: 'Original', title: "Manaf's Hustle" };
+  } else if (nameWithoutExt.toLowerCase().includes('srt') && nameWithoutExt.toLowerCase().includes('heavy')) {
+    return { artist: 'SRT', title: 'Heavy' };
+  } else if (nameWithoutExt.toLowerCase().includes('what have you done')) {
+    return { artist: 'Original', title: 'What Have You Done' };
+  }
   
   // Handle different filename patterns
   if (nameWithoutExt.includes(' - ')) {
@@ -98,17 +125,6 @@ function parseFilename(filename: string): { title: string; artist: string } {
         return { artist: second, title: first };
       }
     }
-  }
-  
-  // Special cases for known tracks
-  if (nameWithoutExt.toLowerCase().includes('channa mereya')) {
-    return { artist: 'Arijit Singh', title: 'Channa Mereya' };
-  } else if (nameWithoutExt.includes('حسين الجسمي') || nameWithoutExt.includes('امي جنة')) {
-    return { artist: 'Hussain Al Jassmi', title: 'Ommi Jannah' };
-  } else if (nameWithoutExt.toLowerCase().includes('lag jaa gale')) {
-    return { artist: 'SANAM', title: 'Lag Jaa Gale - Acoustic' };
-  } else if (nameWithoutExt.toLowerCase().includes('mahboob')) {
-    return { artist: 'Original', title: "Mahboob's Madness" };
   }
   
   // Fallback: use filename as title

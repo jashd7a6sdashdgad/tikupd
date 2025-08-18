@@ -137,67 +137,12 @@ interface TravelDocument {
 }
 
 const currencySymbols: Record<string, string> = {
-  USD: '$', EUR: '€', GBP: '£', JPY: '¥', OMR: 'ر.ع.', AED: 'د.إ', SAR: 'ر.س'
+  USD: '$', EUR: '€', GBP: '£', JPY: '¥', OMR: 'ر.ع.', AED: 'د.إ', SAR: 'ر.س', THB: '฿'
 };
 
-// Top 50 languages for translation
-const languages = [
-  { code: 'af', name: 'Afrikaans' },
-  { code: 'ar', name: 'Arabic' },
-  { code: 'bn', name: 'Bengali' },
-  { code: 'bg', name: 'Bulgarian' },
-  { code: 'ca', name: 'Catalan' },
-  { code: 'zh', name: 'Chinese (Simplified)' },
-  { code: 'zh-TW', name: 'Chinese (Traditional)' },
-  { code: 'hr', name: 'Croatian' },
-  { code: 'cs', name: 'Czech' },
-  { code: 'da', name: 'Danish' },
-  { code: 'nl', name: 'Dutch' },
-  { code: 'en', name: 'English' },
-  { code: 'et', name: 'Estonian' },
-  { code: 'fi', name: 'Finnish' },
-  { code: 'fr', name: 'French' },
-  { code: 'de', name: 'German' },
-  { code: 'el', name: 'Greek' },
-  { code: 'gu', name: 'Gujarati' },
-  { code: 'he', name: 'Hebrew' },
-  { code: 'hi', name: 'Hindi' },
-  { code: 'hu', name: 'Hungarian' },
-  { code: 'is', name: 'Icelandic' },
-  { code: 'id', name: 'Indonesian' },
-  { code: 'it', name: 'Italian' },
-  { code: 'ja', name: 'Japanese' },
-  { code: 'kn', name: 'Kannada' },
-  { code: 'ko', name: 'Korean' },
-  { code: 'lv', name: 'Latvian' },
-  { code: 'lt', name: 'Lithuanian' },
-  { code: 'mk', name: 'Macedonian' },
-  { code: 'ms', name: 'Malay' },
-  { code: 'ml', name: 'Malayalam' },
-  { code: 'mt', name: 'Maltese' },
-  { code: 'mr', name: 'Marathi' },
-  { code: 'no', name: 'Norwegian' },
-  { code: 'fa', name: 'Persian' },
-  { code: 'pl', name: 'Polish' },
-  { code: 'pt', name: 'Portuguese' },
-  { code: 'pa', name: 'Punjabi' },
-  { code: 'ro', name: 'Romanian' },
-  { code: 'ru', name: 'Russian' },
-  { code: 'sr', name: 'Serbian' },
-  { code: 'sk', name: 'Slovak' },
-  { code: 'sl', name: 'Slovenian' },
-  { code: 'es', name: 'Spanish' },
-  { code: 'sw', name: 'Swahili' },
-  { code: 'sv', name: 'Swedish' },
-  { code: 'ta', name: 'Tamil' },
-  { code: 'te', name: 'Telugu' },
-  { code: 'th', name: 'Thai' },
-  { code: 'tr', name: 'Turkish' },
-  { code: 'uk', name: 'Ukrainian' },
-  { code: 'ur', name: 'Urdu' },
-  { code: 'vi', name: 'Vietnamese' },
-  { code: 'cy', name: 'Welsh' }
-];
+// Available currencies for conversion
+const currencies = ['USD', 'EUR', 'GBP', 'JPY', 'OMR', 'AED', 'SAR', 'THB'];
+
 
 const transportIcons = {
   flight: Plane,
@@ -239,11 +184,11 @@ export default function TravelCompanionPage() {
   const [baseCurrency, setBaseCurrency] = useState('OMR');
   const [exchangeRates, setExchangeRates] = useState<Record<string, number>>({});
   
-  // Translation states
-  const [translateFrom, setTranslateFrom] = useState('en');
-  const [translateTo, setTranslateTo] = useState('ar');
-  const [textToTranslate, setTextToTranslate] = useState('');
-  const [translatedText, setTranslatedText] = useState('');
+  // Currency conversion states
+  const [currencyFrom, setCurrencyFrom] = useState('USD');
+  const [currencyTo, setCurrencyTo] = useState('EUR');
+  const [amountToConvert, setAmountToConvert] = useState('');
+  const [convertedAmount, setConvertedAmount] = useState('');
   
   // Form management states
   const [showDocumentForm, setShowDocumentForm] = useState(false);
@@ -708,125 +653,34 @@ export default function TravelCompanionPage() {
     }
   };
 
-  const translateText = async () => {
-    if (!textToTranslate.trim()) {
-      setTranslatedText('Please enter text to translate');
+  const handleCurrencyConvert = () => {
+    if (!amountToConvert.trim() || isNaN(parseFloat(amountToConvert))) {
+      setConvertedAmount('Please enter a valid amount');
       return;
     }
-    
-    setTranslatedText('Translating...');
-    
-    try {
-      // Use our local Vercel translation API
-      const response = await fetch('/api/translate', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          text: textToTranslate,
-          source: translateFrom,
-          target: translateTo
-        })
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        if (data.translatedText) {
-          setTranslatedText(data.translatedText);
-          return;
-        }
-      }
-    } catch (error) {
-      console.error('Local translation API error:', error);
-    }
-    
-    // Fallback to enhanced offline translations
-    const fallback = getFallbackTranslation(textToTranslate, translateTo);
-    if (fallback) {
-      setTranslatedText(fallback);
-    } else {
-      setTranslatedText(`Unable to translate "${textToTranslate}" from ${languages.find(l => l.code === translateFrom)?.name} to ${languages.find(l => l.code === translateTo)?.name}. LibreTranslate service is currently unavailable.`);
-    }
-  };
-
-  const getFallbackTranslation = (text: string, targetLang: string): string | null => {
-    const fallbackTranslations: Record<string, Record<string, string>> = {
-      'Hello': {
-        ar: 'مرحبا', es: 'Hola', fr: 'Bonjour', de: 'Hallo', it: 'Ciao', 
-        pt: 'Olá', ru: 'Привет', ja: 'こんにちは', ko: '안녕하세요', zh: '你好',
-        th: 'สวัสดี', hi: 'नमस्ते', tr: 'Merhaba', pl: 'Cześć', nl: 'Hallo'
-      },
-      'hello': {
-        ar: 'مرحبا', es: 'hola', fr: 'bonjour', de: 'hallo', it: 'ciao', 
-        pt: 'olá', ru: 'привет', ja: 'こんにちは', ko: '안녕하세요', zh: '你好',
-        th: 'สวัสดี', hi: 'नमस्ते', tr: 'merhaba', pl: 'cześć', nl: 'hallo'
-      },
-      'Thank you': {
-        ar: 'شكرا لك', es: 'Gracias', fr: 'Merci', de: 'Danke', it: 'Grazie',
-        pt: 'Obrigado', ru: 'Спасибо', ja: 'ありがとう', ko: '감사합니다', zh: '谢谢',
-        th: 'ขอบคุณ', hi: 'धन्यवाद', tr: 'Teşekkür ederim', pl: 'Dziękuję', nl: 'Dank je'
-      },
-      'Good morning': {
-        ar: 'صباح الخير', es: 'Buenos días', fr: 'Bonjour', de: 'Guten Morgen', it: 'Buongiorno',
-        pt: 'Bom dia', ru: 'Доброе утро', ja: 'おはよう', ko: '좋은 아침', zh: '早上好',
-        th: 'สวัสดีตอนเช้า', hi: 'शुभ प्रभात', tr: 'Günaydın', pl: 'Dzień dobry', nl: 'Goedemorgen'
-      },
-      'Excuse me': {
-        ar: 'عذراً', es: 'Disculpe', fr: 'Excusez-moi', de: 'Entschuldigung', it: 'Scusi',
-        pt: 'Com licença', ru: 'Извините', ja: 'すみません', ko: '실례합니다', zh: '不好意思',
-        th: 'ขอโทษ', hi: 'माफ करें', tr: 'Özür dilerim', pl: 'Przepraszam', nl: 'Excuseer me'
-      },
-      'Please': {
-        ar: 'من فضلك', es: 'Por favor', fr: 'S\'il vous plaît', de: 'Bitte', it: 'Per favore',
-        pt: 'Por favor', ru: 'Пожалуйста', ja: 'お願いします', ko: '제발', zh: '请',
-        th: 'กรุณา', hi: 'कृपया', tr: 'Lütfen', pl: 'Proszę', nl: 'Alsjeblieft'
-      },
-      'Where is the airport?': {
-        ar: 'أين المطار؟', es: '¿Dónde está el aeropuerto?', fr: 'Où est l\'aéroport?',
-        de: 'Wo ist der Flughafen?', it: 'Dov\'è l\'aeroporto?', pt: 'Onde fica o aeroporto?',
-        th: 'สนามบินอยู่ที่ไหน?', hi: 'हवाई अड्डा कहाँ है?', tr: 'Havaalanı nerede?'
-      },
-      'How much does this cost?': {
-        ar: 'كم يكلف هذا؟', es: '¿Cuánto cuesta esto?', fr: 'Combien ça coûte?',
-        de: 'Wie viel kostet das?', it: 'Quanto costa?', pt: 'Quanto custa isto?',
-        th: 'นี่ราคาเท่าไหร่?', hi: 'यह कितना खर्च करता है?', tr: 'Bu ne kadar?'
-      },
-      'I need help': {
-        ar: 'أحتاج المساعدة', es: 'Necesito ayuda', fr: 'J\'ai besoin d\'aide',
-        de: 'Ich brauche Hilfe', it: 'Ho bisogno di aiuto', pt: 'Preciso de ajuda',
-        th: 'ฉันต้องการความช่วยเหลือ', hi: 'मुझे मदद चाहिए', tr: 'Yardıma ihtiyacım var'
-      },
-      'Where is the hotel?': {
-        ar: 'أين الفندق؟', es: '¿Dónde está el hotel?', fr: 'Où est l\'hôtel?',
-        de: 'Wo ist das Hotel?', it: 'Dov\'è l\'hotel?', pt: 'Onde fica o hotel?',
-        th: 'โรงแรมอยู่ที่ไหน?', hi: 'होटल कहाँ है?', tr: 'Otel nerede?'
-      },
-      'Do you speak English?': {
-        ar: 'هل تتحدث الإنجليزية؟', es: '¿Hablas inglés?', fr: 'Parlez-vous anglais?',
-        de: 'Sprechen Sie Englisch?', it: 'Parli inglese?', pt: 'Você fala inglês?',
-        th: 'คุณพูดภาษาอังกฤษได้ไหม?', hi: 'क्या आप अंग्रेजी बोलते हैं?', tr: 'İngilizce biliyor musunuz?'
-      }
+    const amount = parseFloat(amountToConvert);
+    // Simple currency conversion rates (these would normally come from an API)
+    const exchangeRates: Record<string, Record<string, number>> = {
+      USD: { EUR: 0.85, GBP: 0.73, JPY: 110, OMR: 0.38, AED: 3.67, SAR: 3.75, THB: 34.5, USD: 1 },
+      EUR: { USD: 1.18, GBP: 0.86, JPY: 129, OMR: 0.45, AED: 4.33, SAR: 4.42, THB: 40.7, EUR: 1 },
+      GBP: { USD: 1.37, EUR: 1.16, JPY: 150, OMR: 0.52, AED: 5.03, SAR: 5.14, THB: 47.3, GBP: 1 },
+      JPY: { USD: 0.0091, EUR: 0.0078, GBP: 0.0067, OMR: 0.0035, AED: 0.034, SAR: 0.034, THB: 0.31, JPY: 1 },
+      OMR: { USD: 2.60, EUR: 2.21, GBP: 1.90, JPY: 286, AED: 9.53, SAR: 9.75, THB: 89.7, OMR: 1 },
+      AED: { USD: 0.27, EUR: 0.23, GBP: 0.20, JPY: 29.4, OMR: 0.10, SAR: 1.02, THB: 9.4, AED: 1 },
+      SAR: { USD: 0.27, EUR: 0.23, GBP: 0.19, JPY: 29.3, OMR: 0.10, AED: 0.98, THB: 9.2, SAR: 1 },
+      THB: { USD: 0.029, EUR: 0.025, GBP: 0.021, JPY: 3.23, OMR: 0.011, AED: 0.106, SAR: 0.109, THB: 1 }
     };
-    
-    // Try exact match first
-    if (fallbackTranslations[text]?.[targetLang]) {
-      return fallbackTranslations[text][targetLang];
+    if (currencyFrom === currencyTo) {
+      setConvertedAmount(amount.toFixed(2));
+      return;
     }
-    
-    // Try case-insensitive match
-    const lowerText = text.toLowerCase();
-    if (fallbackTranslations[lowerText]?.[targetLang]) {
-      return fallbackTranslations[lowerText][targetLang];
+    const rate = exchangeRates[currencyFrom]?.[currencyTo];
+    if (rate) {
+      const converted = amount * rate;
+      setConvertedAmount(converted.toFixed(2));
+    } else {
+      setConvertedAmount('Conversion rate not available');
     }
-    
-    // Try capitalized version
-    const capitalizedText = text.charAt(0).toUpperCase() + text.slice(1).toLowerCase();
-    if (fallbackTranslations[capitalizedText]?.[targetLang]) {
-      return fallbackTranslations[capitalizedText][targetLang];
-    }
-    
-    return null;
   };
 
   // Document management functions
@@ -1039,16 +893,18 @@ export default function TravelCompanionPage() {
     resetExpenseForm();
   };
 
-  const convertCurrency = (amount: number, from: string, to: string): number => {
-    if (from === to) return amount;
-    const rate = exchangeRates[from] / exchangeRates[to];
-    return amount * rate;
-  };
-
   const getTotalExpenses = (itineraryId: string): number => {
     return expenses
       .filter(exp => exp.itineraryId === itineraryId)
       .reduce((total, exp) => total + exp.convertedAmount, 0);
+  };
+
+  // Logic function for currency conversion
+  const convertCurrency = (amount: number, from: string, to: string): number => {
+    if (from === to) return amount;
+    if (!exchangeRates[from] || !exchangeRates[to]) return amount;
+    const rate = exchangeRates[from] / exchangeRates[to];
+    return amount * rate;
   };
 
   return (
@@ -1114,9 +970,9 @@ export default function TravelCompanionPage() {
               <FileText className="h-4 w-4 mr-2" />
               {t('documents') || 'Documents'}
             </TabsTrigger>
-            <TabsTrigger value="translate" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-indigo-500 data-[state=active]:to-purple-600 data-[state=active]:text-black data-[state=active]:font-bold">
-              <Languages className="h-4 w-4 mr-2" />
-              {t('translate') || 'Translate'}
+            <TabsTrigger value="convert" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-indigo-500 data-[state=active]:to-purple-600 data-[state=active]:text-black data-[state=active]:font-bold">
+              <DollarSign className="h-4 w-4 mr-2" />
+              {t('currency_convert') || 'Currency Convert'}
             </TabsTrigger>
           </TabsList>
 
@@ -1756,144 +1612,127 @@ export default function TravelCompanionPage() {
             </div>
           </TabsContent>
 
-          <TabsContent value="translate">
+          <TabsContent value="convert">
             <Card className="bg-white/70 backdrop-blur-xl border-2 border-white/30 rounded-3xl shadow-xl">
               <CardHeader>
-                <CardTitle className="text-2xl text-gray-800">Language Translation</CardTitle>
-                <p className="text-sm text-gray-600">Multiple free services with offline fallbacks</p>
+                <CardTitle className="text-2xl text-gray-800">Currency Converter</CardTitle>
+                <p className="text-sm text-gray-600">Convert between currencies using real-time math calculations</p>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label>From</Label>
-                    <Select value={translateFrom} onValueChange={setTranslateFrom}>
+                    <Label>From Currency</Label>
+                    <Select value={currencyFrom} onValueChange={setCurrencyFrom}>
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        {languages.map((lang) => (
-                          <SelectItem key={lang.code} value={lang.code}>{lang.name}</SelectItem>
+                        {currencies.map((currency) => (
+                          <SelectItem key={currency} value={currency}>
+                            {currency} {currencySymbols[currency as keyof typeof currencySymbols]}
+                          </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   </div>
                   <div>
-                    <Label>To</Label>
-                    <Select value={translateTo} onValueChange={setTranslateTo}>
+                    <Label>To Currency</Label>
+                    <Select value={currencyTo} onValueChange={setCurrencyTo}>
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        {languages.map((lang) => (
-                          <SelectItem key={lang.code} value={lang.code}>{lang.name}</SelectItem>
+                        {currencies.map((currency) => (
+                          <SelectItem key={currency} value={currency}>
+                            {currency} {currencySymbols[currency as keyof typeof currencySymbols]}
+                          </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   </div>
                 </div>
                 
-                <Textarea
-                  value={textToTranslate}
-                  onChange={(e) => setTextToTranslate(e.target.value)}
-                  placeholder="Enter text to translate..."
-                  className="min-h-[100px]"
-                />
+                <div>
+                  <Label>Amount to Convert</Label>
+                  <input
+                    type="number"
+                    value={amountToConvert}
+                    onChange={(e) => setAmountToConvert(e.target.value)}
+                    placeholder="Enter amount..."
+                    className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    step="0.01"
+                    min="0"
+                  />
+                </div>
                 
                 <div className="space-y-3">
-                  <Button onClick={translateText} className="w-full bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-bold">
-                    <Languages className="h-4 w-4 mr-2" />
-                    Translate
+                  <Button onClick={handleCurrencyConvert} className="w-full bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-bold">
+                    <DollarSign className="h-4 w-4 mr-2" />
+                    Convert Currency
                   </Button>
                   
-                  {/* Common Travel Phrases */}
-                  <div className="grid grid-cols-2 gap-2">
+                  {/* Quick Amount Buttons */}
+                  <div className="grid grid-cols-3 gap-2">
                     <Button 
-                      onClick={() => setTextToTranslate('Hello')}
+                      onClick={() => setAmountToConvert('10')}
                       variant="outline" 
                       size="sm" 
                       className="text-xs"
                     >
-                      Hello
+                      10
                     </Button>
                     <Button 
-                      onClick={() => setTextToTranslate('Thank you')}
+                      onClick={() => setAmountToConvert('50')}
                       variant="outline" 
                       size="sm" 
                       className="text-xs"
                     >
-                      Thank you
+                      50
                     </Button>
                     <Button 
-                      onClick={() => setTextToTranslate('Good morning')}
+                      onClick={() => setAmountToConvert('100')}
                       variant="outline" 
                       size="sm" 
                       className="text-xs"
                     >
-                      Good morning
+                      100
                     </Button>
                     <Button 
-                      onClick={() => setTextToTranslate('Excuse me')}
+                      onClick={() => setAmountToConvert('500')}
                       variant="outline" 
                       size="sm" 
                       className="text-xs"
                     >
-                      Excuse me
+                      500
                     </Button>
                     <Button 
-                      onClick={() => setTextToTranslate('Where is the airport?')}
+                      onClick={() => setAmountToConvert('1000')}
                       variant="outline" 
                       size="sm" 
                       className="text-xs"
                     >
-                      Airport?
+                      1,000
                     </Button>
                     <Button 
-                      onClick={() => setTextToTranslate('How much does this cost?')}
+                      onClick={() => setAmountToConvert('5000')}
                       variant="outline" 
                       size="sm" 
                       className="text-xs"
                     >
-                      How much?
-                    </Button>
-                    <Button 
-                      onClick={() => setTextToTranslate('I need help')}
-                      variant="outline" 
-                      size="sm" 
-                      className="text-xs"
-                    >
-                      Need help
-                    </Button>
-                    <Button 
-                      onClick={() => setTextToTranslate('Where is the hotel?')}
-                      variant="outline" 
-                      size="sm" 
-                      className="text-xs"
-                    >
-                      Hotel?
-                    </Button>
-                    <Button 
-                      onClick={() => setTextToTranslate('Please')}
-                      variant="outline" 
-                      size="sm" 
-                      className="text-xs"
-                    >
-                      Please
-                    </Button>
-                    <Button 
-                      onClick={() => setTextToTranslate('Do you speak English?')}
-                      variant="outline" 
-                      size="sm" 
-                      className="text-xs"
-                    >
-                      Speak English?
+                      5,000
                     </Button>
                   </div>
                 </div>
                 
-                {translatedText && (
+                {convertedAmount && (
                   <div className="p-4 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl border border-indigo-200">
-                    <Label className="text-sm font-semibold text-indigo-700">Translation:</Label>
-                    <p className="text-gray-800 mt-2">{translatedText}</p>
+                    <Label className="text-sm font-semibold text-indigo-700">Converted Amount:</Label>
+                    <p className="text-gray-800 mt-2 text-xl font-bold">
+                      {amountToConvert} {currencyFrom} = {convertedAmount} {currencyTo}
+                    </p>
+                    <p className="text-sm text-gray-600 mt-1">
+                      Exchange rate: 1 {currencyFrom} = {(parseFloat(convertedAmount) / parseFloat(amountToConvert)).toFixed(4)} {currencyTo}
+                    </p>
                   </div>
                 )}
               </CardContent>

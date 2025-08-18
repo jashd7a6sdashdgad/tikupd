@@ -9,7 +9,7 @@ import { useTranslation } from '@/lib/translations';
 import {
   Camera, Upload, Download, Trash2, Search, Grid, List, Heart, Share2,
   Eye, Plus, Filter, ImageIcon, Mic, Brain, Sparkles, Album, Copy, Zap,
-  Tag, MapPin, Calendar, Users, Palette, X, XCircle, RefreshCw
+  Tag, MapPin, Calendar, Users, Palette, X, XCircle, RefreshCw, ChevronLeft, ChevronRight
 } from 'lucide-react';
 import Image from 'next/image';
 import PhotoDashboard from '@/components/PhotoDashboard';
@@ -137,6 +137,8 @@ export default function PhotosPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedPhoto, setSelectedPhoto] = useState<Photo | null>(null);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
@@ -353,6 +355,7 @@ export default function PhotosPage() {
     );
   }, []);
 
+
   // --- AI & Smart Features ---
   const analyzeNewPhoto = useCallback(async (photo: Photo) => {
     if (!photo?.id) return;
@@ -464,6 +467,55 @@ export default function PhotosPage() {
 
     return result;
   }, [photos, photoMetadata, searchTerm, showFavoritesOnly]);
+
+  // --- Modal Functions ---
+  const openPhotoModal = useCallback((photo: Photo) => {
+    const index = filteredPhotos.findIndex(p => p.id === photo.id);
+    setCurrentPhotoIndex(index);
+    setSelectedPhoto(photo);
+    setIsModalOpen(true);
+  }, [filteredPhotos]);
+
+  const closePhotoModal = useCallback(() => {
+    setIsModalOpen(false);
+    setSelectedPhoto(null);
+  }, []);
+
+  const navigatePhoto = useCallback((direction: 'prev' | 'next') => {
+    if (!filteredPhotos.length) return;
+    
+    let newIndex;
+    if (direction === 'prev') {
+      newIndex = currentPhotoIndex > 0 ? currentPhotoIndex - 1 : filteredPhotos.length - 1;
+    } else {
+      newIndex = currentPhotoIndex < filteredPhotos.length - 1 ? currentPhotoIndex + 1 : 0;
+    }
+    
+    setCurrentPhotoIndex(newIndex);
+    setSelectedPhoto(filteredPhotos[newIndex]);
+  }, [filteredPhotos, currentPhotoIndex]);
+
+  // Handle keyboard navigation
+  useEffect(() => {
+    const handleKeyPress = (e: KeyboardEvent) => {
+      if (!isModalOpen) return;
+      
+      switch (e.key) {
+        case 'Escape':
+          closePhotoModal();
+          break;
+        case 'ArrowLeft':
+          navigatePhoto('prev');
+          break;
+        case 'ArrowRight':
+          navigatePhoto('next');
+          break;
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyPress);
+    return () => document.removeEventListener('keydown', handleKeyPress);
+  }, [isModalOpen, closePhotoModal, navigatePhoto]);
 
   // --- Render ---
   return (
@@ -597,7 +649,7 @@ export default function PhotosPage() {
               {viewMode === 'grid' && (
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
                   {filteredPhotos.map((photo) => (
-                    <Card key={photo.id} className="relative group overflow-hidden">
+                    <Card key={photo.id} className="relative group overflow-hidden cursor-pointer" onClick={() => openPhotoModal(photo)}>
                       <div className="aspect-square bg-gray-100 flex items-center justify-center">
                         <DriveImage
                           photo={photo}
@@ -608,7 +660,10 @@ export default function PhotosPage() {
                       </div>
                       <div className="absolute top-2 right-2">
                         <Button
-                          onClick={() => toggleFavorite(photo.id)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleFavorite(photo.id);
+                          }}
                           variant="ghost"
                           size="sm"
                           className={`text-black font-bold hover:text-red-500 ${photo.isFavorite ? 'text-red-500' : ''}`}
@@ -628,7 +683,7 @@ export default function PhotosPage() {
               {viewMode === 'list' && (
                 <div className="space-y-4">
                   {filteredPhotos.map((photo) => (
-                    <Card key={photo.id}>
+                    <Card key={photo.id} className="cursor-pointer" onClick={() => openPhotoModal(photo)}>
                       <CardContent className="p-4 flex items-center gap-4">
                         <div className="w-16 h-16 flex-shrink-0 bg-gray-100 rounded-md overflow-hidden">
                           <DriveImage
@@ -651,14 +706,20 @@ export default function PhotosPage() {
                         </div>
                         <div className="flex gap-2 items-center">
                           <Button
-                            onClick={() => toggleFavorite(photo.id)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleFavorite(photo.id);
+                            }}
                             variant="ghost"
                             size="sm"
                           >
                             <Heart className={`h-4 w-4 ${photo.isFavorite ? 'fill-current text-red-500' : ''}`} />
                           </Button>
                           <Button
-                            onClick={() => deletePhoto(photo.id)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              deletePhoto(photo.id);
+                            }}
                             variant="ghost"
                             size="sm"
                           >
@@ -684,6 +745,115 @@ export default function PhotosPage() {
             </div>
           )}
         </>
+      )}
+
+      {/* Photo Modal */}
+      {isModalOpen && selectedPhoto && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm">
+          {/* Close button */}
+          <Button
+            onClick={closePhotoModal}
+            variant="ghost"
+            className="absolute top-4 right-4 z-60 text-white hover:bg-white/20 rounded-full p-2"
+          >
+            <X className="h-6 w-6" />
+          </Button>
+
+          {/* Photo counter */}
+          <div className="absolute top-4 left-4 z-60 text-white bg-black/50 px-3 py-1 rounded-full text-sm">
+            {currentPhotoIndex + 1} of {filteredPhotos.length}
+          </div>
+
+          {/* Previous button */}
+          {filteredPhotos.length > 1 && (
+            <Button
+              onClick={() => navigatePhoto('prev')}
+              variant="ghost"
+              className="absolute left-4 top-1/2 transform -translate-y-1/2 z-60 text-white hover:bg-white/20 rounded-full p-2"
+            >
+              <ChevronLeft className="h-8 w-8" />
+            </Button>
+          )}
+
+          {/* Next button */}
+          {filteredPhotos.length > 1 && (
+            <Button
+              onClick={() => navigatePhoto('next')}
+              variant="ghost"
+              className="absolute right-4 top-1/2 transform -translate-y-1/2 z-60 text-white hover:bg-white/20 rounded-full p-2"
+            >
+              <ChevronRight className="h-8 w-8" />
+            </Button>
+          )}
+
+          {/* Main photo container */}
+          <div className="relative max-w-[70vw] max-h-[70vh] flex items-center justify-center">
+            <div className="relative flex items-center justify-center bg-white rounded-lg shadow-lg overflow-hidden">
+              <Image
+                src={selectedPhoto.thumbnailLink || selectedPhoto.webContentLink || selectedPhoto.webViewLink || ''}
+                alt={selectedPhoto.name}
+                width={800}
+                height={600}
+                style={{ maxWidth: '70vw', maxHeight: '70vh', objectFit: 'contain' }}
+                quality={100}
+                onError={(e) => {
+                  console.error('Failed to load full-size image');
+                  // Try fallback to thumbnail
+                  const target = e.target as HTMLImageElement;
+                  if (selectedPhoto.thumbnailLink && target.src !== selectedPhoto.thumbnailLink) {
+                    target.src = selectedPhoto.thumbnailLink;
+                  }
+                }}
+              />
+            </div>
+          </div>
+
+          {/* Photo info */}
+          <div className="absolute bottom-4 left-4 right-4 z-60 text-white bg-black/50 p-4 rounded-lg backdrop-blur-sm">
+            <h3 className="text-lg font-semibold mb-2">{selectedPhoto.name}</h3>
+            <div className="flex flex-wrap gap-4 text-sm opacity-80">
+              <span>Size: {formatFileSize(selectedPhoto.size)}</span>
+              <span>Type: {selectedPhoto.mimeType}</span>
+              <span>Created: {new Date(selectedPhoto.createdTime).toLocaleDateString()}</span>
+            </div>
+            
+            {/* Action buttons */}
+            <div className="flex gap-2 mt-3">
+              <Button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  toggleFavorite(selectedPhoto.id);
+                }}
+                variant="ghost"
+                size="sm"
+                className={`text-white hover:bg-white/20 ${selectedPhoto.isFavorite ? 'text-red-400' : ''}`}
+              >
+                <Heart className={`h-4 w-4 mr-2 ${selectedPhoto.isFavorite ? 'fill-current' : ''}`} />
+                {selectedPhoto.isFavorite ? 'Favorited' : 'Add to Favorites'}
+              </Button>
+              <Button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (selectedPhoto.webContentLink) {
+                    window.open(selectedPhoto.webContentLink, '_blank');
+                  }
+                }}
+                variant="ghost"
+                size="sm"
+                className="text-white hover:bg-white/20"
+              >
+                <Download className="h-4 w-4 mr-2" />
+                Download
+              </Button>
+            </div>
+          </div>
+
+          {/* Click outside to close */}
+          <div 
+            className="absolute inset-0 -z-10" 
+            onClick={closePhotoModal}
+          />
+        </div>
       )}
 
       {/* Hidden file input */}

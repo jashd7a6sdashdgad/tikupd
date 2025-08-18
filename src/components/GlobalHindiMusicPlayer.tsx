@@ -18,6 +18,7 @@ import {
   Shuffle,
   Repeat,
   List,
+  RefreshCw,
   Download,
   Share2,
   MoreHorizontal,
@@ -78,6 +79,25 @@ export function GlobalHindiMusicPlayer() {
   useEffect(() => {
     const loadLocalMusic = async () => {
       try {
+        // First, automatically sync new music files
+        try {
+          console.log('🎵 Auto-syncing new music files...');
+          const syncResponse = await fetch('/api/music/sync', { method: 'POST' });
+          
+          if (syncResponse.ok) {
+            const syncResult = await syncResponse.json();
+            if (syncResult.success && syncResult.copiedFiles > 0) {
+              console.log(`🎵 Auto-sync: ${syncResult.copiedFiles} new songs added:`, syncResult.newSongs);
+            } else {
+              console.log('🎵 Auto-sync: No new songs to add');
+            }
+          } else {
+            console.warn('🎵 Auto-sync failed, continuing with existing songs');
+          }
+        } catch (syncError) {
+          console.warn('🎵 Auto-sync error, continuing with existing songs:', syncError);
+        }
+        
         console.log('🎵 Loading local music from /public/Music folder...');
         const response = await fetch('/api/music/local');
         
@@ -144,10 +164,9 @@ export function GlobalHindiMusicPlayer() {
       if (repeatMode === 'one') {
         audio.currentTime = 0;
         audio.play();
-      } else if (repeatMode === 'all' || isShuffled) {
-        playNext();
       } else {
-        setIsPlaying(false);
+        // Always move to next song when current song ends (auto-cycle)
+        playNext();
       }
     };
     const handlePlay = () => {
@@ -227,6 +246,30 @@ export function GlobalHindiMusicPlayer() {
     }
   }, [globalVolume, isMuted]);
 
+  // Auto-play when song changes and ensure audio src updates
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio || !currentSong.audioUrl) return;
+
+    // Update audio source when song changes
+    if (audio.src !== currentSong.audioUrl) {
+      console.log('🎵 Updating audio src to:', currentSong.audioUrl);
+      audio.src = currentSong.audioUrl;
+      audio.load();
+    }
+
+    // Auto-play if music should be playing
+    if (isPlaying && currentSong.audioUrl) {
+      const playPromise = audio.play();
+      if (playPromise) {
+        playPromise.catch(error => {
+          console.error('❌ Auto-play failed:', error);
+          setIsPlaying(false);
+        });
+      }
+    }
+  }, [currentSong, isPlaying]);
+
   const togglePlay = () => {
     const audio = audioRef.current;
     if (!audio) return;
@@ -250,13 +293,59 @@ export function GlobalHindiMusicPlayer() {
     if (isShuffled) {
       nextIndex = Math.floor(Math.random() * songs.length);
     } else {
-      nextIndex = (currentIndex + 1) % songs.length;
+      nextIndex = (currentIndex + 1) % songs.length; // Loops back to first song after last
     }
+    console.log('🎵 Moving to next song:', songs[nextIndex]?.title);
     setCurrentIndex(nextIndex);
     setCurrentSong(songs[nextIndex]);
-    setIsPlaying(true);
+    setIsPlaying(true); // Ensure auto-play continues
     setHasError(false);
     setRetryCount(0);
+  };
+
+  const refreshMusicLibrary = async () => {
+    console.log('🎵 Manually refreshing music library...');
+    setIsLoadingMusic(true);
+    try {
+      // Auto-sync new music files
+      const syncResponse = await fetch('/api/music/sync', { method: 'POST' });
+      
+      if (syncResponse.ok) {
+        const syncResult = await syncResponse.json();
+        if (syncResult.success && syncResult.copiedFiles > 0) {
+          console.log(`🎵 Manual refresh: ${syncResult.copiedFiles} new songs added:`, syncResult.newSongs);
+        }
+      }
+      
+      // Reload music library
+      const response = await fetch('/api/music/local');
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success && result.tracks && result.tracks.length > 0) {
+          const localSongs = result.tracks.map((track: any, index: number) => ({
+            id: track.id,
+            title: track.title,
+            artist: track.artist,
+            album: track.artist,
+            duration: track.duration || '0:00',
+            audioUrl: track.audioUrl,
+            imageUrl: `https://images.unsplash.com/photo-${1493225457124 + index}-a3eb161ffa5f?w=400&h=400&fit=crop`,
+            isLiked: false,
+            genre: 'Hindi',
+            year: 2023
+          }));
+          
+          setSongs(localSongs);
+          if (!currentSong.audioUrl && localSongs.length > 0) {
+            setCurrentSong(localSongs[0]);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('🎵 Error refreshing music library:', error);
+    } finally {
+      setIsLoadingMusic(false);
+    }
   };
 
   const playPrevious = () => {
@@ -264,11 +353,12 @@ export function GlobalHindiMusicPlayer() {
     if (isShuffled) {
       prevIndex = Math.floor(Math.random() * songs.length);
     } else {
-      prevIndex = currentIndex === 0 ? songs.length - 1 : currentIndex - 1;
+      prevIndex = currentIndex === 0 ? songs.length - 1 : currentIndex - 1; // Loops to last song if at first
     }
+    console.log('🎵 Moving to previous song:', songs[prevIndex]?.title);
     setCurrentIndex(prevIndex);
     setCurrentSong(songs[prevIndex]);
-    setIsPlaying(true);
+    setIsPlaying(true); // Ensure auto-play continues
     setHasError(false);
     setRetryCount(0);
   };
@@ -295,9 +385,10 @@ export function GlobalHindiMusicPlayer() {
   };
 
   const playSongByIndex = (index: number) => {
+    console.log('🎵 Playing song by index:', index, songs[index]?.title);
     setCurrentIndex(index);
     setCurrentSong(songs[index]);
-    setIsPlaying(true);
+    setIsPlaying(true); // Auto-play the selected song
     setHasError(false);
     setRetryCount(0);
   };
@@ -514,6 +605,15 @@ export function GlobalHindiMusicPlayer() {
                         <span className="text-xs text-white font-bold">1</span>
                       </span>
                     )}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={refreshMusicLibrary}
+                    className="h-8 w-8 p-0 rounded-xl transition-all duration-200 text-gray-600 hover:text-green-600"
+                    title="Refresh Music Library"
+                  >
+                    <RefreshCw className="h-4 w-4" />
                   </Button>
                 </div>
 

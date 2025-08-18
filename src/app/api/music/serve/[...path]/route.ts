@@ -51,8 +51,11 @@ export async function GET(request: NextRequest) {
       return new NextResponse('Not Found', { status: 404 });
     }
 
-    // Only serve MP3 files
-    if (!filePath.toLowerCase().endsWith('.mp3')) {
+    // Only serve MP3 and WAV files
+    const isMP3 = filePath.toLowerCase().endsWith('.mp3');
+    const isWAV = filePath.toLowerCase().endsWith('.wav');
+    
+    if (!isMP3 && !isWAV) {
       return new NextResponse('Unsupported Media Type', { status: 415 });
     }
 
@@ -61,7 +64,7 @@ export async function GET(request: NextRequest) {
     
     // Set appropriate headers for audio streaming
     const headers = new Headers();
-    headers.set('Content-Type', 'audio/mpeg');
+    headers.set('Content-Type', isMP3 ? 'audio/mpeg' : 'audio/wav');
     headers.set('Content-Length', fileBuffer.length.toString());
     headers.set('Accept-Ranges', 'bytes');
     headers.set('Cache-Control', 'public, max-age=3600'); // Cache for 1 hour

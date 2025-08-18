@@ -35,6 +35,20 @@ export const translations: Record<string, Translation> = {
     emailSummary: "Email Summary",
     thinking: "Thinking",
     
+    // Travel Page
+    travelCompanion: "Travel Companion",
+    planTrackManage: "Plan, track, and manage your journeys",
+    itinerary: "Itinerary",
+    transport: "Transport",
+    documents: "Documents",
+    currency_convert: "Currency Convert",
+    conversionRateNotAvailable: "Conversion rate not available",
+    pleaseEnterValidAmount: "Please enter a valid amount",
+    pleaseFillAllRequiredFields: "Please fill in all required fields",
+    emailSentSuccessfully: "Email sent successfully",
+    voiceInputProcessedWebhookFailed: "Voice input processed (webhook failed)",
+    fakeAudioTestEmailSent: "Fake audio test: Email sent successfully",
+    
     // Common
     save: "Save",
     cancel: "Cancel",
@@ -688,6 +702,20 @@ export const translations: Record<string, Translation> = {
     imageGeneration: "إنشاء الصور",
     thinking: "التفكير",
     
+    // Travel Page
+    travelCompanion: "رفيق السفر",
+    planTrackManage: "خطط وتتبع وأدر رحلاتك",
+    itinerary: "خط السير",
+    transport: "النقل",
+    documents: "الوثائق",
+    currency_convert: "تحويل العملة",
+    conversionRateNotAvailable: "معدل التحويل غير متاح",
+    pleaseEnterValidAmount: "يرجى إدخال مبلغ صحيح",
+    pleaseFillAllRequiredFields: "يرجى ملء جميع الحقول المطلوبة",
+    emailSentSuccessfully: "تم إرسال البريد الإلكتروني بنجاح",
+    voiceInputProcessedWebhookFailed: "تمت معالجة الإدخال الصوتي (فشل الويب هوك)",
+    fakeAudioTestEmailSent: "اختبار صوتي وهمي: تم إرسال البريد الإلكتروني بنجاح",
+    
     // Common
     save: "حفظ",
     cancel: "إلغاء",
@@ -1042,6 +1070,7 @@ export const translations: Record<string, Translation> = {
     // Expense Categories
     food: "طعام",
     transportation: "مواصلات",
+    businessExpense: "أعمال",
     medical: "طبي",
     entertainment: "ترفيه",
     shopping: "تسوق",
