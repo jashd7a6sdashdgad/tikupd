@@ -464,6 +464,42 @@ export function Navigation() {
                     </div>
                   </li>
 
+                  {/* Hindi Music Toggle for Mobile */}
+                  <li className="mb-4">
+                    <div className="px-3">
+                      <Button
+                        onClick={toggleGlobalMusic}
+                        className={cn(
+                          'group flex w-full gap-x-3 rounded-xl p-3 text-sm leading-6 font-semibold transition-all duration-300 ease-in-out relative overflow-hidden',
+                          isGlobalMusicEnabled
+                            ? 'bg-gradient-to-r from-orange-100 to-orange-50 text-orange-700 font-bold shadow-lg shadow-orange-500/20 border border-orange-200/50'
+                            : 'text-gray-700 hover:text-orange-700 hover:bg-gradient-to-r hover:from-orange-50 hover:to-orange-25 hover:shadow-md hover:shadow-orange-500/10 hover:border hover:border-orange-200/30 hover:scale-102 hover:translate-x-1'
+                        )}
+                        variant="ghost"
+                      >
+                        <div className={cn(
+                          "p-2 rounded-xl transition-all duration-300",
+                          isGlobalMusicEnabled
+                            ? "bg-gradient-to-br from-orange-500 to-red-600 shadow-lg"
+                            : "bg-gray-100 group-hover:bg-gradient-to-br group-hover:from-orange-500 group-hover:to-red-600 group-hover:shadow-lg"
+                        )}>
+                          <Music className={cn(
+                            "h-5 w-5 shrink-0 transition-all duration-300",
+                            isGlobalMusicEnabled
+                              ? "text-white transform scale-110" 
+                              : "text-gray-600 group-hover:text-white group-hover:scale-110 group-hover:rotate-6"
+                          )} />
+                        </div>
+                        <span className="transition-all duration-300 group-hover:translate-x-1 flex-1">
+                          Hindi Music {isGlobalMusicEnabled ? 'ON' : 'OFF'}
+                        </span>
+                        {isGlobalMusicEnabled && (
+                          <div className="absolute inset-0 bg-gradient-to-r from-orange-500/10 to-transparent opacity-50 animate-pulse rounded-xl"></div>
+                        )}
+                      </Button>
+                    </div>
+                  </li>
+
                   <li className="mt-8">
                     <Link
                       href="/settings"

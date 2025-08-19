@@ -341,7 +341,7 @@ export default function ExpensesPage() {
     return expense.from && expense.from.toLowerCase().includes('ahlibank@ahlibank.om');
   };
 
-  // Filter expenses by selected bank
+  // Filter expenses by selected bank and sort by date (latest first)
   const getFilteredExpenses = () => {
     let filteredExpenses = expenses;
     
@@ -357,7 +357,12 @@ export default function ExpensesPage() {
       );
     }
     
-    return filteredExpenses;
+    // Sort by date in descending order (latest first)
+    return filteredExpenses.sort((a, b) => {
+      const dateA = new Date(a.date || 0).getTime();
+      const dateB = new Date(b.date || 0).getTime();
+      return dateB - dateA; // Descending order (latest first)
+    });
   };
 
   // AI Sorting function

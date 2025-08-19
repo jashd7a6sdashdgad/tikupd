@@ -23,7 +23,8 @@ import {
   ArrowRight,
   Brain,
   Camera,
-  Briefcase
+  Briefcase,
+  Cloud
 } from 'lucide-react';
 
 // Import new smart components
@@ -878,45 +879,6 @@ if (calendarResponse && calendarResponse.ok) {
               </CardContent>
             </Card>
 
-            {/* Activity Insights */}
-            <Card className="card-3d glass-widget p-4">
-              <CardHeader>
-                <CardTitle className="flex items-center text-black">
-                  <Activity className="h-5 w-5 mr-2" />
-                  {t('activityInsights')}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="p-3 bg-purple-50 border border-purple-200 rounded-lg">
-                    <div className="flex items-center">
-                      <Calendar className="h-4 w-4 text-purple-600 mr-2" />
-                      <span className="text-sm font-medium text-purple-800">{t('mostProductiveDay')}</span>
-                    </div>
-                    <p className="text-lg font-bold text-purple-900 mt-1">{weeklyStats.mostProductiveDay}</p>
-                    <p className="text-xs text-purple-700">{Math.ceil(weeklyStats.weeklyEvents / 7)} {t('eventsCompleted')}</p>
-                  </div>
-                  
-                  <div className="p-3 bg-purple-50 border border-purple-200 rounded-lg">
-                    <div className="flex items-center">
-                      <DollarSign className="h-4 w-4 text-purple-600 mr-2" />
-                      <span className="text-sm font-medium text-purple-800">{t('topExpenseCategory')}</span>
-                    </div>
-                    <p className="text-lg font-bold text-purple-900 mt-1">{weeklyStats.topExpenseCategory}</p>
-                    <p className="text-xs text-purple-700">{weeklyStats.topExpenseAmount.toFixed(2)} OMR {t('thisMonth')}</p>
-                  </div>
-                  
-                  <div className="p-3 bg-purple-50 border border-purple-200 rounded-lg">
-                    <div className="flex items-center">
-                      <Clock className="h-4 w-4 text-purple-600 mr-2" />
-                      <span className="text-sm font-medium text-purple-800">{t('peakHours')}</span>
-                    </div>
-                    <p className="text-lg font-bold text-purple-900 mt-1">{weeklyStats.peakHours}</p>
-                    <p className="text-xs text-purple-700">{t('highestActivityTime')}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
           </div>
 
           {/* Right Column */}
@@ -1081,6 +1043,8 @@ if (calendarResponse && calendarResponse.ok) {
             { name: 'Email', icon: Mail, route: '/email', color: 'from-green-500 to-emerald-600' },
             { name: 'Expenses', icon: DollarSign, route: '/expenses', color: 'from-amber-500 to-orange-600' },
             { name: 'Diary', icon: BookOpen, route: '/diary', color: 'from-pink-500 to-rose-600' },
+            { name: 'Tracking', icon: BarChart3, route: '/tracking', color: 'from-purple-500 to-indigo-600' },
+            { name: 'Weather', icon: Cloud, route: '/weather', color: 'from-sky-500 to-blue-600' },
           ].map((feature, index) => {
             const IconComponent = feature.icon;
             return (

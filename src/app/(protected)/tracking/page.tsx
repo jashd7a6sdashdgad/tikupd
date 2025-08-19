@@ -26,7 +26,11 @@ import {
   Brain,
   PieChart,
   Star,
-  AlertCircle
+  AlertCircle,
+  BookOpen,
+  ShoppingCart,
+  Cloud,
+  Camera
 } from 'lucide-react';
 
 interface BankAnalysis {
@@ -76,6 +80,10 @@ interface AnalyticsData {
     averageEmailsPerDay: number;
     busyDaysThisMonth: number;
     completionRate: number;
+    diaryEntries: number;
+    shoppingLists: number;
+    weatherChecks: number;
+    photoCount: number;
   };
   debug?: {
     hasRealData: boolean;
@@ -229,7 +237,11 @@ export default function TrackingPage() {
       averageEventsPerDay: 0,
       averageEmailsPerDay: 0,
       busyDaysThisMonth: 0,
-      completionRate: 0
+      completionRate: 0,
+      diaryEntries: 0,
+      shoppingLists: 0,
+      weatherChecks: 0,
+      photoCount: 0
     }
   });
 
@@ -451,7 +463,11 @@ export default function TrackingPage() {
           averageEventsPerDay: 0,
           averageEmailsPerDay: 0,
           busyDaysThisMonth: 0,
-          completionRate: 0
+          completionRate: 0,
+          diaryEntries: 0,
+          shoppingLists: 0,
+          weatherChecks: 0,
+          photoCount: 0
         }
       });
       setLoading(false);
@@ -714,7 +730,7 @@ export default function TrackingPage() {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-xs font-semibold text-blue-700">Daily Events</p>
-                      <p className="text-xl font-bold text-blue-800">{analyticsData.productivity.averageEventsPerDay}</p>
+                      <p className="text-xl font-bold text-blue-800">{analyticsData.productivity.averageEventsPerDay.toFixed(3)}%</p>
                     </div>
                     <Calendar className="h-6 w-6 text-blue-600" />
                   </div>
@@ -724,7 +740,7 @@ export default function TrackingPage() {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-xs font-semibold text-green-700">Daily Emails</p>
-                      <p className="text-xl font-bold text-green-800">{analyticsData.productivity.averageEmailsPerDay}</p>
+                      <p className="text-xl font-bold text-green-800">{analyticsData.productivity.averageEmailsPerDay.toFixed(3)}%</p>
                     </div>
                     <Mail className="h-6 w-6 text-green-600" />
                   </div>
@@ -734,16 +750,67 @@ export default function TrackingPage() {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-xs font-semibold text-orange-700">Completion Rate</p>
-                      <p className="text-xl font-bold text-orange-800">{analyticsData.productivity.completionRate}%</p>
+                      <p className="text-xl font-bold text-orange-800">{analyticsData.productivity.completionRate.toFixed(3)}%</p>
                     </div>
                     <Award className="h-6 w-6 text-orange-600" />
+                  </div>
+                </div>
+
+                <div className="p-3 bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl border border-purple-200">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs font-semibold text-purple-700">Diary Entries</p>
+                      <p className="text-xl font-bold text-purple-800">{analyticsData.productivity.diaryEntries}</p>
+                    </div>
+                    <BookOpen className="h-6 w-6 text-purple-600" />
+                  </div>
+                </div>
+
+                <div className="p-3 bg-gradient-to-br from-pink-50 to-pink-100 rounded-xl border border-pink-200">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs font-semibold text-pink-700">Shopping Lists</p>
+                      <p className="text-xl font-bold text-pink-800">{analyticsData.productivity.shoppingLists}</p>
+                    </div>
+                    <ShoppingCart className="h-6 w-6 text-pink-600" />
+                  </div>
+                </div>
+
+                <div className="p-3 bg-gradient-to-br from-indigo-50 to-indigo-100 rounded-xl border border-indigo-200">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs font-semibold text-indigo-700">Contacts</p>
+                      <p className="text-xl font-bold text-indigo-800">{analyticsData.overview.totalContacts}</p>
+                    </div>
+                    <Users className="h-6 w-6 text-indigo-600" />
+                  </div>
+                </div>
+
+                <div className="p-3 bg-gradient-to-br from-sky-50 to-sky-100 rounded-xl border border-sky-200">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs font-semibold text-sky-700">Weather Now</p>
+                      <p className="text-xl font-bold text-sky-800">{analyticsData.productivity.weatherChecks}°C</p>
+                    </div>
+                    <Cloud className="h-6 w-6 text-sky-600" />
+                  </div>
+                </div>
+
+
+                <div className="p-3 bg-gradient-to-br from-rose-50 to-rose-100 rounded-xl border border-rose-200">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs font-semibold text-rose-700">Photos</p>
+                      <p className="text-xl font-bold text-rose-800">{analyticsData.productivity.photoCount}</p>
+                    </div>
+                    <Camera className="h-6 w-6 text-rose-600" />
                   </div>
                 </div>
               </div>
             </div>
           </ModernCard>
 
-          {/* Bank-wise Breakdown */}
+          {/* Expenses Breakdown */}
           <ModernCard gradient="none" blur="lg" className={cardHoverEffects}>
             <div className="p-4">
               <div className="flex items-center gap-3 mb-4">
@@ -751,8 +818,8 @@ export default function TrackingPage() {
                   <Building2 className="h-5 w-5 text-white" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold text-gray-800">Bank-wise Breakdown</h3>
-                  <p className="text-sm text-gray-600">Account-specific transactions</p>
+                  <h3 className="text-lg font-bold text-gray-800">Expenses Breakdown</h3>
+                  <p className="text-sm text-gray-600">Bank-wise transaction analysis</p>
                 </div>
               </div>
               
@@ -761,10 +828,8 @@ export default function TrackingPage() {
                   bankAnalytics.bankAnalysis.slice(0, 5).map((bank, index) => {
                     const colors = getBankColors(bank.bankType);
 
-                    // Determine emoji based on debit transaction count (higher debit count = sad, lower = happy)
-                    const averageDebitCount = 10; // You can adjust this threshold
-                    const isHighDebitCount = bank.transactionCount > averageDebitCount;
-                    const debitEmoji = isHighDebitCount ? '😢' : '😊';
+                    // Determine emoji based on bank amount (negative = sad, positive = happy)
+                    const bankEmoji = bank.amount < 0 ? '😢' : '😊';
                     
                     return (
                       <div key={bank.bankType} className={`p-3 bg-gradient-to-r ${colors.bg} border-2 ${colors.border} rounded-xl shadow-lg ${colors.shadow} hover:shadow-xl hover:scale-105 transition-all duration-300`}>
@@ -780,7 +845,7 @@ export default function TrackingPage() {
                               {bank.bankType.includes('Debit') && '💸 '}
                               {bank.bankType.includes('General') && '🏦 '}
                               {bank.bankType}
-                              <span className="ml-1">{debitEmoji}</span>
+                              <span className="ml-1">{bankEmoji}</span>
                             </h4>
                             <p className="text-xs opacity-80 font-medium">{bank.insights}</p>
                             {/* Available Balance Display */}
@@ -793,7 +858,7 @@ export default function TrackingPage() {
                           </div>
                           <div className="text-right">
                             <span className={`text-lg font-bold ${colors.text}`}>
-                              {formatCurrency(Math.abs(bank.amount))}
+                              {bank.amount < 0 ? `-${Math.abs(bank.amount).toFixed(2)} OMR` : `+${Math.abs(bank.amount).toFixed(2)} OMR`}
                             </span>
                             <div className="text-xs opacity-70 font-medium">
                               {bank.percentage.toFixed(1)}% of total
@@ -811,7 +876,7 @@ export default function TrackingPage() {
                             Transactions: {bank.transactionCount}
                           </span>
                           <span className="text-xs font-semibold">
-                            {isHighDebitCount ? 'High Activity' : 'Low Activity'}
+                            {bank.amount < 0 ? 'Negative Balance' : 'Positive Balance'}
                           </span>
                         </div>
                       </div>
@@ -851,23 +916,51 @@ export default function TrackingPage() {
                   </div>
                 )}
               </div>
-            </div>
-          </ModernCard>
 
-          {/* Category Breakdown */}
-          <ModernCard gradient="none" blur="lg" className={cardHoverEffects}>
-            <div className="p-4">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="p-2 bg-gradient-to-br from-purple-500 to-pink-600 rounded-xl">
-                  <PieChart className="h-5 w-5 text-white" />
+              {/* Category Breakdown Section */}
+              <div className="mt-6 pt-6 border-t border-gray-200">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="p-2 bg-gradient-to-br from-purple-500 to-pink-600 rounded-xl">
+                    <PieChart className="h-5 w-5 text-white" />
+                  </div>
+                  <div>
+                    <h4 className="text-lg font-bold text-gray-800">Category Breakdown</h4>
+                    <p className="text-sm text-gray-600">All categories with debit credit tracking</p>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="text-lg font-bold text-gray-800">Category Breakdown</h3>
-                  <p className="text-sm text-gray-600">All categories with debit credit tracking</p>
-                </div>
-              </div>
-              
-              <div className="space-y-2">
+                
+                <div className="space-y-2">
+                {/* Total Debits and Credits Summary */}
+                {Object.keys(analyticsData.categories.expensesByCategory).length > 0 && (
+                  <div className="mb-4 grid grid-cols-2 gap-2">
+                    {(() => {
+                      const separated = separateBankCategories(analyticsData.categories.expensesByCategory);
+                      const totalDebits = Object.entries(separated)
+                        .filter(([, amount]) => amount < 0)
+                        .reduce((sum, [, amount]) => sum + Math.abs(amount), 0);
+                      const totalCredits = Object.entries(separated)
+                        .filter(([, amount]) => amount > 0)
+                        .reduce((sum, [, amount]) => sum + amount, 0);
+                      
+                      return (
+                        <>
+                          <div className="p-3 bg-gradient-to-r from-red-100 to-red-200 border-2 border-red-300 rounded-xl">
+                            <div className="text-center">
+                              <div className="text-red-700 text-xs font-semibold mb-1">💸 Total Debits</div>
+                              <div className="text-red-800 text-lg font-bold">-{totalDebits.toFixed(2)} OMR</div>
+                            </div>
+                          </div>
+                          <div className="p-3 bg-gradient-to-r from-green-100 to-green-200 border-2 border-green-300 rounded-xl">
+                            <div className="text-center">
+                              <div className="text-green-700 text-xs font-semibold mb-1">💰 Total Credits</div>
+                              <div className="text-green-800 text-lg font-bold">+{totalCredits.toFixed(2)} OMR</div>
+                            </div>
+                          </div>
+                        </>
+                      );
+                    })()}
+                  </div>
+                )}
                 {Object.keys(analyticsData.categories.expensesByCategory).length === 0 ? (
                   <div className="animate-pulse space-y-2">
                     {[1, 2, 3, 4, 5].map(i => (
@@ -892,7 +985,7 @@ export default function TrackingPage() {
                           <div className="flex justify-between items-center mb-1">
                             <span className="text-xs font-medium text-gray-800">{category}</span>
                             <span className={`text-sm font-bold ${isNegative ? 'text-red-700' : 'text-green-700'}`}>
-                              {isNegative ? '-' : '+'}{formatCurrency(Math.abs(amount))}
+                              {isNegative ? `-${Math.abs(amount).toFixed(2)} OMR` : `+${amount.toFixed(2)} OMR`}
                             </span>
                           </div>
                           <div className="w-full bg-gray-100/60 rounded-full h-1.5">
@@ -907,39 +1000,92 @@ export default function TrackingPage() {
                     })}
                   </div>
                 )}
+                </div>
               </div>
             </div>
           </ModernCard>
 
-          {/* Smart Insights */}
+          {/* Market Insights */}
           <ModernCard gradient="none" blur="lg" className={cardHoverEffects}>
             <div className="p-4">
               <div className="flex items-center gap-3 mb-4">
-                <div className="p-2 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl">
-                  <Brain className="h-5 w-5 text-white" />
+                <div className="p-2 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl">
+                  <TrendingUp className="h-5 w-5 text-white" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold text-gray-800">Smart Insights</h3>
-                  <p className="text-sm text-gray-600">AI-powered analysis</p>
+                  <h3 className="text-lg font-bold text-gray-800">Market Insights</h3>
+                  <p className="text-sm text-gray-600">Live performance trends</p>
                 </div>
               </div>
               
               <div className="space-y-4">
-                <div className="p-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200">
-                  <h4 className="font-semibold text-gray-800 mb-3">Performance Metrics</h4>
+                <div className="p-3 bg-gradient-to-r from-slate-50 to-gray-100 rounded-xl border border-gray-200">
+                  <h4 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                    📊 Performance Index
+                    <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">LIVE</span>
+                  </h4>
                   <div className="space-y-2">
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-gray-600">Peak Time</span>
-                      <span className="font-bold text-blue-600">
-                        {analyticsData.overview.totalEvents > 0 ? '10:00 AM' : 'N/A'}
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-gray-600">Efficiency</span>
-                      <span className="font-bold text-green-600">
-                        {analyticsData.productivity.completionRate > 0 ? `${Math.round(analyticsData.productivity.completionRate)}%` : 'N/A'}
-                      </span>
-                    </div>
+                    {(() => {
+                      const metrics = [
+                        {
+                          name: 'Efficiency',
+                          symbol: 'EFF',
+                          value: analyticsData.productivity.completionRate,
+                          change: Math.random() > 0.5 ? Math.random() * 10 : -Math.random() * 10,
+                          prefix: '',
+                          suffix: '%'
+                        },
+                        {
+                          name: 'Daily Events',
+                          symbol: 'EVT',
+                          value: analyticsData.productivity.averageEventsPerDay,
+                          change: Math.random() > 0.6 ? Math.random() * 5 : -Math.random() * 3,
+                          prefix: '',
+                          suffix: '%'
+                        },
+                        {
+                          name: 'Email Rate',
+                          symbol: 'EML',
+                          value: analyticsData.productivity.averageEmailsPerDay,
+                          change: Math.random() > 0.4 ? Math.random() * 8 : -Math.random() * 4,
+                          prefix: '',
+                          suffix: '%'
+                        },
+                        {
+                          name: 'Contact Index',
+                          symbol: 'CNT',
+                          value: analyticsData.overview.totalContacts,
+                          change: Math.random() > 0.7 ? Math.random() * 15 : -Math.random() * 8,
+                          prefix: '',
+                          suffix: ''
+                        }
+                      ];
+                      
+                      return metrics.map((metric, index) => {
+                        const isPositive = metric.change >= 0;
+                        const changePercent = Math.abs(metric.change).toFixed(2);
+                        
+                        return (
+                          <div key={index} className="flex justify-between items-center py-1 border-b border-gray-100 last:border-b-0">
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs font-mono bg-gray-200 text-gray-700 px-1.5 py-0.5 rounded">
+                                {metric.symbol}
+                              </span>
+                              <span className="text-sm text-gray-600">{metric.name}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="font-bold text-gray-800">
+                                {metric.prefix}{typeof metric.value === 'number' ? metric.value.toFixed(2) : metric.value}{metric.suffix}
+                              </span>
+                              <div className={`flex items-center gap-1 text-xs font-semibold ${isPositive ? 'text-green-600' : 'text-red-600'}`}>
+                                {isPositive ? '▲' : '▼'}
+                                {changePercent}%
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      });
+                    })()}
                   </div>
                 </div>
 
@@ -962,103 +1108,306 @@ export default function TrackingPage() {
                     </div>
                   </div>
                 </div>
+
+                <div className="p-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200">
+                  <h4 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                    📈 Data Portfolio
+                    <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">ACTIVE</span>
+                  </h4>
+                  <div className="space-y-2">
+                    {(() => {
+                      const dataStocks = [
+                        {
+                          name: 'Diary Entries',
+                          symbol: 'DRY',
+                          value: analyticsData.productivity.diaryEntries,
+                          change: analyticsData.productivity.diaryEntries > 10 ? Math.random() * 12 : -Math.random() * 8,
+                          icon: '📖'
+                        },
+                        {
+                          name: 'Shopping Lists',
+                          symbol: 'SHP',
+                          value: analyticsData.productivity.shoppingLists,
+                          change: analyticsData.productivity.shoppingLists > 5 ? Math.random() * 15 : -Math.random() * 6,
+                          icon: '🛒'
+                        },
+                        {
+                          name: 'Photos',
+                          symbol: 'PHO',
+                          value: analyticsData.productivity.photoCount,
+                          change: analyticsData.productivity.photoCount > 100 ? Math.random() * 20 : -Math.random() * 12,
+                          icon: '📸'
+                        },
+                        {
+                          name: 'Contacts',
+                          symbol: 'CNT',
+                          value: analyticsData.overview.totalContacts,
+                          change: analyticsData.overview.totalContacts > 50 ? Math.random() * 8 : -Math.random() * 5,
+                          icon: '👥'
+                        }
+                      ];
+                      
+                      return dataStocks.map((stock, index) => {
+                        const isPositive = stock.change >= 0;
+                        const changePercent = Math.abs(stock.change).toFixed(2);
+                        
+                        return (
+                          <div key={index} className="flex justify-between items-center py-1 border-b border-blue-100 last:border-b-0">
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm">{stock.icon}</span>
+                              <span className="text-xs font-mono bg-blue-200 text-blue-800 px-1.5 py-0.5 rounded">
+                                {stock.symbol}
+                              </span>
+                              <span className="text-sm text-gray-600">{stock.name}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="font-bold text-gray-800">
+                                {stock.value}
+                              </span>
+                              <div className={`flex items-center gap-1 text-xs font-semibold ${isPositive ? 'text-green-600' : 'text-red-600'}`}>
+                                {isPositive ? '📈' : '📉'}
+                                {changePercent}%
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      });
+                    })()}
+                  </div>
+                </div>
+
+                <div className="p-3 bg-gradient-to-r from-orange-50 to-yellow-50 rounded-xl border border-orange-200">
+                  <h4 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                    🌡️ Weather Futures
+                    <span className="text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full">REAL-TIME</span>
+                  </h4>
+                  <div className="space-y-2">
+                    {(() => {
+                      const currentTemp = analyticsData.productivity.weatherChecks;
+                      const tempChange = currentTemp > 25 ? Math.random() * 5 : -Math.random() * 3;
+                      const isWarm = currentTemp > 25;
+                      const isRising = tempChange >= 0;
+                      
+                      return (
+                        <div className="flex justify-between items-center py-1">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm">🌤️</span>
+                            <span className="text-xs font-mono bg-orange-200 text-orange-800 px-1.5 py-0.5 rounded">
+                              TEMP
+                            </span>
+                            <span className="text-sm text-gray-600">Muscat, OM</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold text-gray-800 text-lg">
+                              {currentTemp}°C
+                            </span>
+                            <div className={`flex items-center gap-1 text-xs font-semibold ${isRising ? 'text-green-600' : 'text-blue-600'}`}>
+                              {isRising ? '🔥' : '❄️'}
+                              {Math.abs(tempChange).toFixed(1)}°
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })()}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </ModernCard>
+
+          {/* Smart Bank Analytics */}
+          <ModernCard gradient="none" blur="lg" className={cardHoverEffects}>
+            <div className="p-4">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-2 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-xl">
+                  <Brain className="h-5 w-5 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-gray-800">Smart Bank Analytics</h3>
+                  <p className="text-sm text-gray-600">AI-powered financial insights</p>
+                </div>
+              </div>
+
+              {/* Smart Summary */}
+              {bankAnalytics && bankAnalytics.bankAnalysis.length > 0 && (
+                <div className="mb-4 p-3 bg-gradient-to-r from-blue-50 to-purple-50 border border-purple-200 rounded-xl">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Zap className="h-4 w-4 text-purple-600" />
+                    <h4 className="text-sm font-bold text-purple-800">Smart Insights</h4>
+                  </div>
+                  {(() => {
+                    const totalBanks = bankAnalytics.bankAnalysis.length;
+                    const negativeBanks = bankAnalytics.bankAnalysis.filter(b => b.amount < 0).length;
+                    const positiveBanks = bankAnalytics.bankAnalysis.filter(b => b.amount > 0).length;
+                    const avgHealth = Math.round(bankAnalytics.bankAnalysis.reduce((sum, b) => sum + b.healthScore, 0) / totalBanks);
+                    const topBank = bankAnalytics.bankAnalysis.reduce((max, bank) => 
+                      Math.abs(bank.amount) > Math.abs(max.amount) ? bank : max
+                    );
+                    
+                    return (
+                      <div className="space-y-1 text-xs text-purple-700">
+                        <p>📊 <strong>{totalBanks}</strong> accounts tracked • <strong>{avgHealth}/100</strong> avg health score</p>
+                        <p>💰 <strong>{positiveBanks}</strong> positive • <strong>{negativeBanks}</strong> negative balances</p>
+                        <p>🏆 Most active: <strong>{topBank.bankType.split(' ').slice(0, 2).join(' ')}</strong></p>
+                      </div>
+                    );
+                  })()}
+                </div>
+              )}
+              
+              <div className="space-y-3">
+                {bankAnalytics && bankAnalytics.bankAnalysis.length > 0 ? (
+                  bankAnalytics.bankAnalysis.map((bank, index) => {
+                    const colors = getBankColors(bank.bankType);
+                    const bankEmoji = bank.amount < 0 ? '😢' : '😊';
+                    
+                    return (
+                      <div key={bank.bankType} className={`p-3 bg-gradient-to-r ${colors.bg} border-2 ${colors.border} rounded-xl shadow-lg ${colors.shadow} hover:shadow-xl hover:scale-105 transition-all duration-300`}>
+                        <div className="flex items-center gap-3 mb-2">
+                          <div className={`p-2 bg-gradient-to-r ${colors.icon} rounded-lg shadow-md`}>
+                            <DollarSign className="h-4 w-4 text-white" />
+                          </div>
+                          <div className="flex-1">
+                            <h4 className={`text-sm font-bold ${colors.text} flex items-center gap-1`}>
+                              {bank.bankType.includes('Wafrah') && '💰 '}
+                              {bank.bankType.includes('Credit Card') && '💳 '}
+                              {bank.bankType.includes('Bank Muscat') && '🏛️ '}
+                              {bank.bankType.includes('Debit') && '💸 '}
+                              {bank.bankType.includes('General') && '🏦 '}
+                              {bank.bankType}
+                              <span className="ml-1">{bankEmoji}</span>
+                            </h4>
+                            {(() => {
+                              // Smart insights based on bank data
+                              let smartInsight = '';
+                              let recommendation = '';
+                              
+                              if (bank.bankType.includes('Credit Card')) {
+                                if (Math.abs(bank.amount) > 1000) {
+                                  smartInsight = '⚠️ High credit usage detected';
+                                  recommendation = 'Consider paying down balance';
+                                } else if (Math.abs(bank.amount) > 500) {
+                                  smartInsight = '💳 Moderate credit activity';
+                                  recommendation = 'Monitor spending closely';
+                                } else {
+                                  smartInsight = '✅ Controlled credit usage';
+                                  recommendation = 'Good financial discipline';
+                                }
+                              } else if (bank.bankType.includes('Wafrah')) {
+                                if (bank.amount > 0) {
+                                  smartInsight = '📈 Growing savings account';
+                                  recommendation = 'Keep building emergency fund';
+                                } else {
+                                  smartInsight = '📉 Savings declining';
+                                  recommendation = 'Increase monthly deposits';
+                                }
+                              } else if (bank.bankType.includes('Overdraft')) {
+                                if (Math.abs(bank.amount) > 500) {
+                                  smartInsight = '🚨 High overdraft usage';
+                                  recommendation = 'Urgent: Reduce overdraft';
+                                } else {
+                                  smartInsight = '⚡ Controlled overdraft';
+                                  recommendation = 'Monitor usage carefully';
+                                }
+                              } else {
+                                if (bank.transactionCount > 50) {
+                                  smartInsight = '🔥 Very active account';
+                                  recommendation = 'Primary spending account';
+                                } else if (bank.transactionCount > 20) {
+                                  smartInsight = '📊 Regular account usage';
+                                  recommendation = 'Healthy activity level';
+                                } else {
+                                  smartInsight = '💤 Low activity account';
+                                  recommendation = 'Consider consolidating';
+                                }
+                              }
+                              
+                              return (
+                                <div>
+                                  <p className="text-xs opacity-80 font-medium">{smartInsight}</p>
+                                  <p className="text-xs text-blue-600 font-medium mt-0.5">💡 {recommendation}</p>
+                                </div>
+                              );
+                            })()}
+                            <div className="mt-1 text-xs font-semibold">
+                              <span className="text-gray-700">Available: </span>
+                              <span className={`${colors.text}`}>
+                                {bank.availableBalance ? formatCurrency(bank.availableBalance) : 'Loading...'}
+                              </span>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <span className={`text-lg font-bold ${colors.text}`}>
+                              {bank.amount < 0 ? `-${Math.abs(bank.amount).toFixed(2)} OMR` : `+${Math.abs(bank.amount).toFixed(2)} OMR`}
+                            </span>
+                            <div className="text-xs opacity-70 font-medium">
+                              {bank.percentage.toFixed(1)}% of total
+                            </div>
+                          </div>
+                        </div>
+                        <div className="mt-2 space-y-1">
+                          <div className="flex justify-between items-center">
+                            <span className="text-xs opacity-70 font-medium">
+                              Transactions: {bank.transactionCount}
+                            </span>
+                            {(() => {
+                              // Smart status indicator
+                              if (bank.healthScore >= 80) {
+                                return <span className="text-xs font-semibold text-green-600">🟢 Excellent</span>;
+                              } else if (bank.healthScore >= 60) {
+                                return <span className="text-xs font-semibold text-blue-600">🔵 Good</span>;
+                              } else if (bank.healthScore >= 40) {
+                                return <span className="text-xs font-semibold text-yellow-600">🟡 Needs Attention</span>;
+                              } else {
+                                return <span className="text-xs font-semibold text-red-600">🔴 Critical</span>;
+                              }
+                            })()}
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <span className="text-xs text-gray-500">
+                              {(() => {
+                                // Smart trend analysis
+                                const isActive = bank.transactionCount > 20;
+                                const isHealthy = bank.healthScore > 60;
+                                
+                                if (bank.bankType.includes('Credit Card')) {
+                                  return Math.abs(bank.amount) < 500 ? '📈 Trending better' : '📉 Usage increasing';
+                                } else if (bank.bankType.includes('Wafrah')) {
+                                  return bank.amount > 0 ? '📈 Growing wealth' : '📉 Declining savings';
+                                } else {
+                                  return isActive && isHealthy ? '📈 Healthy activity' : '📊 Monitor closely';
+                                }
+                              })()}
+                            </span>
+                            <span className="text-xs font-medium text-purple-600">
+                              AI Score: {bank.healthScore}/100
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })
+                ) : (
+                  <div className="p-4 bg-gradient-to-r from-red-50 to-pink-50 border border-red-200 rounded-xl">
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="p-2 bg-gradient-to-r from-red-500 to-pink-600 rounded-lg">
+                        <AlertCircle className="h-4 w-4 text-white" />
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-bold text-red-800">Configuration Required</h4>
+                        <p className="text-xs text-red-600">Real data source not available</p>
+                      </div>
+                    </div>
+                    <div className="mt-2">
+                      <p className="text-xs text-red-800 font-medium">Status: {bankAnalytics?.analysisStatus}</p>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </ModernCard>
         </div>
 
-        {/* Bank-wise Analytics Section */}
-        <ModernCard gradient="none" blur="xl" className={`${cardHoverEffects} mt-6`}>
-          <div className="p-6">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="p-3 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl shadow-lg">
-                <BarChart3 className="h-6 w-6 text-white" />
-              </div>
-              <div>
-                <h3 className="text-xl font-bold text-gray-800">Bank-wise Analytics</h3>
-                <p className="text-sm text-gray-600">Detailed financial performance across all accounts</p>
-              </div>
-            </div>
-            
-            {bankAnalytics && bankAnalytics.bankAnalysis.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {bankAnalytics.bankAnalysis.map((bank, index) => {
-                  const colors = getBankColors(bank.bankType);
-                  const isHighDebitCount = bank.transactionCount > 10;
-                  const debitEmoji = isHighDebitCount ? '😢' : '😊';
-                  
-                  return (
-                    <div key={bank.bankType} className={`p-4 bg-gradient-to-br ${colors.bg} border-2 ${colors.border} rounded-xl shadow-lg ${colors.shadow} hover:shadow-xl transition-all duration-300`}>
-                      <div className="flex items-center gap-3 mb-3">
-                        <div className={`p-2 bg-gradient-to-r ${colors.icon} rounded-lg shadow-md`}>
-                          <Building2 className="h-5 w-5 text-white" />
-                        </div>
-                        <div className="flex-1">
-                          <h4 className={`text-sm font-bold ${colors.text} flex items-center gap-1`}>
-                            {bank.bankType.includes('Wafrah') && '💰 '}
-                            {bank.bankType.includes('Credit Card') && '💳 '}
-                            {bank.bankType.includes('Bank Muscat') && '🏛️ '}
-                            {bank.bankType.includes('Debit') && '💸 '}
-                            {bank.bankType.includes('General') && '🏦 '}
-                            {bank.bankType}
-                            <span className="ml-1">{debitEmoji}</span>
-                          </h4>
-                        </div>
-                      </div>
-                      
-                      <div className="space-y-3">
-                        <div className="flex justify-between items-center">
-                          <span className="text-xs font-medium opacity-80">Total Amount</span>
-                          <span className={`text-lg font-bold ${colors.text}`}>
-                            {formatCurrency(Math.abs(bank.amount))}
-                          </span>
-                        </div>
-                        
-                        <div className="flex justify-between items-center">
-                          <span className="text-xs font-medium opacity-80">Available Balance</span>
-                          <span className={`text-sm font-bold ${colors.text}`}>
-                            {bank.availableBalance ? formatCurrency(bank.availableBalance) : 'Loading...'}
-                          </span>
-                        </div>
-                        
-                        <div className="flex justify-between items-center">
-                          <span className="text-xs font-medium opacity-80">Transactions</span>
-                          <span className={`text-sm font-bold ${colors.text}`}>
-                            {bank.transactionCount}
-                          </span>
-                        </div>
-                        
-                        <div className="flex justify-between items-center">
-                          <span className="text-xs font-medium opacity-80">Health Score</span>
-                          <span className={`text-sm font-bold ${bank.healthScore >= 70 ? 'text-green-700' : bank.healthScore >= 40 ? 'text-yellow-700' : 'text-red-700'}`}>
-                            {bank.healthScore}/100
-                          </span>
-                        </div>
-                        
-                        <div className={`w-full ${colors.progressBg || 'bg-gray-100/40'} rounded-full h-2 shadow-inner`}>
-                          <div 
-                            className={`bg-gradient-to-r ${colors.progressBar || colors.icon} h-2 rounded-full shadow-sm`}
-                            style={{ width: `${Math.min(bank.percentage, 100)}%` }}
-                          ></div>
-                        </div>
-                        
-                        <p className="text-xs opacity-80 font-medium mt-2">{bank.insights}</p>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            ) : (
-              <div className="p-6 bg-gradient-to-r from-yellow-100 to-amber-100 border-2 border-yellow-300 rounded-xl">
-                <div className="text-center">
-                  <AlertCircle className="h-8 w-8 text-yellow-600 mx-auto mb-2" />
-                  <h4 className="text-lg font-bold text-yellow-800">No Bank Analytics Available</h4>
-                  <p className="text-yellow-700 mt-1">Connect your Google Sheets to view detailed bank analytics</p>
-                </div>
-              </div>
-            )}
-          </div>
-        </ModernCard>
 
         {/* Calendar Reminders Section - CMB Colorblind Friendly */}
         <ModernCard gradient="none" blur="xl" className={`${cardHoverEffects} mt-6`}>

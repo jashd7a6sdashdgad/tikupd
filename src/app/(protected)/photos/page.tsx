@@ -808,45 +808,6 @@ export default function PhotosPage() {
             </div>
           </div>
 
-          {/* Photo info */}
-          <div className="absolute bottom-4 left-4 right-4 z-60 text-white bg-black/50 p-4 rounded-lg backdrop-blur-sm">
-            <h3 className="text-lg font-semibold mb-2">{selectedPhoto.name}</h3>
-            <div className="flex flex-wrap gap-4 text-sm opacity-80">
-              <span>Size: {formatFileSize(selectedPhoto.size)}</span>
-              <span>Type: {selectedPhoto.mimeType}</span>
-              <span>Created: {new Date(selectedPhoto.createdTime).toLocaleDateString()}</span>
-            </div>
-            
-            {/* Action buttons */}
-            <div className="flex gap-2 mt-3">
-              <Button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  toggleFavorite(selectedPhoto.id);
-                }}
-                variant="ghost"
-                size="sm"
-                className={`text-white hover:bg-white/20 ${selectedPhoto.isFavorite ? 'text-red-400' : ''}`}
-              >
-                <Heart className={`h-4 w-4 mr-2 ${selectedPhoto.isFavorite ? 'fill-current' : ''}`} />
-                {selectedPhoto.isFavorite ? 'Favorited' : 'Add to Favorites'}
-              </Button>
-              <Button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (selectedPhoto.webContentLink) {
-                    window.open(selectedPhoto.webContentLink, '_blank');
-                  }
-                }}
-                variant="ghost"
-                size="sm"
-                className="text-white hover:bg-white/20"
-              >
-                <Download className="h-4 w-4 mr-2" />
-                Download
-              </Button>
-            </div>
-          </div>
 
           {/* Click outside to close */}
           <div 

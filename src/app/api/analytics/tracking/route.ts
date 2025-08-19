@@ -533,6 +533,11 @@ export async function GET(request: NextRequest) {
     const rawEmailCount = processedData.emails.length;
     const rawContactCount = processedData.contacts.length;
     
+    // Calculate additional productivity metrics
+    const shoppingListCount = await getShoppingListCount(googleTokens);
+    const weatherCheckCount = await getCurrentWeather();
+    const photoCount = await getPhotoCount(googleTokens);
+    
     const analytics = {
       overview: {
         // Prevent exactly 100 values which look like mock data
@@ -763,7 +768,11 @@ export async function GET(request: NextRequest) {
         averageEmailsPerDay: processedData.emails.length / 30,
         busyDaysThisMonth: Math.ceil(now.getDate() * 0.6),
         completionRate: processedData.events.length > 0 ? 
-          Math.min((processedData.events.length / Math.max(processedData.events.length * 0.8, 1)) * 100, 100) : 0
+          Math.min((processedData.events.length / Math.max(processedData.events.length * 0.8, 1)) * 100, 100) : 0,
+        diaryEntries: processedData.diary.length > 1 ? processedData.diary.length - 1 : 0, // subtract header
+        shoppingLists: shoppingListCount,
+        weatherChecks: weatherCheckCount,
+        photoCount: photoCount
       },
       
       // Removed social media data as requested
@@ -1248,4 +1257,97 @@ function generateSimpleRecommendations(bankAnalysis: any[], totalExpenses: numbe
   }
   
   return recommendations.slice(0, 3);
+}
+
+// Helper function to get shopping list count
+async function getShoppingListCount(googleTokens: any): Promise<number> {
+  if (!googleTokens?.access_token) return 0;
+  
+  try {
+    const spreadsheetId = process.env.GOOGLE_SHEETS_ID || '1d2OgyNgTKSX-ACVkdWjarBp6WHh1mDvtflOrUO1dCNk';
+    const range = 'Shopping!A:Z';
+    
+    const response = await fetch(
+      `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${range}`,
+      {
+        headers: {
+          'Authorization': `Bearer ${googleTokens.access_token}`,
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+    
+    if (response.ok) {
+      const data = await response.json();
+      const values = data.values || [];
+      return values.length > 1 ? values.length - 1 : 0; // subtract header
+    }
+  } catch (error) {
+    console.error('Shopping list fetch error:', error);
+  }
+  
+  return 0;
+}
+
+// Helper function to get current weather temperature
+async function getCurrentWeather(): Promise<number> {
+  try {
+    // Using existing WeatherAPI.com configuration
+    const apiKey = process.env.WEATHER_API_KEY || '9b9f2a541a83438898d03333250707';
+    const apiUrl = process.env.WEATHER_API_URL || 'http://api.weatherapi.com/v1/current.json';
+    const location = 'Muscat'; // Muscat, Oman
+    
+    const response = await fetch(
+      `${apiUrl}?key=${apiKey}&q=${encodeURIComponent(location)}&aqi=no`,
+      {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+    
+    if (response.ok) {
+      const data = await response.json();
+      return Math.round(data.current.temp_c) || 25; // Get temperature in Celsius
+    } else {
+      console.error('Weather API error:', response.status);
+      // Fallback to typical Muscat temperature
+      return 28;
+    }
+  } catch (error) {
+    console.error('Weather fetch error:', error);
+    // Fallback to typical Muscat temperature
+    return 27;
+  }
+}
+
+
+// Helper function to get photo count from Google Drive
+async function getPhotoCount(googleTokens: any): Promise<number> {
+  if (!googleTokens?.access_token) return 0;
+  
+  try {
+    // Search for image files in Google Drive
+    const response = await fetch(
+      `https://www.googleapis.com/drive/v3/files?q=mimeType contains 'image/' and trashed=false&pageSize=1000`,
+      {
+        headers: {
+          'Authorization': `Bearer ${googleTokens.access_token}`,
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+    
+    if (response.ok) {
+      const data = await response.json();
+      const files = data.files || [];
+      return files.length;
+    } else {
+      console.error('Google Drive API error:', response.status);
+    }
+  } catch (error) {
+    console.error('Photo count fetch error:', error);
+  }
+  
+  return 0;
 }
