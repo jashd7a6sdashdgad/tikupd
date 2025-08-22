@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voice Joke AI - Talk to Your Comedy Companion</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 800px;
+            width: 90%;
+            padding: 2rem;
+            text-align: center;
+        }
+
+        .header {
+            margin-bottom: 3rem;
+        }
+
+        .title {
+            font-size: 3rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            background: linear-gradient(45deg, #fff, #f0f8ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .subtitle {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            margin-bottom: 0.5rem;
+        }
+
+        .instructions {
+            font-size: 1rem;
+            opacity: 0.8;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .voice-interface {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 25px;
+            padding: 3rem 2rem;
+            margin: 2rem 0;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        }
+
+        .voice-button {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            border: none;
+            background: linear-gradient(45deg, #ff6b6b, #ff8e53);
+            color: white;
+            font-size: 3rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 1rem auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 10px 30px rgba(255, 107, 107, 0.4);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .voice-button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 15px 40px rgba(255, 107, 107, 0.6);
+        }
+
+        .voice-button.listening {
+            background: linear-gradient(45deg, #4ecdc4, #44a08d);
+            animation: pulse 2s infinite;
+        }
+
+        .voice-button.processing {
+            background: linear-gradient(45deg, #ffa726, #ff7043);
+            animation: rotate 2s linear infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        @keyframes rotate {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .status-text {
+            font-size: 1.3rem;
+            margin: 1.5rem 0;
+            min-height: 2rem;
+            font-weight: 500;
+        }
+
+        .transcript-box {
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 15px;
+            padding: 1.5rem;
+            margin: 1.5rem 0;
+            min-height: 80px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .transcript-text {
+            font-size: 1.1rem;
+            line-height: 1.5;
+            opacity: 0.9;
+        }
+
+        .joke-box {
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 15px;
+            padding: 2rem;
+            margin: 1.5rem 0;
+            min-height: 120px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            display: none;
+        }
+
+        .joke-text {
+            font-size: 1.2rem;
+            line-height: 1.6;
+            font-weight: 500;
+        }
+
+        .controls {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin-top: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .control-btn {
+            padding: 0.8rem 1.5rem;
+            border: none;
+            border-radius: 25px;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            backdrop-filter: blur(5px);
+        }
+
+        .control-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .control-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .error-message {
+            background: rgba(255, 99, 99, 0.2);
+            color: #ffb3b3;
+            padding: 1rem;
+            border-radius: 10px;
+            margin: 1rem 0;
+            border: 1px solid rgba(255, 99, 99, 0.3);
+            display: none;
+        }
+
+        .success-message {
+            background: rgba(76, 175, 80, 0.2);
+            color: #c8e6c9;
+            padding: 1rem;
+            border-radius: 10px;
+            margin: 1rem 0;
+            border: 1px solid rgba(76, 175, 80, 0.3);
+            display: none;
+        }
+
+        .chat-history {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 1.5rem;
+            margin-top: 2rem;
+            max-height: 300px;
+            overflow-y: auto;
+            text-align: left;
+        }
+
+        .chat-entry {
+            margin-bottom: 1rem;
+            padding: 0.8rem;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .chat-user {
+            background: rgba(102, 126, 234, 0.3);
+        }
+
+        .chat-ai {
+            background: rgba(255, 107, 107, 0.3);
+        }
+
+        .supported-check {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            backdrop-filter: blur(5px);
+        }
+
+        .feature-indicator {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+
+        .supported { background: #4caf50; }
+        .not-supported { background: #f44336; }
+
+        @media (max-width: 768px) {
+            .title {
+                font-size: 2rem;
+            }
+            
+            .voice-button {
+                width: 120px;
+                height: 120px;
+                font-size: 2.5rem;
+            }
+            
+            .container {
+                padding: 1rem;
+            }
+        }
+
+        /* Loading animation for voice button */
+        .loading-dots {
+            display: inline-block;
+            position: relative;
+            width: 40px;
+            height: 40px;
+        }
+
+        .loading-dots div {
+            position: absolute;
+            top: 16px;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: white;
+            animation: loading-dots 1.2s linear infinite;
+        }
+
+        .loading-dots div:nth-child(1) { left: 4px; animation-delay: 0s; }
+        .loading-dots div:nth-child(2) { left: 16px; animation-delay: -0.4s; }
+        .loading-dots div:nth-child(3) { left: 28px; animation-delay: -0.8s; }
+
+        @keyframes loading-dots {
+            0%, 80%, 100% { transform: scale(0); }
+            40% { transform: scale(1); }
+        }
+    </style>
+</head>
+<body>
+    <div class="supported-check">
+        <span class="feature-indicator" id="speechRecognitionIndicator"></span>Speech Recognition
+        <br>
+        <span class="feature-indicator" id="speechSynthesisIndicator"></span>Speech Synthesis
+    </div>
+
+    <div class="container">
+        <div class="header">
+            <h1 class="title">🎭 Voice Joke AI</h1>
+            <p class="subtitle">Your Voice-Powered Comedy Companion</p>
+            <p class="instructions">
+                Click the microphone and speak your request for jokes! 
+                Ask for specific types, topics, or just say "tell me a joke" to get started.
+            </p>
+        </div>
+
+        <div class="voice-interface">
+            <button class="voice-button" id="voiceButton">
+                🎤
+            </button>
+            
+            <div class="status-text" id="statusText">
+                Click the microphone to start talking
+            </div>
+
+            <div class="transcript-box">
+                <div class="transcript-text" id="transcriptText">
+                    Your speech will appear here...
+                </div>
+            </div>
+
+            <div class="joke-box" id="jokeBox">
+                <div class="joke-text" id="jokeText"></div>
+            </div>
+
+            <div class="error-message" id="errorMessage"></div>
+            <div class="success-message" id="successMessage"></div>
+
+            <div class="controls">
+                <button class="control-btn" id="stopSpeechBtn" disabled>Stop Speaking</button>
+                <button class="control-btn" id="repeatJokeBtn" disabled>Repeat Last Joke</button>
+                <button class="control-btn" id="clearHistoryBtn">Clear History</button>
+            </div>
+        </div>
+
+        <div class="chat-history" id="chatHistory" style="display: none;">
+            <h3>Conversation History</h3>
+            <div id="chatEntries"></div>
+        </div>
+    </div>
+
+    <script>
+        class VoiceJokeAI {
+            constructor() {
+                this.webhookUrl = 'https://n8n.1000273.xyz/webhook/795344a0-0bf9-45e6-a81e-cf76af34705b';
+                this.isListening = false;
+                this.isProcessing = false;
+                this.isSpeaking = false;
+                this.currentJoke = '';
+                this.chatHistory = [];
+                
+                // Initialize speech recognition
+                this.initSpeechRecognition();
+                this.initSpeechSynthesis();
+                this.initEventListeners();
+                this.checkBrowserSupport();
+            }
+
+            initSpeechRecognition() {
+                if ('webkitSpeechRecognition' in window) {
+                    this.recognition = new webkitSpeechRecognition();
+                } else if ('SpeechRecognition' in window) {
+                    this.recognition = new SpeechRecognition();
+                } else {
+                    this.showError('Speech recognition not supported in this browser. Please use Chrome, Edge, or Safari.');
+                    return;
+                }
+
+                this.recognition.continuous = false;
+                this.recognition.interimResults = true;
+                this.recognition.lang = 'en-US';
+
+                this.recognition.onstart = () => {
+                    this.isListening = true;
+                    this.updateUI();
+                    this.setStatus('Listening... Speak now!');
+                };
+
+                this.recognition.onresult = (event) => {
+                    let transcript = '';
+                    for (let i = event.resultIndex; i < event.results.length; i++) {
+                        transcript += event.results[i][0].transcript;
+                    }
+                    this.updateTranscript(transcript);
+                };
+
+                this.recognition.onend = () => {
+                    this.isListening = false;
+                    this.updateUI();
+                    const finalTranscript = document.getElementById('transcriptText').textContent;
+                    if (finalTranscript && finalTranscript !== 'Your speech will appear here...') {
+                        this.processJokeRequest(finalTranscript);
+                    } else {
+                        this.setStatus('No speech detected. Click to try again.');
+                    }
+                };
+
+                this.recognition.onerror = (event) => {
+                    this.isListening = false;
+                    this.updateUI();
+                    this.showError(`Speech recognition error: ${event.error}`);
+                    this.setStatus('Click the microphone to try again');
+                };
+            }
+
+            initSpeechSynthesis() {
+                this.synth = window.speechSynthesis;
+                this.currentUtterance = null;
+            }
+
+            initEventListeners() {
+                document.getElementById('voiceButton').addEventListener('click', () => {
+                    this.toggleVoiceInput();
+                });
+
+                document.getElementById('stopSpeechBtn').addEventListener('click', () => {
+                    this.stopSpeaking();
+                });
+
+                document.getElementById('repeatJokeBtn').addEventListener('click', () => {
+                    this.repeatLastJoke();
+                });
+
+                document.getElementById('clearHistoryBtn').addEventListener('click', () => {
+                    this.clearHistory();
+                });
+            }
+
+            checkBrowserSupport() {
+                const speechRecognitionSupported = 'webkitSpeechRecognition' in window || 'SpeechRecognition' in window;
+                const speechSynthesisSupported = 'speechSynthesis' in window;
+
+                document.getElementById('speechRecognitionIndicator').className = 
+                    `feature-indicator ${speechRecognitionSupported ? 'supported' : 'not-supported'}`;
+                
+                document.getElementById('speechSynthesisIndicator').className = 
+                    `feature-indicator ${speechSynthesisSupported ? 'supported' : 'not-supported'}`;
+
+                if (!speechRecognitionSupported || !speechSynthesisSupported) {
+                    this.showError('Some features may not work properly. Please use a modern browser like Chrome, Edge, or Safari.');
+                }
+            }
+
+            toggleVoiceInput() {
+                if (this.isListening) {
+                    this.recognition.stop();
+                } else if (this.isSpeaking) {
+                    this.stopSpeaking();
+                } else if (!this.isProcessing) {
+                    this.startListening();
+                }
+            }
+
+            startListening() {
+                if (!this.recognition) {
+                    this.showError('Speech recognition not available');
+                    return;
+                }
+
+                this.clearMessages();
+                this.updateTranscript('');
+                
+                try {
+                    this.recognition.start();
+                } catch (error) {
+                    this.showError('Could not start speech recognition. Please try again.');
+                    console.error('Speech recognition error:', error);
+                }
+            }
+
+            updateTranscript(text) {
+                document.getElementById('transcriptText').textContent = text || 'Your speech will appear here...';
+            }
+
+            async processJokeRequest(transcript) {
+                this.isProcessing = true;
+                this.updateUI();
+                this.setStatus('Processing your request...');
+
+                try {
+                    const response = await fetch(this.webhookUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            message: transcript,
+                            timestamp: new Date().toISOString()
+                        })
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+
+                    const data = await response.text();
+                    this.currentJoke = data;
+                    
+                    this.displayJoke(data);
+                    this.addToChatHistory('user', transcript);
+                    this.addToChatHistory('ai', data);
+                    this.speakJoke(data);
+                    
+                    this.showSuccess('Joke received! Playing now...');
+                    
+                } catch (error) {
+                    console.error('Error calling webhook:', error);
+                    this.showError('Sorry, I couldn\'t get a joke right now. Please try again!');
+                    this.setStatus('Click the microphone to try again');
+                } finally {
+                    this.isProcessing = false;
+                    this.updateUI();
+                }
+            }
+
+            displayJoke(joke) {
+                const jokeBox = document.getElementById('jokeBox');
+                const jokeText = document.getElementById('jokeText');
+                
+                jokeText.textContent = joke;
+                jokeBox.style.display = 'block';
+            }
+
+            speakJoke(joke) {
+                if (!this.synth) {
+                    this.showError('Text-to-speech not available');
+                    return;
+                }
+
+                // Stop any current speech
+                this.synth.cancel();
+
+                this.currentUtterance = new SpeechSynthesisUtterance(joke);
+                this.currentUtterance.rate = 0.9;
+                this.currentUtterance.pitch = 1.1;
+                this.currentUtterance.volume = 0.8;
+
+                // Try to use a more expressive voice
+                const voices = this.synth.getVoices();
+                const preferredVoice = voices.find(voice => 
+                    voice.name.includes('Alex') || 
+                    voice.name.includes('Daniel') || 
+                    voice.name.includes('Karen') ||
+                    voice.lang.startsWith('en')
+                );
+                
+                if (preferredVoice) {
+                    this.currentUtterance.voice = preferredVoice;
+                }
+
+                this.currentUtterance.onstart = () => {
+                    this.isSpeaking = true;
+                    this.updateUI();
+                    this.setStatus('🔊 Playing joke...');
+                };
+
+                this.currentUtterance.onend = () => {
+                    this.isSpeaking = false;
+                    this.updateUI();
+                    this.setStatus('Ask for another joke!');
+                    document.getElementById('repeatJokeBtn').disabled = false;
+                };
+
+                this.currentUtterance.onerror = (event) => {
+                    this.isSpeaking = false;
+                    this.updateUI();
+                    this.showError('Could not play speech. Check your audio settings.');
+                    console.error('Speech synthesis error:', event);
+                };
+
+                this.synth.speak(this.currentUtterance);
+            }
+
+            stopSpeaking() {
+                if (this.synth) {
+                    this.synth.cancel();
+                }
+                this.isSpeaking = false;
+                this.updateUI();
+                this.setStatus('Speech stopped. Ask for another joke!');
+            }
+
+            repeatLastJoke() {
+                if (this.currentJoke) {
+                    this.speakJoke(this.currentJoke);
+                }
+            }
+
+            addToChatHistory(sender, message) {
+                this.chatHistory.push({ sender, message, timestamp: new Date() });
+                this.updateChatDisplay();
+            }
+
+            updateChatDisplay() {
+                const chatHistory = document.getElementById('chatHistory');
+                const chatEntries = document.getElementById('chatEntries');
+                
+                if (this.chatHistory.length > 0) {
+                    chatHistory.style.display = 'block';
+                    chatEntries.innerHTML = '';
+                    
+                    this.chatHistory.slice(-10).forEach(entry => {
+                        const div = document.createElement('div');
+                        div.className = `chat-entry chat-${entry.sender}`;
+                        div.innerHTML = `
+                            <strong>${entry.sender === 'user' ? 'You' : 'Joke AI'}:</strong>
+                            <br>${entry.message}
+                        `;
+                        chatEntries.appendChild(div);
+                    });
+                    
+                    chatHistory.scrollTop = chatHistory.scrollHeight;
+                }
+            }
+
+            clearHistory() {
+                this.chatHistory = [];
+                document.getElementById('chatHistory').style.display = 'none';
+                this.showSuccess('Chat history cleared!');
+            }
+
+            updateUI() {
+                const button = document.getElementById('voiceButton');
+                const stopBtn = document.getElementById('stopSpeechBtn');
+                
+                button.className = 'voice-button';
+                
+                if (this.isListening) {
+                    button.className += ' listening';
+                    button.innerHTML = '🎤';
+                } else if (this.isProcessing) {
+                    button.className += ' processing';
+                    button.innerHTML = '<div class="loading-dots"><div></div><div></div><div></div></div>';
+                } else if (this.isSpeaking) {
+                    button.innerHTML = '🔊';
+                } else {
+                    button.innerHTML = '🎤';
+                }
+                
+                stopBtn.disabled = !this.isSpeaking;
+            }
+
+            setStatus(message) {
+                document.getElementById('statusText').textContent = message;
+            }
+
+            showError(message) {
+                const errorDiv = document.getElementById('errorMessage');
+                errorDiv.textContent = message;
+                errorDiv.style.display = 'block';
+                setTimeout(() => {
+                    errorDiv.style.display = 'none';
+                }, 5000);
+            }
+
+            showSuccess(message) {
+                const successDiv = document.getElementById('successMessage');
+                successDiv.textContent = message;
+                successDiv.style.display = 'block';
+                setTimeout(() => {
+                    successDiv.style.display = 'none';
+                }, 3000);
+            }
+
+            clearMessages() {
+                document.getElementById('errorMessage').style.display = 'none';
+                document.getElementById('successMessage').style.display = 'none';
+            }
+        }
+
+        // Initialize the app when the page loads
+        window.addEventListener('load', () => {
+            new VoiceJokeAI();
+        });
+
+        // Handle speech synthesis voices loading
+        if ('speechSynthesis' in window) {
+            speechSynthesis.onvoiceschanged = () => {
+                console.log('Voices loaded:', speechSynthesis.getVoices().length);
+            };
+        }
+    </script>
+</body>
+</html>

@@ -191,13 +191,13 @@ export default function SmartInsights({ dashboardData, weeklyStats, className = 
       });
 
       newInsights.push({
-        id: 'search-everything',
+        id: 'add-photos',
         type: 'optimization',
         priority: 'medium',
-        title: 'Global Search Ready',
-        description: 'Use the powerful search feature to find anything across your data. Try "restaurant expenses" or "meetings this week".',
-        action: { text: 'Try Search', path: '/search' },
-        icon: <Brain className="h-4 w-4" />,
+        title: 'Add Any Photos',
+        description: 'Upload and manage your photos easily. Organize your memories and access them anytime.',
+        action: { text: 'Add Photos', path: '/photos' },
+        icon: <Camera className="h-4 w-4" />,
         timestamp: new Date()
       });
 

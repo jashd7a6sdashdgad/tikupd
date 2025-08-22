@@ -14,6 +14,7 @@ export const translations: Record<string, Translation> = {
     diary: "Diary",
     weather: "Weather",
     chat: "Chat",
+    voiceJokeAI: "Voice Joke AI",
     settings: "Settings",
     facebook: "Facebook",
     instagram: "Instagram",

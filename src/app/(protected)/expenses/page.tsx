@@ -357,12 +357,8 @@ export default function ExpensesPage() {
       );
     }
     
-    // Sort by date in descending order (latest first)
-    return filteredExpenses.sort((a, b) => {
-      const dateA = new Date(a.date || 0).getTime();
-      const dateB = new Date(b.date || 0).getTime();
-      return dateB - dateA; // Descending order (latest first)
-    });
+    // Return filtered expenses (API already returns them sorted newest first)
+    return filteredExpenses;
   };
 
   // AI Sorting function
@@ -423,6 +419,55 @@ export default function ExpensesPage() {
       return '😢'; // Sad face
     }
     return '😐'; // Neutral face for edge cases
+  };
+
+  // Helper function to parse dates from Google Sheets
+  const formatExpenseDate = (dateString: string) => {
+    if (!dateString) return 'No Date';
+    
+    try {
+      // Handle different date formats from Google Sheets
+      let date;
+      
+      if (typeof dateString === 'string') {
+        const dateStr = dateString.trim();
+        
+        // Handle DD/MM/YYYY format
+        if (dateStr.includes('/')) {
+          const [day, month, year] = dateStr.split('/');
+          if (day && month && year) {
+            date = new Date(`${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`);
+          }
+        }
+        // Handle DD-MM-YYYY format
+        else if (dateStr.includes('-') && dateStr.length === 10) {
+          const parts = dateStr.split('-');
+          if (parts[0].length === 4) {
+            // YYYY-MM-DD format
+            date = new Date(dateStr);
+          } else if (parts.length === 3) {
+            // DD-MM-YYYY format
+            date = new Date(`${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`);
+          }
+        }
+        // Try direct parsing as fallback
+        else {
+          date = new Date(dateStr);
+        }
+      } else {
+        date = new Date(dateString);
+      }
+      
+      // Check if date is valid
+      if (isNaN(date.getTime())) {
+        return dateString; // Return original string if parsing failed
+      }
+      
+      return date.toLocaleDateString();
+    } catch (error) {
+      console.warn('Date parsing error:', error, 'for date:', dateString);
+      return dateString; // Return original string if error
+    }
   };
 
 
@@ -868,7 +913,7 @@ export default function ExpensesPage() {
                             </div>
                             
                             <div className="text-sm text-gray-600">
-                              {expense.date && <span>{new Date(expense.date).toLocaleDateString()}</span>}
+                              {expense.date && <span>{formatExpenseDate(expense.date)}</span>}
                               {'merchant' in (smartExpense || {}) && smartExpense?.merchant && smartExpense.merchant !== expense.from && (
                                 <span className="ml-2">• Merchant: {smartExpense.merchant}</span>
                               )}

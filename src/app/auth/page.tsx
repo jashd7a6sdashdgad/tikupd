@@ -217,13 +217,54 @@ export default function AuthPage() {
     }
   };
 
-  // Check biometric support on component mount
+  // Check if user is authorized for biometric authentication
+  const isAuthorizedForBiometric = () => {
+    // Only mahboob@gmail.com is authorized for biometric authentication
+    const authorizedEmail = 'mahboob@gmail.com';
+    
+    // Check if user is logged in with Google and has the authorized email
+    const googleUser = localStorage.getItem('google_user');
+    if (googleUser) {
+      try {
+        const userInfo = JSON.parse(googleUser);
+        return userInfo.email === authorizedEmail;
+      } catch {
+        return false;
+      }
+    }
+    
+    // Check if current user session matches authorized user
+    if (user && user.email === authorizedEmail) {
+      return true;
+    }
+    
+    // Check if username suggests this is the authorized user
+    if (credentials.username === 'mahboob' || credentials.username === authorizedEmail) {
+      return true;
+    }
+    
+    return false;
+  };
+
+  // Check biometric support on component mount and when credentials change
   useEffect(() => {
     checkBiometricSupport();
   }, []);
 
+  // Re-check biometric support when credentials change
+  useEffect(() => {
+    checkBiometricSupport();
+  }, [credentials.username, user]);
+
   const checkBiometricSupport = async () => {
     try {
+      // First check if user is authorized for biometric authentication
+      if (!isAuthorizedForBiometric()) {
+        console.log('User not authorized for biometric authentication');
+        setBiometricSupported(false);
+        return;
+      }
+
       // Check mobile biometric support
       const available = await checkMobileBiometricSupport();
       setBiometricSupported(available);
@@ -241,12 +282,26 @@ export default function AuthPage() {
           setBiometricType('Mobile Biometric');
         }
 
-        // Check if there's a stored mobile credential
+        // Check if there's a stored mobile credential for authorized user
         const storedCredentialId = localStorage.getItem('mobile_biometric_credential_id');
-        setHasStoredCredential(!!storedCredentialId);
+        const storedUserEmail = localStorage.getItem('mobile_biometric_user_email');
         
-        console.log('Mobile biometric support available:', available);
-        console.log('Has stored mobile credential:', !!storedCredentialId);
+        // Only show stored credential if it belongs to authorized user
+        if (storedCredentialId && storedUserEmail === 'mahboob@gmail.com') {
+          setHasStoredCredential(true);
+        } else {
+          setHasStoredCredential(false);
+          // Clear invalid credentials
+          if (storedCredentialId && storedUserEmail !== 'mahboob@gmail.com') {
+            localStorage.removeItem('mobile_biometric_credential_id');
+            localStorage.removeItem('mobile_biometric_raw_id');
+            localStorage.removeItem('mobile_biometric_device_type');
+            localStorage.removeItem('mobile_biometric_user_email');
+          }
+        }
+        
+        console.log('Mobile biometric support available for authorized user:', available);
+        console.log('Has stored mobile credential for authorized user:', !!storedCredentialId && storedUserEmail === 'mahboob@gmail.com');
       }
     } catch (error) {
       console.error('Error checking mobile biometric support:', error);
@@ -258,16 +313,23 @@ export default function AuthPage() {
       setBiometricLoading(true);
       setError('');
 
-      console.log('Starting mobile biometric registration...');
+      // Check if user is authorized before allowing registration
+      if (!isAuthorizedForBiometric()) {
+        throw new Error('Biometric authentication is only available for mahboob@gmail.com');
+      }
+
+      console.log('Starting mobile biometric registration for authorized user...');
       const result = await registerMobileBiometric();
       
       if (result.success) {
+        // Store user email with the biometric credential
+        localStorage.setItem('mobile_biometric_user_email', 'mahboob@gmail.com');
         setHasStoredCredential(true);
-        console.log('Mobile biometric credential registered successfully');
+        console.log('Mobile biometric credential registered successfully for mahboob@gmail.com');
         
         // Show success message with device-specific text
         const deviceName = result.deviceType === 'ios' ? 'Face ID/Touch ID' : 'Fingerprint/Face Unlock';
-        alert(`${deviceName} registration successful! You can now use biometric authentication.`);
+        alert(`${deviceName} registration successful for mahboob@gmail.com! You can now use biometric authentication.`);
       } else {
         throw new Error(result.error || 'Registration failed');
       }
@@ -284,17 +346,28 @@ export default function AuthPage() {
       setBiometricLoading(true);
       setError('');
 
-      console.log('Starting mobile biometric authentication...');
+      // Check if user is authorized before allowing authentication
+      if (!isAuthorizedForBiometric()) {
+        throw new Error('Biometric authentication is only available for mahboob@gmail.com');
+      }
+
+      // Verify stored credential belongs to authorized user
+      const storedUserEmail = localStorage.getItem('mobile_biometric_user_email');
+      if (storedUserEmail !== 'mahboob@gmail.com') {
+        throw new Error('Stored biometric credential is not authorized for this user');
+      }
+
+      console.log('Starting mobile biometric authentication for authorized user...');
       const result = await authenticateWithMobileBiometric();
       
       if (result.success) {
-        console.log(`Mobile biometric authentication successful: ${result.type}`);
+        console.log(`Mobile biometric authentication successful for mahboob@gmail.com: ${result.type}`);
         
-        // Simulate successful login after biometric verification
+        // Simulate successful login after biometric verification for authorized user
         const loginResult = await login({ username: 'mahboob', password: 'mahboob123' });
         
         if (loginResult.success) {
-          alert(`${result.type} authentication successful! Welcome back!`);
+          alert(`${result.type} authentication successful! Welcome back, Mahboob!`);
           router.push('/dashboard');
         } else {
           setError('Biometric authentication successful but login failed. Please try again.');
@@ -314,8 +387,9 @@ export default function AuthPage() {
     localStorage.removeItem('mobile_biometric_credential_id');
     localStorage.removeItem('mobile_biometric_raw_id');
     localStorage.removeItem('mobile_biometric_device_type');
+    localStorage.removeItem('mobile_biometric_user_email');
     setHasStoredCredential(false);
-    alert('Mobile biometric credentials cleared. You will need to set up fingerprint/Face ID authentication again.');
+    alert('Mobile biometric credentials cleared for mahboob@gmail.com. You will need to set up fingerprint/Face ID authentication again.');
   };
 
   // Redirect to dashboard if already authenticated
@@ -597,11 +671,6 @@ export default function AuthPage() {
                   </div>
                 </div>
                 
-                <div className="mt-6 text-center text-sm text-muted-foreground">
-                  <p>{language === 'ar' ? 'بيانات تجريبية:' : 'Demo Credentials:'}</p>
-                  <p><strong>{language === 'ar' ? 'اسم المستخدم:' : 'Username:'}</strong> mahboob</p>
-                  <p><strong>{language === 'ar' ? 'كلمة المرور:' : 'Password:'}</strong> mahboob123</p>
-                </div>
               </CardContent>
             </Card>
           )}

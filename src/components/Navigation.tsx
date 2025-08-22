@@ -58,6 +58,12 @@ const getNavigation = (t: (key: string) => string): NavigationItem[] => [
     icon: Search
   },
   {
+    key: 'voice-joke-ai',
+    name: t('voiceJokeAI'),
+    href: '/voice-joke-ai',
+    icon: Music
+  },
+  {
     key: 'calendar',
     name: t('calendar'),
     href: '/calendar',

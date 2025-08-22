@@ -147,7 +147,8 @@ export async function GET(request: NextRequest) {
       }
 
       // Skip header row and convert to structured data
-      const dataRows = rows.slice(1);
+      // REVERSE the rows so newest entries (added at bottom) appear first
+      const dataRows = rows.slice(1).reverse();
       let expenses = dataRows.map((row, index) => ({
         id: row[10] || (index + 1).toString(),
         from: row[0] || '',
@@ -161,6 +162,9 @@ export async function GET(request: NextRequest) {
         creditCardBalance: parseFloat(row[8]) || 0,
         debitCardBalance: parseFloat(row[9]) || 0
       }));
+
+      // Since we reversed the rows, newest entries from bottom of sheet are now first
+      // No additional sorting needed as the data is now in the correct order
 
       // Apply filters
       if (startDate || endDate) {
