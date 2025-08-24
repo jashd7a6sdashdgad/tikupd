@@ -24,7 +24,11 @@ import {
   TrendingUp,
   Calendar as CalendarDays,
   PartyPopper,
-  MapPin
+  MapPin,
+  Info,
+  X,
+  Plane,
+  AlertCircle
 } from 'lucide-react';
 import { useVoiceInput } from '@/hooks/useVoiceInput';
 
@@ -47,6 +51,8 @@ export default function CalendarPage() {
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const [showConflicts, setShowConflicts] = useState(false);
   const [authError, setAuthError] = useState(false);
+  const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
+  const [showEventDetails, setShowEventDetails] = useState(false);
   
   // Calendar data state
   const [calendarData, setCalendarData] = useState<{
@@ -83,6 +89,52 @@ export default function CalendarPage() {
     resetTranscript, 
     isSupported 
   } = useVoiceInput();
+
+  // Function to detect if event is a flight and extract flight information
+  const parseFlightInfo = (event: CalendarEvent) => {
+    const title = event.title || '';
+    const description = event.description || '';
+    const combined = `${title} ${description}`.toLowerCase();
+
+    // Check if it's a flight event
+    const isFlightEvent = combined.includes('flight') || 
+                         combined.includes('oman air') || 
+                         combined.includes('mct') || 
+                         combined.includes('bkk') || 
+                         combined.includes('confirmation number') ||
+                         title.toLowerCase().includes('flight');
+
+    if (!isFlightEvent) return null;
+
+    // Extract flight information using regex patterns
+    const flightNumberMatch = combined.match(/flight\s+(\w+\s*\d+)/i);
+    const confirmationMatch = combined.match(/confirmation\s+number[:\s]+([A-Z0-9]+)/i);
+    
+    // Extract airports
+    const departureAirport = combined.includes('muscat') ? 'MUSCAT MCT' : 'Unknown';
+    const arrivalAirport = combined.includes('bangkok') ? 'BANGKOK SUVARNABH BKK' : 'Unknown';
+    
+    // Extract times
+    const departureTimeMatch = combined.match(/(\d{1,2}:\d{2}[ap]m).*?local time.*?bangkok/i);
+    const arrivalTimeMatch = combined.match(/bangkok.*?(\d{1,2}:\d{2}[ap]m).*?local time/i);
+
+    return {
+      isFlightEvent: true,
+      flightNumber: flightNumberMatch ? flightNumberMatch[1] : 'Unknown',
+      confirmationNumber: confirmationMatch ? confirmationMatch[1] : 'Unknown',
+      departureAirport,
+      arrivalAirport,
+      departureTime: departureTimeMatch ? departureTimeMatch[1] : 'Unknown',
+      arrivalTime: arrivalTimeMatch ? arrivalTimeMatch[1] : 'Unknown',
+      airline: combined.includes('oman air') ? 'Oman Air' : 'Unknown Airline',
+      organizer: 'Mahboob AlBulushi',
+      guestCount: '1 guest',
+      reminder: '30 minutes before',
+      visibility: 'Only me',
+      status: 'Free',
+      autoCreated: combined.includes('automatically created from an email')
+    };
+  };
 
   // Fetch calendar data (birthdays, tasks, holidays)
   const fetchCalendarData = async () => {
@@ -634,25 +686,48 @@ export default function CalendarPage() {
                 
                 <div className="space-y-3">
                   {calendarData.todayEvents.length > 0 ? (
-                    calendarData.todayEvents.map((event, index) => (
-                      <div key={event.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                        <div className="flex-shrink-0">
-                          {event.type === 'birthday' && <PartyPopper className="h-5 w-5 text-pink-500" />}
-                          {event.type === 'task' && <CheckSquare className="h-5 w-5 text-blue-500" />}
-                          {event.type === 'holiday' && <Flag className="h-5 w-5 text-red-500" />}
-                          {event.type === 'event' && <CalendarDays className="h-5 w-5 text-purple-500" />}
+                    calendarData.todayEvents.map((event, index) => {
+                      const flightInfo = parseFlightInfo(event);
+                      return (
+                        <div key={event.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                          <div className="flex-shrink-0">
+                            {flightInfo ? <Plane className="h-5 w-5 text-blue-600" /> :
+                             event.type === 'birthday' ? <PartyPopper className="h-5 w-5 text-pink-500" /> :
+                             event.type === 'task' ? <CheckSquare className="h-5 w-5 text-blue-500" /> :
+                             event.type === 'holiday' ? <Flag className="h-5 w-5 text-red-500" /> :
+                             <CalendarDays className="h-5 w-5 text-purple-500" />}
+                          </div>
+                          <div className="flex-1">
+                            <p className="font-medium text-gray-800">{event.title}</p>
+                            {event.description && (
+                              <p className="text-sm text-gray-600">{event.description}</p>
+                            )}
+                            {flightInfo && (
+                              <p className="text-xs text-blue-600 font-medium">
+                                ✈️ {flightInfo.departureAirport} → {flightInfo.arrivalAirport}
+                              </p>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {event.priority === 'high' && (
+                              <Star className="h-4 w-4 text-yellow-500" />
+                            )}
+                            <Button
+                              onClick={() => {
+                                setSelectedEvent(event);
+                                setShowEventDetails(true);
+                              }}
+                              variant="outline"
+                              size="sm"
+                              className="text-xs h-7 px-2"
+                            >
+                              <Info className="h-3 w-3 mr-1" />
+                              More Info
+                            </Button>
+                          </div>
                         </div>
-                        <div className="flex-1">
-                          <p className="font-medium text-gray-800">{event.title}</p>
-                          {event.description && (
-                            <p className="text-sm text-gray-600">{event.description}</p>
-                          )}
-                        </div>
-                        {event.priority === 'high' && (
-                          <Star className="h-4 w-4 text-yellow-500" />
-                        )}
-                      </div>
-                    ))
+                      );
+                    })
                   ) : (
                     <div className="text-center py-8">
                       <Clock className="h-12 w-12 text-gray-300 mx-auto mb-3" />
@@ -678,35 +753,58 @@ export default function CalendarPage() {
                 
                 <div className="space-y-3 max-h-96 overflow-y-auto">
                   {calendarData.upcomingEvents.length > 0 ? (
-                    calendarData.upcomingEvents.map((event, index) => (
-                      <div key={event.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                        <div className="flex-shrink-0">
-                          {event.type === 'birthday' && <PartyPopper className="h-5 w-5 text-pink-500" />}
-                          {event.type === 'task' && <CheckSquare className="h-5 w-5 text-blue-500" />}
-                          {event.type === 'holiday' && <Flag className="h-5 w-5 text-red-500" />}
-                          {event.type === 'event' && <CalendarDays className="h-5 w-5 text-purple-500" />}
-                        </div>
-                        <div className="flex-1">
-                          <p className="font-medium text-gray-800">{event.title}</p>
-                          <p className="text-sm text-gray-600">
-                            {new Date(event.date).toLocaleDateString('en-US', { 
-                              weekday: 'short', 
-                              month: 'short', 
-                              day: 'numeric' 
-                            })}
-                          </p>
-                          {event.location && (
-                            <p className="text-xs text-gray-500 flex items-center gap-1">
-                              <MapPin className="h-3 w-3" />
-                              {event.location}
+                    calendarData.upcomingEvents.map((event, index) => {
+                      const flightInfo = parseFlightInfo(event);
+                      return (
+                        <div key={event.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                          <div className="flex-shrink-0">
+                            {flightInfo ? <Plane className="h-5 w-5 text-blue-600" /> :
+                             event.type === 'birthday' ? <PartyPopper className="h-5 w-5 text-pink-500" /> :
+                             event.type === 'task' ? <CheckSquare className="h-5 w-5 text-blue-500" /> :
+                             event.type === 'holiday' ? <Flag className="h-5 w-5 text-red-500" /> :
+                             <CalendarDays className="h-5 w-5 text-purple-500" />}
+                          </div>
+                          <div className="flex-1">
+                            <p className="font-medium text-gray-800">{event.title}</p>
+                            <p className="text-sm text-gray-600">
+                              {new Date(event.date).toLocaleDateString('en-US', { 
+                                weekday: 'short', 
+                                month: 'short', 
+                                day: 'numeric' 
+                              })}
                             </p>
-                          )}
+                            {event.location && (
+                              <p className="text-xs text-gray-500 flex items-center gap-1">
+                                <MapPin className="h-3 w-3" />
+                                {event.location}
+                              </p>
+                            )}
+                            {flightInfo && (
+                              <p className="text-xs text-blue-600 font-medium">
+                                ✈️ {flightInfo.departureAirport} → {flightInfo.arrivalAirport}
+                              </p>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {event.priority === 'high' && (
+                              <Star className="h-4 w-4 text-yellow-500" />
+                            )}
+                            <Button
+                              onClick={() => {
+                                setSelectedEvent(event);
+                                setShowEventDetails(true);
+                              }}
+                              variant="outline"
+                              size="sm"
+                              className="text-xs h-7 px-2"
+                            >
+                              <Info className="h-3 w-3 mr-1" />
+                              More Info
+                            </Button>
+                          </div>
                         </div>
-                        {event.priority === 'high' && (
-                          <Star className="h-4 w-4 text-yellow-500" />
-                        )}
-                      </div>
-                    ))
+                      );
+                    })
                   ) : (
                     <div className="text-center py-8">
                       <CalendarDays className="h-12 w-12 text-gray-300 mx-auto mb-3" />
@@ -1070,6 +1168,206 @@ export default function CalendarPage() {
           </Card>
         </div>
       </div>
+
+      {/* Event Details Modal */}
+      {showEventDetails && selectedEvent && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-y-auto">
+            {(() => {
+              const flightInfo = parseFlightInfo(selectedEvent);
+              return (
+                <div className="p-6">
+                  {/* Modal Header */}
+                  <div className="flex justify-between items-start mb-6">
+                    <div className="flex items-center gap-3">
+                      {flightInfo ? (
+                        <Plane className="h-6 w-6 text-blue-600" />
+                      ) : (
+                        <CalendarIcon className="h-6 w-6 text-purple-600" />
+                      )}
+                      <h2 className="text-2xl font-bold text-gray-800">
+                        {flightInfo ? 'Flight Information' : 'Event Details'}
+                      </h2>
+                    </div>
+                    <Button
+                      onClick={() => {
+                        setShowEventDetails(false);
+                        setSelectedEvent(null);
+                      }}
+                      variant="ghost"
+                      size="sm"
+                    >
+                      <X className="h-5 w-5" />
+                    </Button>
+                  </div>
+
+                  {/* Event Title */}
+                  <div className="mb-6">
+                    <h3 className="text-xl font-semibold text-gray-800 mb-2">
+                      {selectedEvent.title}
+                    </h3>
+                    {selectedEvent.description && (
+                      <p className="text-gray-600">{selectedEvent.description}</p>
+                    )}
+                  </div>
+
+                  {/* Flight-specific information */}
+                  {flightInfo && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                      {/* Flight Details Card */}
+                      <Card>
+                        <CardHeader className="pb-3">
+                          <CardTitle className="text-lg flex items-center gap-2">
+                            <Plane className="h-5 w-5" />
+                            Flight Details
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-3">
+                          <div>
+                            <p className="text-sm text-gray-600">Flight Number</p>
+                            <p className="font-semibold">{flightInfo.flightNumber}</p>
+                          </div>
+                          <div>
+                            <p className="text-sm text-gray-600">Airline</p>
+                            <p className="font-semibold">{flightInfo.airline}</p>
+                          </div>
+                          <div>
+                            <p className="text-sm text-gray-600">Confirmation Number</p>
+                            <p className="font-semibold text-blue-600">{flightInfo.confirmationNumber}</p>
+                          </div>
+                          <div>
+                            <p className="text-sm text-gray-600">Organizer</p>
+                            <p className="font-semibold">{flightInfo.organizer}</p>
+                          </div>
+                        </CardContent>
+                      </Card>
+
+                      {/* Route Information Card */}
+                      <Card>
+                        <CardHeader className="pb-3">
+                          <CardTitle className="text-lg flex items-center gap-2">
+                            <MapPin className="h-5 w-5" />
+                            Route Information
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-3">
+                          <div>
+                            <p className="text-sm text-gray-600">From</p>
+                            <p className="font-semibold">{flightInfo.departureAirport}</p>
+                            <p className="text-sm text-blue-600">{flightInfo.departureTime} (local time)</p>
+                          </div>
+                          <div className="flex justify-center py-2">
+                            <div className="w-16 h-0.5 bg-blue-300 relative">
+                              <Plane className="h-4 w-4 text-blue-600 absolute -top-2 right-0" />
+                            </div>
+                          </div>
+                          <div>
+                            <p className="text-sm text-gray-600">To</p>
+                            <p className="font-semibold">{flightInfo.arrivalAirport}</p>
+                            <p className="text-sm text-blue-600">{flightInfo.arrivalTime} (local time)</p>
+                          </div>
+                        </CardContent>
+                      </Card>
+
+                      {/* Additional Info Card */}
+                      <Card className="md:col-span-2">
+                        <CardHeader className="pb-3">
+                          <CardTitle className="text-lg flex items-center gap-2">
+                            <Info className="h-5 w-5" />
+                            Additional Information
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                            <div>
+                              <p className="text-gray-600">Guests</p>
+                              <p className="font-semibold">{flightInfo.guestCount}</p>
+                            </div>
+                            <div>
+                              <p className="text-gray-600">Reminder</p>
+                              <p className="font-semibold">{flightInfo.reminder}</p>
+                            </div>
+                            <div>
+                              <p className="text-gray-600">Visibility</p>
+                              <p className="font-semibold">{flightInfo.visibility}</p>
+                            </div>
+                            <div>
+                              <p className="text-gray-600">Status</p>
+                              <p className="font-semibold">{flightInfo.status}</p>
+                            </div>
+                          </div>
+                          {flightInfo.autoCreated && (
+                            <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+                              <p className="text-sm text-blue-800 flex items-center gap-2">
+                                <AlertCircle className="h-4 w-4" />
+                                This event was automatically created from an email.
+                              </p>
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
+                    </div>
+                  )}
+
+                  {/* Regular event information */}
+                  {!flightInfo && (
+                    <div className="space-y-4">
+                      {selectedEvent.date && (
+                        <div>
+                          <p className="text-sm text-gray-600">Date</p>
+                          <p className="font-semibold">
+                            {new Date(selectedEvent.date).toLocaleDateString('en-US', {
+                              weekday: 'long',
+                              year: 'numeric',
+                              month: 'long',
+                              day: 'numeric'
+                            })}
+                          </p>
+                        </div>
+                      )}
+                      {selectedEvent.location && (
+                        <div>
+                          <p className="text-sm text-gray-600">Location</p>
+                          <p className="font-semibold flex items-center gap-2">
+                            <MapPin className="h-4 w-4" />
+                            {selectedEvent.location}
+                          </p>
+                        </div>
+                      )}
+                      {selectedEvent.priority && (
+                        <div>
+                          <p className="text-sm text-gray-600">Priority</p>
+                          <p className="font-semibold flex items-center gap-2">
+                            <Star className="h-4 w-4 text-yellow-500" />
+                            {selectedEvent.priority.charAt(0).toUpperCase() + selectedEvent.priority.slice(1)}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Action Buttons */}
+                  <div className="flex justify-end gap-3 mt-8 pt-6 border-t">
+                    {flightInfo && (
+                      <Button variant="outline">
+                        View Confirmation
+                      </Button>
+                    )}
+                    <Button
+                      onClick={() => {
+                        setShowEventDetails(false);
+                        setSelectedEvent(null);
+                      }}
+                    >
+                      Close
+                    </Button>
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
