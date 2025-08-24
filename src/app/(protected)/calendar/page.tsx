@@ -162,6 +162,35 @@ export default function CalendarPage() {
       airline = 'Qatar Airways';
     }
 
+    // Extract organizer from event data
+    const organizer = event.organizer?.displayName || event.organizer?.email || 'Unknown Organizer';
+    
+    // Extract attendee count
+    const attendeeCount = event.attendees ? event.attendees.length : 0;
+    const guestCount = attendeeCount > 0 ? `${attendeeCount} guest${attendeeCount > 1 ? 's' : ''}` : 'No guests';
+    
+    // Extract reminder information
+    let reminder = 'No reminder';
+    if (event.reminders && event.reminders.overrides) {
+      const reminderMinutes = event.reminders.overrides[0]?.minutes;
+      if (reminderMinutes) {
+        if (reminderMinutes >= 60) {
+          const hours = Math.floor(reminderMinutes / 60);
+          reminder = `${hours} hour${hours > 1 ? 's' : ''} before`;
+        } else {
+          reminder = `${reminderMinutes} minute${reminderMinutes > 1 ? 's' : ''} before`;
+        }
+      }
+    }
+    
+    // Extract visibility
+    const visibility = event.visibility === 'private' ? 'Private' : 
+                      event.visibility === 'public' ? 'Public' : 
+                      'Default';
+    
+    // Extract status
+    const status = event.transparency === 'transparent' ? 'Free' : 'Busy';
+
     return {
       isFlightEvent: true,
       flightNumber,
@@ -171,11 +200,11 @@ export default function CalendarPage() {
       departureTime,
       arrivalTime,
       airline,
-      organizer: 'Mahboob AlBulushi',
-      guestCount: '1 guest',
-      reminder: '30 minutes before',
-      visibility: 'Only me',
-      status: 'Free',
+      organizer,
+      guestCount,
+      reminder,
+      visibility,
+      status,
       autoCreated: combined.includes('automatically created from an email')
     };
   };
