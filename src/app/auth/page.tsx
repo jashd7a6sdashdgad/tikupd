@@ -33,32 +33,34 @@ export default function AuthPage() {
   const { t } = useTranslation(language);
   const router = useRouter();
 
-  // Mobile-specific biometric authentication using WebAuthn optimized for phones
+  // Biometric authentication using WebAuthn for mobile and desktop
   const checkMobileBiometricSupport = async () => {
     try {
-      // Check if we're on a mobile device first
+      // Check device types
       const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
       const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
       const isAndroid = /Android/.test(navigator.userAgent);
+      const isDesktop = !isMobile;
       
-      console.log('Device detection:', { isMobile, isIOS, isAndroid });
+      console.log('Device detection:', { isMobile, isIOS, isAndroid, isDesktop });
 
-      if (!isMobile) {
-        console.log('Not a mobile device - biometric authentication disabled');
+      // Allow both mobile and desktop devices
+      if (!isMobile && !isDesktop) {
+        console.log('Unsupported device type');
         return false;
       }
 
       // Check WebAuthn support
       if (!window.PublicKeyCredential) {
-        console.log('WebAuthn not supported on this mobile device');
+        console.log('WebAuthn not supported on this device');
         return false;
       }
 
-      // Check for platform authenticator (Touch ID, Face ID, Android fingerprint)
+      // Check for platform authenticator (Touch ID, Face ID, Android fingerprint, Windows Hello, etc.)
       const available = await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
-      console.log('Mobile biometric authenticator available:', available);
+      console.log('Biometric authenticator available:', available);
 
-      // Additional mobile-specific checks
+      // Device-specific checks
       if (isIOS) {
         // Check if the device likely has biometrics (iOS 8+)
         const hasModernIOS = parseFloat(navigator.userAgent.match(/OS (\d+)_/)?.[1] || '0') >= 8;
@@ -71,6 +73,10 @@ export default function AuthPage() {
         const hasModernAndroid = androidVersion >= 6;
         console.log('Android biometric support detected:', hasModernAndroid && available);
         return hasModernAndroid && available;
+      } else if (isDesktop) {
+        // Desktop browsers with WebAuthn support (Windows Hello, Mac Touch ID, etc.)
+        console.log('Desktop biometric support detected:', available);
+        return available;
       }
 
       return available;
@@ -267,21 +273,30 @@ export default function AuthPage() {
         return;
       }
 
-      // Check mobile biometric support
+      // Check biometric support
       const available = await checkMobileBiometricSupport();
       setBiometricSupported(available);
 
       if (available) {
-        // Set mobile-specific biometric type
+        // Set device-specific biometric type
         const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
         const isAndroid = /Android/.test(navigator.userAgent);
+        const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        const isWindows = /Windows/.test(navigator.userAgent);
+        const isMac = /Mac/.test(navigator.userAgent);
         
         if (isIOS) {
           setBiometricType('Face ID / Touch ID');
         } else if (isAndroid) {
           setBiometricType('Fingerprint / Face Unlock');
-        } else {
+        } else if (isWindows) {
+          setBiometricType('Windows Hello / PIN');
+        } else if (isMac) {
+          setBiometricType('Touch ID');
+        } else if (isMobile) {
           setBiometricType('Mobile Biometric');
+        } else {
+          setBiometricType('Biometric Authentication');
         }
 
         // Check if there's a stored mobile credential for authorized user
