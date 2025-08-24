@@ -36,53 +36,85 @@ export default function AuthPage() {
   // Biometric authentication using WebAuthn for mobile and desktop
   const checkMobileBiometricSupport = async () => {
     try {
-      // Check device types
-      const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-      const isAndroid = /Android/.test(navigator.userAgent);
+      // Enhanced device detection
+      const userAgent = navigator.userAgent || '';
+      const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile/i.test(userAgent);
+      const isIOS = /iPad|iPhone|iPod/.test(userAgent);
+      const isAndroid = /Android/.test(userAgent);
       const isDesktop = !isMobile;
+      const isSafari = /Safari/.test(userAgent) && !/Chrome/.test(userAgent);
+      const isChrome = /Chrome/.test(userAgent);
       
-      console.log('Device detection:', { isMobile, isIOS, isAndroid, isDesktop });
+      console.log('🔍 Device detection:', { 
+        userAgent: userAgent.substring(0, 100) + '...', 
+        isMobile, 
+        isIOS, 
+        isAndroid, 
+        isDesktop, 
+        isSafari, 
+        isChrome 
+      });
 
-      // Allow both mobile and desktop devices
-      if (!isMobile && !isDesktop) {
-        console.log('Unsupported device type');
+      // Always allow any device - let WebAuthn determine support
+      console.log('✅ Device type check passed');
+
+      // Check WebAuthn support with better detection
+      const hasPublicKeyCredential = typeof window !== 'undefined' && 'PublicKeyCredential' in window;
+      console.log('🔐 WebAuthn support check:', { hasPublicKeyCredential });
+      
+      if (!hasPublicKeyCredential) {
+        console.log('❌ WebAuthn not supported on this device');
         return false;
       }
 
-      // Check WebAuthn support
-      if (!window.PublicKeyCredential) {
-        console.log('WebAuthn not supported on this device');
-        return false;
+      // Check for platform authenticator with timeout and error handling
+      let available = false;
+      try {
+        console.log('🔍 Checking platform authenticator availability...');
+        available = await Promise.race([
+          PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable(),
+          new Promise(resolve => setTimeout(() => resolve(false), 3000)) // 3s timeout
+        ]) as boolean;
+        console.log('🔐 Platform authenticator available:', available);
+      } catch (error) {
+        console.warn('⚠️ Platform authenticator check failed:', error);
+        // On mobile, assume it's available if WebAuthn is supported
+        available = isMobile;
+        console.log('📱 Fallback: Assuming mobile biometric available:', available);
       }
 
-      // Check for platform authenticator (Touch ID, Face ID, Android fingerprint, Windows Hello, etc.)
-      const available = await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
-      console.log('Biometric authenticator available:', available);
-
-      // Device-specific checks
+      // Enhanced device-specific checks
       if (isIOS) {
-        // Check if the device likely has biometrics (iOS 8+)
-        const hasModernIOS = parseFloat(navigator.userAgent.match(/OS (\d+)_/)?.[1] || '0') >= 8;
-        console.log('iOS biometric support detected:', hasModernIOS && available);
-        return hasModernIOS && available;
+        console.log('🍎 iOS device detected');
+        // For iOS, if WebAuthn is supported, biometrics are likely available
+        const result = available || (isSafari && hasPublicKeyCredential);
+        console.log('🍎 iOS biometric support:', result);
+        return result;
       } else if (isAndroid) {
-        // Check for Android 6+ (fingerprint support)
-        const androidMatch = navigator.userAgent.match(/Android (\d+)/);
+        console.log('🤖 Android device detected');
+        // For Android, check version but be more permissive
+        const androidMatch = userAgent.match(/Android (\d+)/);
         const androidVersion = androidMatch ? parseInt(androidMatch[1]) : 0;
-        const hasModernAndroid = androidVersion >= 6;
-        console.log('Android biometric support detected:', hasModernAndroid && available);
-        return hasModernAndroid && available;
+        const hasModernAndroid = androidVersion >= 6 || androidVersion === 0; // 0 means we couldn't detect version
+        const result = available && hasModernAndroid;
+        console.log('🤖 Android biometric support:', { androidVersion, hasModernAndroid, result });
+        return result;
       } else if (isDesktop) {
-        // Desktop browsers with WebAuthn support (Windows Hello, Mac Touch ID, etc.)
-        console.log('Desktop biometric support detected:', available);
+        console.log('🖥️ Desktop device detected');
+        // Desktop browsers with WebAuthn support
+        console.log('🖥️ Desktop biometric support:', available);
         return available;
       }
 
+      // Fallback: if we got here and have platform authenticator, enable it
+      console.log('🔄 Fallback biometric check:', available);
       return available;
     } catch (error) {
-      console.error('Error checking mobile biometric support:', error);
-      return false;
+      console.error('❌ Error checking biometric support:', error);
+      // On error, still try to enable for mobile devices
+      const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent || '');
+      console.log('🔄 Error fallback - enabling for mobile:', isMobile);
+      return isMobile;
     }
   };
 
@@ -254,6 +286,14 @@ export default function AuthPage() {
     return credentials.username === authorizedUsername || user?.username === authorizedUsername;
   };
 
+  // Debug function to test biometric support manually
+  const testBiometricSupport = async () => {
+    console.log('🧪 Manual biometric test started...');
+    const result = await checkMobileBiometricSupport();
+    console.log('🧪 Manual test result:', result);
+    alert(`Biometric support test result: ${result ? 'SUPPORTED' : 'NOT SUPPORTED'}\nCheck console for detailed logs.`);
+  };
+
   // Check biometric support on component mount and when credentials change
   useEffect(() => {
     checkBiometricSupport();
@@ -263,6 +303,9 @@ export default function AuthPage() {
   useEffect(() => {
     checkBiometricSupport();
   }, [credentials.username, user]);
+
+  // Add test button in development
+  const isDevelopment = process.env.NODE_ENV === 'development';
 
   const checkBiometricSupport = async () => {
     try {
@@ -695,6 +738,17 @@ export default function AuthPage() {
                       }}
                     />
                   </div>
+                </div>
+
+                {/* Debug Test Button - Always visible for testing */}
+                <div className="mt-6">
+                  <Button
+                    onClick={testBiometricSupport}
+                    variant="outline"
+                    className="w-full text-xs"
+                  >
+                    🧪 Test Biometric Support (Debug)
+                  </Button>
                 </div>
                 
               </CardContent>
