@@ -52,6 +52,15 @@ export default function CalendarPage() {
   const [showConflicts, setShowConflicts] = useState(false);
   const [authError, setAuthError] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
+  const [selectedCalendarDataEvent, setSelectedCalendarDataEvent] = useState<{
+    id: string;
+    title: string;
+    description?: string;
+    type: 'birthday' | 'task' | 'holiday' | 'event';
+    priority?: 'high' | 'medium' | 'low';
+    date?: string;
+    location?: string;
+  } | null>(null);
   const [showEventDetails, setShowEventDetails] = useState(false);
   
   // Calendar data state
@@ -92,6 +101,52 @@ export default function CalendarPage() {
 
   // Function to detect if event is a flight and extract flight information
   const parseFlightInfo = (event: CalendarEvent) => {
+    const title = event.summary || '';
+    const description = event.description || '';
+    const combined = `${title} ${description}`.toLowerCase();
+
+    // Check if it's a flight event
+    const isFlightEvent = combined.includes('flight') || 
+                         combined.includes('oman air') || 
+                         combined.includes('mct') || 
+                         combined.includes('bkk') || 
+                         combined.includes('confirmation number') ||
+                         title.toLowerCase().includes('flight');
+
+    if (!isFlightEvent) return null;
+
+    // Extract flight information using regex patterns
+    const flightNumberMatch = combined.match(/flight\s+(\w+\s*\d+)/i);
+    const confirmationMatch = combined.match(/confirmation\s+number[:\s]+([A-Z0-9]+)/i);
+    
+    // Extract airports
+    const departureAirport = combined.includes('muscat') ? 'MUSCAT MCT' : 'Unknown';
+    const arrivalAirport = combined.includes('bangkok') ? 'BANGKOK SUVARNABH BKK' : 'Unknown';
+    
+    // Extract times
+    const departureTimeMatch = combined.match(/(\d{1,2}:\d{2}[ap]m).*?local time.*?bangkok/i);
+    const arrivalTimeMatch = combined.match(/bangkok.*?(\d{1,2}:\d{2}[ap]m).*?local time/i);
+
+    return {
+      isFlightEvent: true,
+      flightNumber: flightNumberMatch ? flightNumberMatch[1] : 'Unknown',
+      confirmationNumber: confirmationMatch ? confirmationMatch[1] : 'Unknown',
+      departureAirport,
+      arrivalAirport,
+      departureTime: departureTimeMatch ? departureTimeMatch[1] : 'Unknown',
+      arrivalTime: arrivalTimeMatch ? arrivalTimeMatch[1] : 'Unknown',
+      airline: combined.includes('oman air') ? 'Oman Air' : 'Unknown Airline',
+      organizer: 'Mahboob AlBulushi',
+      guestCount: '1 guest',
+      reminder: '30 minutes before',
+      visibility: 'Only me',
+      status: 'Free',
+      autoCreated: combined.includes('automatically created from an email')
+    };
+  };
+
+  // Function to detect if calendar data event is a flight and extract flight information
+  const parseCalendarDataFlightInfo = (event: { title: string; description?: string }) => {
     const title = event.title || '';
     const description = event.description || '';
     const combined = `${title} ${description}`.toLowerCase();
@@ -687,7 +742,7 @@ export default function CalendarPage() {
                 <div className="space-y-3">
                   {calendarData.todayEvents.length > 0 ? (
                     calendarData.todayEvents.map((event, index) => {
-                      const flightInfo = parseFlightInfo(event);
+                      const flightInfo = parseCalendarDataFlightInfo(event);
                       return (
                         <div key={event.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
                           <div className="flex-shrink-0">
@@ -754,7 +809,7 @@ export default function CalendarPage() {
                 <div className="space-y-3 max-h-96 overflow-y-auto">
                   {calendarData.upcomingEvents.length > 0 ? (
                     calendarData.upcomingEvents.map((event, index) => {
-                      const flightInfo = parseFlightInfo(event);
+                      const flightInfo = parseCalendarDataFlightInfo(event);
                       return (
                         <div key={event.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
                           <div className="flex-shrink-0">
@@ -885,7 +940,7 @@ export default function CalendarPage() {
                 <h4 className="font-medium text-sm">Conflicting Events:</h4>
                 {conflicts.map((conflict, index) => (
                   <div key={index} className="p-3 bg-white rounded border-l-4 border-orange-400">
-                    <p className="font-medium">{conflict.title}</p>
+                    <p className="font-medium">{conflict.title || conflict.summary || 'Untitled Event'}</p>
                     <p className="text-sm text-gray-600">
                       {new Date(conflict.startTime).toLocaleString()} - {new Date(conflict.endTime).toLocaleString()}
                     </p>
@@ -1069,6 +1124,28 @@ export default function CalendarPage() {
                             </div>
                           </div>
                           <div className="flex space-x-1">
+                            <Button
+                              onClick={() => {
+                                // Convert Google Calendar event to CalendarEvent format
+                                const calendarEvent = {
+                                  id: event.id || 'unknown',
+                                  title: event.summary || 'Untitled Event',
+                                  description: event.description || '',
+                                  date: event?.start?.dateTime || event?.start?.date || '',
+                                  location: event.location || '',
+                                  type: 'event' as const,
+                                  priority: undefined
+                                };
+                                setSelectedEvent(calendarEvent);
+                                setShowEventDetails(true);
+                              }}
+                              variant="outline"
+                              size="sm"
+                              className="text-xs h-7 px-2"
+                            >
+                              <Info className="h-3 w-3 mr-1" />
+                              More Info
+                            </Button>
                             <Button 
                               variant="ghost" 
                               size="sm"
@@ -1139,6 +1216,28 @@ export default function CalendarPage() {
                             )}
                           </div>
                           <div className="flex space-x-1">
+                            <Button
+                              onClick={() => {
+                                // Convert Google Calendar event to CalendarEvent format
+                                const calendarEvent = {
+                                  id: event.id || 'unknown',
+                                  title: event.summary || 'Untitled Event',
+                                  description: event.description || '',
+                                  date: event?.start?.dateTime || event?.start?.date || '',
+                                  location: event.location || '',
+                                  type: 'event' as const,
+                                  priority: undefined
+                                };
+                                setSelectedEvent(calendarEvent);
+                                setShowEventDetails(true);
+                              }}
+                              variant="outline"
+                              size="sm"
+                              className="text-xs h-7 px-2"
+                            >
+                              <Info className="h-3 w-3 mr-1" />
+                              More Info
+                            </Button>
                             <Button 
                               variant="ghost" 
                               size="sm"
@@ -1204,7 +1303,7 @@ export default function CalendarPage() {
                   {/* Event Title */}
                   <div className="mb-6">
                     <h3 className="text-xl font-semibold text-gray-800 mb-2">
-                      {selectedEvent.title}
+                      {selectedEvent.summary}
                     </h3>
                     {selectedEvent.description && (
                       <p className="text-gray-600">{selectedEvent.description}</p>
