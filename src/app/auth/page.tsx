@@ -219,8 +219,9 @@ export default function AuthPage() {
 
   // Check if user is authorized for biometric authentication
   const isAuthorizedForBiometric = () => {
-    // Only mahboob@gmail.com is authorized for biometric authentication
+    // Mahboob is authorized for biometric authentication
     const authorizedEmail = 'mahboob@gmail.com';
+    const authorizedUsername = 'mahboob';
     
     // Check if user is logged in with Google and has the authorized email
     const googleUser = localStorage.getItem('google_user');
@@ -234,16 +235,17 @@ export default function AuthPage() {
     }
     
     // Check if current user session matches authorized user
-    if (user && user.email === authorizedEmail) {
+    if (user && (user.email === authorizedEmail || user.username === authorizedUsername)) {
       return true;
     }
     
-    // Check if username suggests this is the authorized user
-    if (credentials.username === 'mahboob' || credentials.username === authorizedEmail) {
+    // Check if username is mahboob (for login form)
+    if (credentials.username === authorizedUsername || credentials.username === authorizedEmail) {
       return true;
     }
     
-    return false;
+    // Always show for mahboob user
+    return credentials.username === authorizedUsername || user?.username === authorizedUsername;
   };
 
   // Check biometric support on component mount and when credentials change
@@ -285,18 +287,25 @@ export default function AuthPage() {
         // Check if there's a stored mobile credential for authorized user
         const storedCredentialId = localStorage.getItem('mobile_biometric_credential_id');
         const storedUserEmail = localStorage.getItem('mobile_biometric_user_email');
+        const storedUsername = localStorage.getItem('mobile_biometric_username');
         
-        // Only show stored credential if it belongs to authorized user
-        if (storedCredentialId && storedUserEmail === 'mahboob@gmail.com') {
+        // Only show stored credential if it belongs to authorized user (mahboob)
+        const isValidStoredCredential = storedCredentialId && (
+          storedUserEmail === 'mahboob@gmail.com' || 
+          storedUsername === 'mahboob'
+        );
+        
+        if (isValidStoredCredential) {
           setHasStoredCredential(true);
         } else {
           setHasStoredCredential(false);
           // Clear invalid credentials
-          if (storedCredentialId && storedUserEmail !== 'mahboob@gmail.com') {
+          if (storedCredentialId && !isValidStoredCredential) {
             localStorage.removeItem('mobile_biometric_credential_id');
             localStorage.removeItem('mobile_biometric_raw_id');
             localStorage.removeItem('mobile_biometric_device_type');
             localStorage.removeItem('mobile_biometric_user_email');
+            localStorage.removeItem('mobile_biometric_username');
           }
         }
         
@@ -322,10 +331,11 @@ export default function AuthPage() {
       const result = await registerMobileBiometric();
       
       if (result.success) {
-        // Store user email with the biometric credential
+        // Store user info with the biometric credential
         localStorage.setItem('mobile_biometric_user_email', 'mahboob@gmail.com');
+        localStorage.setItem('mobile_biometric_username', 'mahboob');
         setHasStoredCredential(true);
-        console.log('Mobile biometric credential registered successfully for mahboob@gmail.com');
+        console.log('Mobile biometric credential registered successfully for mahboob');
         
         // Show success message with device-specific text
         const deviceName = result.deviceType === 'ios' ? 'Face ID/Touch ID' : 'Fingerprint/Face Unlock';
@@ -351,9 +361,10 @@ export default function AuthPage() {
         throw new Error('Biometric authentication is only available for mahboob@gmail.com');
       }
 
-      // Verify stored credential belongs to authorized user
+      // Verify stored credential belongs to authorized user (mahboob)
       const storedUserEmail = localStorage.getItem('mobile_biometric_user_email');
-      if (storedUserEmail !== 'mahboob@gmail.com') {
+      const storedUsername = localStorage.getItem('mobile_biometric_username');
+      if (storedUserEmail !== 'mahboob@gmail.com' && storedUsername !== 'mahboob') {
         throw new Error('Stored biometric credential is not authorized for this user');
       }
 
