@@ -769,7 +769,7 @@ export default function CalendarPage() {
                             )}
                             <Button
                               onClick={() => {
-                                setSelectedEvent(event);
+                                setSelectedCalendarDataEvent(event);
                                 setShowEventDetails(true);
                               }}
                               variant="outline"
@@ -846,7 +846,7 @@ export default function CalendarPage() {
                             )}
                             <Button
                               onClick={() => {
-                                setSelectedEvent(event);
+                                setSelectedCalendarDataEvent(event);
                                 setShowEventDetails(true);
                               }}
                               variant="outline"
@@ -1127,14 +1127,13 @@ export default function CalendarPage() {
                             <Button
                               onClick={() => {
                                 // Convert Google Calendar event to CalendarEvent format
-                                const calendarEvent = {
+                                const calendarEvent: CalendarEvent = {
                                   id: event.id || 'unknown',
-                                  title: event.summary || 'Untitled Event',
+                                  summary: event.summary || 'Untitled Event',
                                   description: event.description || '',
-                                  date: event?.start?.dateTime || event?.start?.date || '',
-                                  location: event.location || '',
-                                  type: 'event' as const,
-                                  priority: undefined
+                                  start: event.start || { dateTime: '', timeZone: '' },
+                                  end: event.end || { dateTime: '', timeZone: '' },
+                                  attendees: event.attendees || []
                                 };
                                 setSelectedEvent(calendarEvent);
                                 setShowEventDetails(true);
@@ -1219,14 +1218,13 @@ export default function CalendarPage() {
                             <Button
                               onClick={() => {
                                 // Convert Google Calendar event to CalendarEvent format
-                                const calendarEvent = {
+                                const calendarEvent: CalendarEvent = {
                                   id: event.id || 'unknown',
-                                  title: event.summary || 'Untitled Event',
+                                  summary: event.summary || 'Untitled Event',
                                   description: event.description || '',
-                                  date: event?.start?.dateTime || event?.start?.date || '',
-                                  location: event.location || '',
-                                  type: 'event' as const,
-                                  priority: undefined
+                                  start: event.start || { dateTime: '', timeZone: '' },
+                                  end: event.end || { dateTime: '', timeZone: '' },
+                                  attendees: event.attendees || []
                                 };
                                 setSelectedEvent(calendarEvent);
                                 setShowEventDetails(true);
@@ -1269,11 +1267,13 @@ export default function CalendarPage() {
       </div>
 
       {/* Event Details Modal */}
-      {showEventDetails && selectedEvent && (
+      {showEventDetails && (selectedEvent || selectedCalendarDataEvent) && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-y-auto">
             {(() => {
-              const flightInfo = parseFlightInfo(selectedEvent);
+              const currentEvent = selectedEvent || selectedCalendarDataEvent;
+              const flightInfo = selectedEvent ? parseFlightInfo(selectedEvent) : 
+                                selectedCalendarDataEvent ? parseCalendarDataFlightInfo(selectedCalendarDataEvent) : null;
               return (
                 <div className="p-6">
                   {/* Modal Header */}
@@ -1292,6 +1292,7 @@ export default function CalendarPage() {
                       onClick={() => {
                         setShowEventDetails(false);
                         setSelectedEvent(null);
+                        setSelectedCalendarDataEvent(null);
                       }}
                       variant="ghost"
                       size="sm"
@@ -1303,10 +1304,10 @@ export default function CalendarPage() {
                   {/* Event Title */}
                   <div className="mb-6">
                     <h3 className="text-xl font-semibold text-gray-800 mb-2">
-                      {selectedEvent.summary}
+                      {selectedEvent?.summary || selectedCalendarDataEvent?.title || 'Untitled Event'}
                     </h3>
-                    {selectedEvent.description && (
-                      <p className="text-gray-600">{selectedEvent.description}</p>
+                    {(selectedEvent?.description || selectedCalendarDataEvent?.description) && (
+                      <p className="text-gray-600">{selectedEvent?.description || selectedCalendarDataEvent?.description}</p>
                     )}
                   </div>
 
@@ -1411,11 +1412,11 @@ export default function CalendarPage() {
                   {/* Regular event information */}
                   {!flightInfo && (
                     <div className="space-y-4">
-                      {selectedEvent.date && (
+                      {(selectedEvent?.start?.dateTime || selectedCalendarDataEvent?.date) && (
                         <div>
                           <p className="text-sm text-gray-600">Date</p>
                           <p className="font-semibold">
-                            {new Date(selectedEvent.date).toLocaleDateString('en-US', {
+                            {new Date(selectedEvent?.start?.dateTime || selectedCalendarDataEvent?.date || '').toLocaleDateString('en-US', {
                               weekday: 'long',
                               year: 'numeric',
                               month: 'long',
@@ -1424,21 +1425,21 @@ export default function CalendarPage() {
                           </p>
                         </div>
                       )}
-                      {selectedEvent.location && (
+                      {selectedCalendarDataEvent?.location && (
                         <div>
                           <p className="text-sm text-gray-600">Location</p>
                           <p className="font-semibold flex items-center gap-2">
                             <MapPin className="h-4 w-4" />
-                            {selectedEvent.location}
+                            {selectedCalendarDataEvent.location}
                           </p>
                         </div>
                       )}
-                      {selectedEvent.priority && (
+                      {selectedCalendarDataEvent?.priority && (
                         <div>
                           <p className="text-sm text-gray-600">Priority</p>
                           <p className="font-semibold flex items-center gap-2">
                             <Star className="h-4 w-4 text-yellow-500" />
-                            {selectedEvent.priority.charAt(0).toUpperCase() + selectedEvent.priority.slice(1)}
+                            {selectedCalendarDataEvent.priority.charAt(0).toUpperCase() + selectedCalendarDataEvent.priority.slice(1)}
                           </p>
                         </div>
                       )}
@@ -1456,6 +1457,7 @@ export default function CalendarPage() {
                       onClick={() => {
                         setShowEventDetails(false);
                         setSelectedEvent(null);
+                        setSelectedCalendarDataEvent(null);
                       }}
                     >
                       Close
