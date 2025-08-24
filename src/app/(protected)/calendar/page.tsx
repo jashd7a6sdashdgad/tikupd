@@ -115,27 +115,62 @@ export default function CalendarPage() {
 
     if (!isFlightEvent) return null;
 
-    // Extract flight information using regex patterns
-    const flightNumberMatch = combined.match(/flight\s+(\w+\s*\d+)/i);
+    // Extract flight information dynamically from actual content
+    
+    // Flight number - multiple patterns: (WY 817), WY817, Flight 817, etc.
+    const flightNumberMatch = combined.match(/\(([A-Z]{2}\s*\d+)\)|([A-Z]{2}\s*\d+)|flight\s+([A-Z]{2}?\s*\d+)/i);
+    const flightNumber = flightNumberMatch ? (flightNumberMatch[1] || flightNumberMatch[2] || flightNumberMatch[3]) : 'Unknown';
+    
+    // Confirmation number
     const confirmationMatch = combined.match(/confirmation\s+number[:\s]+([A-Z0-9]+)/i);
+    const confirmationNumber = confirmationMatch ? confirmationMatch[1] : 'Unknown';
     
-    // Extract airports
-    const departureAirport = combined.includes('muscat') ? 'MUSCAT MCT' : 'Unknown';
-    const arrivalAirport = combined.includes('bangkok') ? 'BANGKOK SUVARNABH BKK' : 'Unknown';
+    // Departure airport - look for common patterns
+    let departureAirport = 'Unknown';
+    if (combined.includes('muscat mct') || combined.includes('muscat (mct)')) {
+      departureAirport = 'MUSCAT MCT';
+    } else if (combined.includes('muscat')) {
+      departureAirport = 'MUSCAT';
+    } else if (combined.includes('mct')) {
+      departureAirport = 'MCT';
+    }
     
-    // Extract times
-    const departureTimeMatch = combined.match(/(\d{1,2}:\d{2}[ap]m).*?local time.*?bangkok/i);
-    const arrivalTimeMatch = combined.match(/bangkok.*?(\d{1,2}:\d{2}[ap]m).*?local time/i);
+    // Arrival airport - look for destinations in title and description
+    let arrivalAirport = 'Unknown';
+    if (combined.includes('bangkok suvarnabh bkk') || combined.includes('bangkok (bkk)')) {
+      arrivalAirport = 'BANGKOK SUVARNABH BKK';
+    } else if (combined.includes('bangkok suvarnabh')) {
+      arrivalAirport = 'BANGKOK SUVARNABH';
+    } else if (combined.includes('bangkok')) {
+      arrivalAirport = 'BANGKOK';
+    } else if (combined.includes('bkk')) {
+      arrivalAirport = 'BKK';
+    }
+    
+    // Extract times - look for time patterns in the content
+    const timeMatches = combined.match(/(\d{1,2}:\d{2}\s*[ap]m)/gi);
+    const departureTime = timeMatches && timeMatches[0] ? timeMatches[0] : 'Unknown';
+    const arrivalTime = timeMatches && timeMatches[1] ? timeMatches[1] : 'Unknown';
+    
+    // Determine airline from flight code or content
+    let airline = 'Unknown Airline';
+    if (flightNumber.toLowerCase().includes('wy') || combined.includes('oman air')) {
+      airline = 'Oman Air';
+    } else if (flightNumber.toLowerCase().includes('ek') || combined.includes('emirates')) {
+      airline = 'Emirates';
+    } else if (flightNumber.toLowerCase().includes('qa') || combined.includes('qatar')) {
+      airline = 'Qatar Airways';
+    }
 
     return {
       isFlightEvent: true,
-      flightNumber: flightNumberMatch ? flightNumberMatch[1] : 'Unknown',
-      confirmationNumber: confirmationMatch ? confirmationMatch[1] : 'Unknown',
+      flightNumber,
+      confirmationNumber,
       departureAirport,
       arrivalAirport,
-      departureTime: departureTimeMatch ? departureTimeMatch[1] : 'Unknown',
-      arrivalTime: arrivalTimeMatch ? arrivalTimeMatch[1] : 'Unknown',
-      airline: combined.includes('oman air') ? 'Oman Air' : 'Unknown Airline',
+      departureTime,
+      arrivalTime,
+      airline,
       organizer: 'Mahboob AlBulushi',
       guestCount: '1 guest',
       reminder: '30 minutes before',
@@ -741,7 +776,7 @@ export default function CalendarPage() {
                 
                 <div className="space-y-3">
                   {calendarData.todayEvents.length > 0 ? (
-                    calendarData.todayEvents.map((event, index) => {
+                    calendarData.todayEvents.map((event) => {
                       const flightInfo = parseCalendarDataFlightInfo(event);
                       return (
                         <div key={event.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
@@ -808,7 +843,7 @@ export default function CalendarPage() {
                 
                 <div className="space-y-3 max-h-96 overflow-y-auto">
                   {calendarData.upcomingEvents.length > 0 ? (
-                    calendarData.upcomingEvents.map((event, index) => {
+                    calendarData.upcomingEvents.map((event) => {
                       const flightInfo = parseCalendarDataFlightInfo(event);
                       return (
                         <div key={event.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
@@ -1271,7 +1306,7 @@ export default function CalendarPage() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-y-auto">
             {(() => {
-              const currentEvent = selectedEvent || selectedCalendarDataEvent;
+              // const currentEvent = selectedEvent || selectedCalendarDataEvent;
               const flightInfo = selectedEvent ? parseFlightInfo(selectedEvent) : 
                                 selectedCalendarDataEvent ? parseCalendarDataFlightInfo(selectedCalendarDataEvent) : null;
               return (
