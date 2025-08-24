@@ -63,7 +63,7 @@ export default function VoiceJokeAIPage() {
   const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
 
   // n8n webhook URL
-  const webhookUrl = 'https://n8n.1000273.xyz/webhook/795344a0-0bf9-45e6-a81e-cf76af34705b';
+  const webhookUrl = 'https://n8n.1000273.xyz/webhook/jooka';
 
   // Supported languages for speech recognition
   const supportedLanguages = [
