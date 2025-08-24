@@ -1,6 +1,6 @@
 // Test script to verify ModernVoiceWidget N8N webhook integration
 async function testModernVoiceWebhook() {
-  const webhookUrl = 'https://n8n.srv903406.hstgr.cloud/webhook/990e6a3a-6881-4ae3-a345-5d5ef28f5f58';
+  const webhookUrl = 'https://n8n.1000273.xyz/webhook/990e6a3a-6881-4ae3-a345-5d5ef28f5f58';
   
   console.log('🎤 Testing ModernVoiceWidget N8N Webhook Integration...');
   console.log('Webhook URL:', webhookUrl);

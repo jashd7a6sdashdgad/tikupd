@@ -401,7 +401,7 @@ export default function TravelCompanionPage() {
   const testWebhookConnection = async () => {
     try {
       console.log('🧪 Testing webhook connection...');
-      const response = await fetch('https://n8n.srv903406.hstgr.cloud/webhook/travel', {
+      const response = await fetch('https://n8n.1000273.xyz/webhook/travel', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -476,7 +476,7 @@ export default function TravelCompanionPage() {
     try {
       console.log('🚀 Sending audio to n8n webhook...');
       console.log('📊 Audio data size:', base64Audio.length, 'characters');
-      console.log('🔗 Webhook URL:', 'https://n8n.srv903406.hstgr.cloud/webhook/travel');
+      console.log('🔗 Webhook URL:', 'https://n8n.1000273.xyz/webhook/travel');
       
       const payload = {
         audio: base64Audio,
@@ -491,7 +491,7 @@ export default function TravelCompanionPage() {
         audio: `${base64Audio.substring(0, 50)}...(${base64Audio.length} chars total)`
       });
       
-      const response = await fetch('https://n8n.srv903406.hstgr.cloud/webhook/travel', {
+      const response = await fetch('https://n8n.1000273.xyz/webhook/travel', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

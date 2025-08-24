@@ -9,7 +9,7 @@ const https = require('https');
 const http = require('http');
 
 const BASE_URL = 'http://localhost:3000';
-const NEW_WEBHOOK_URL = 'https://n8n.srv903406.hstgr.cloud/webhook/990e6a3a-6881-4ae3-a345-5d5ef28f5f58';
+const NEW_WEBHOOK_URL = 'https://n8n.1000273.xyz/webhook/990e6a3a-6881-4ae3-a345-5d5ef28f5f58';
 const TEST_COOKIE = 'your_session_cookie_here'; // Replace with actual session cookie
 
 async function makeRequest(path, options = {}) {

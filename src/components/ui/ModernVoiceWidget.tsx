@@ -109,7 +109,7 @@ export function ModernVoiceWidget({
       };
 
       // Send directly to N8N webhook
-      const response = await fetch('https://n8n.srv903406.hstgr.cloud/webhook/990e6a3a-6881-4ae3-a345-5d5ef28f5f58', {
+      const response = await fetch('https://n8n.1000273.xyz/webhook/990e6a3a-6881-4ae3-a345-5d5ef28f5f58', {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
