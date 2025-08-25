@@ -605,8 +605,8 @@ export default function SettingsPage() {
                     
                     <div className="flex items-center justify-between">
                       <div>
-                        <h4 className="font-medium text-black">Analytics</h4>
-                        <p className="text-sm text-black">Help improve the app with usage analytics</p>
+                        <h4 className="font-medium text-black">{t('analytics')}</h4>
+                        <p className="text-sm text-black">{t('analyticsDesc')}</p>
                       </div>
                       <button
                         onClick={() => setSettings({
@@ -638,15 +638,15 @@ export default function SettingsPage() {
                   </div>
                   <div>
                     <h2 className="text-2xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
-                      Appearance
+                      {t('appearance')}
                     </h2>
-                    <p className="text-gray-600 font-medium">Customize the look and feel</p>
+                    <p className="text-gray-600 font-medium">{t('appearanceDesc')}</p>
                   </div>
                 </div>
                 <div className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-black mb-1">Theme</label>
+                      <label className="block text-sm font-medium text-black mb-1">{t('theme')}</label>
                       <select
                         value={settings.appearance.theme}
                         onChange={(e) => setSettings({
@@ -655,13 +655,13 @@ export default function SettingsPage() {
                         })}
                         className="w-full px-3 py-2 border border-secondary rounded-md focus:outline-none focus:ring-2 focus:ring-primary text-black bg-background"
                       >
-                        <option value="light">Light</option>
-                        <option value="dark">Dark</option>
-                        <option value="auto">Auto</option>
+                        <option value="light">{t('light')}</option>
+                        <option value="dark">{t('dark')}</option>
+                        <option value="auto">{t('auto')}</option>
                       </select>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-black mb-1">Font Size</label>
+                      <label className="block text-sm font-medium text-black mb-1">{t('fontSize')}</label>
                       <select
                         value={settings.appearance.fontSize}
                         onChange={(e) => setSettings({
@@ -670,15 +670,15 @@ export default function SettingsPage() {
                         })}
                         className="w-full px-3 py-2 border border-secondary rounded-md focus:outline-none focus:ring-2 focus:ring-primary text-black bg-background"
                       >
-                        <option value="small">Small</option>
-                        <option value="medium">Medium</option>
-                        <option value="large">Large</option>
+                        <option value="small">{t('small')}</option>
+                        <option value="medium">{t('medium')}</option>
+                        <option value="large">{t('large')}</option>
                       </select>
                     </div>
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-4">Modern Color Palettes</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-4">{t('modernColorPalettes')}</label>
                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                       {[
                         { id: 'default', name: 'Classic Blue', primary: '#3D74B6', secondary: '#EAC8A6', accent: '#DC3C22', gradient: 'from-blue-500 to-blue-600' },
@@ -750,16 +750,16 @@ export default function SettingsPage() {
                   </div>
                   <div>
                     <h2 className="text-2xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
-                      Voice Assistant
+                      {t('voiceAssistant')}
                     </h2>
-                    <p className="text-gray-600 font-medium">Configure voice input and output settings</p>
+                    <p className="text-gray-600 font-medium">{t('voiceAssistantDesc')}</p>
                   </div>
                 </div>
                 <div className="space-y-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <h4 className="font-medium text-black">Voice Input</h4>
-                      <p className="text-sm text-black">Enable voice commands and dictation</p>
+                      <h4 className="font-medium text-black">{t('voiceInput')}</h4>
+                      <p className="text-sm text-black">{t('voiceInputDesc')}</p>
                     </div>
                     <button
                       onClick={() => setSettings({
@@ -779,7 +779,7 @@ export default function SettingsPage() {
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium text-black mb-1">Voice Language</label>
+                    <label className="block text-sm font-medium text-black mb-1">{t('voiceLanguage')}</label>
                     <select
                       value={settings.voice.language}
                       onChange={(e) => setSettings({
@@ -788,16 +788,16 @@ export default function SettingsPage() {
                       })}
                       className="w-full px-3 py-2 border border-secondary rounded-md focus:outline-none focus:ring-2 focus:ring-primary text-black bg-background"
                     >
-                      <option value="en-US">English (US)</option>
-                      <option value="en-GB">English (UK)</option>
-                      <option value="es-ES">Spanish</option>
-                      <option value="fr-FR">French</option>
+                      <option value="en-US">{t('englishUS')}</option>
+                      <option value="en-GB">{t('englishUK')}</option>
+                      <option value="es-ES">{t('spanish')}</option>
+                      <option value="fr-FR">{t('french')}</option>
                     </select>
                   </div>
                   
                   <div className="space-y-4">
                     <div>
-                      <label className="block text-sm font-medium text-black mb-2">Speech Rate: {settings.voice.rate}</label>
+                      <label className="block text-sm font-medium text-black mb-2">{t('speechRate')}: {settings.voice.rate}</label>
                       <input
                         type="range"
                         min="0.5"
@@ -813,7 +813,7 @@ export default function SettingsPage() {
                     </div>
                     
                     <div>
-                      <label className="block text-sm font-medium text-black mb-2">Speech Pitch: {settings.voice.pitch}</label>
+                      <label className="block text-sm font-medium text-black mb-2">{t('speechPitch')}: {settings.voice.pitch}</label>
                       <input
                         type="range"
                         min="0.5"
@@ -842,26 +842,26 @@ export default function SettingsPage() {
                     </div>
                     <div>
                       <h2 className="text-2xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
-                        Data Management
+                        {t('dataManagement')}
                       </h2>
-                      <p className="text-gray-600 font-medium">Import, export, and manage your data</p>
+                      <p className="text-gray-600 font-medium">{t('dataManagementDesc')}</p>
                     </div>
                   </div>
                   <div className="space-y-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <Button onClick={handleExportData} variant="outline" className="text-black">
                         <Download className="h-4 w-4 mr-2" />
-                        Export Data
+                        {t('exportData')}
                       </Button>
                       <Button variant="outline" className="text-black">
                         <Upload className="h-4 w-4 mr-2" />
-                        Import Data
+                        {t('importData')}
                       </Button>
                     </div>
                     
                     <div className="border-t border-secondary pt-6">
-                      <h4 className="font-medium text-black mb-2">Danger Zone</h4>
-                      <p className="text-sm text-black mb-4">These actions cannot be undone</p>
+                      <h4 className="font-medium text-black mb-2">{t('dangerZone')}</h4>
+                      <p className="text-sm text-black mb-4">{t('dangerZoneDesc')}</p>
                       
                       <div className="space-y-3">
                         <Button 
@@ -870,15 +870,15 @@ export default function SettingsPage() {
                           className="text-orange-600 border-orange-300 hover:bg-orange-50"
                         >
                           <RefreshCw className="h-4 w-4 mr-2" />
-                          Reset Theme Settings (Debug)
+                          {t('resetThemeSettings')}
                         </Button>
                         <Button variant="outline" className="text-red-600 border-red-300 hover:bg-red-50">
                           <Trash2 className="h-4 w-4 mr-2" />
-                          Clear All Data
+                          {t('clearAllData')}
                         </Button>
                         <Button variant="outline" className="text-red-600 border-red-300 hover:bg-red-50">
                           <Trash2 className="h-4 w-4 mr-2" />
-                          Delete Account
+                          {t('deleteAccount')}
                         </Button>
                       </div>
                     </div>
@@ -893,10 +893,10 @@ export default function SettingsPage() {
                     </div>
                     <div>
                       <h2 className="text-2xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
-                        Mobile Biometric Authentication
+                        {t('mobileBiometricAuth')}
                       </h2>
                       <p className="text-gray-600 font-medium">
-                        Configure Face ID, Touch ID, or fingerprint authentication for secure login
+                        {t('mobileBiometricAuthDesc')}
                       </p>
                     </div>
                   </div>
@@ -904,10 +904,9 @@ export default function SettingsPage() {
                     {!biometricSupported ? (
                       <div className="text-center py-8">
                         <UserCheck className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                        <h3 className="font-medium text-black mb-2">Biometric Authentication Not Available</h3>
+                        <h3 className="font-medium text-black mb-2">{t('biometricNotAvailable')}</h3>
                         <p className="text-black text-sm">
-                          This feature requires a mobile device with Face ID, Touch ID, or fingerprint sensor.
-                          Please access this page from your phone to set up biometric authentication.
+                          {t('biometricNotAvailableDesc')}
                         </p>
                       </div>
                     ) : (
@@ -921,10 +920,10 @@ export default function SettingsPage() {
                             )}
                             <div>
                               <h4 className="font-medium text-black">
-                                {biometricType} Available
+                                {biometricType} {t('available')}
                               </h4>
                               <p className="text-sm text-black">
-                                Your device supports biometric authentication
+                                {t('deviceSupportsBiometric')}
                               </p>
                             </div>
                           </div>
@@ -932,12 +931,12 @@ export default function SettingsPage() {
                             {hasStoredCredential ? (
                               <div className="flex items-center gap-1 text-green-600">
                                 <UserCheck className="h-4 w-4" />
-                                <span className="text-sm font-medium">Enabled</span>
+                                <span className="text-sm font-medium">{t('enabled')}</span>
                               </div>
                             ) : (
                               <div className="flex items-center gap-1 text-gray-500">
                                 <Fingerprint className="h-4 w-4" />
-                                <span className="text-sm">Not Set Up</span>
+                                <span className="text-sm">{t('notSetUp')}</span>
                               </div>
                             )}
                           </div>
@@ -960,12 +959,12 @@ export default function SettingsPage() {
                                 <Fingerprint className="h-5 w-5" />
                                 <div className="text-left">
                                   <div className="font-medium">
-                                    Set Up {biometricType}
+                                    {t('setUp')} {biometricType}
                                   </div>
                                   <div className="text-xs opacity-90">
                                     {biometricLoading 
-                                      ? 'Follow the prompts on your device...' 
-                                      : 'Enable secure biometric login'
+                                      ? t('followPrompts') 
+                                      : t('enableSecureBiometric')
                                     }
                                   </div>
                                 </div>
@@ -987,7 +986,7 @@ export default function SettingsPage() {
                                   )}
                                   <div>
                                     <h4 className="font-medium text-black">{biometricType}</h4>
-                                    <p className="text-sm text-gray-600">Ready for authentication</p>
+                                    <p className="text-sm text-gray-600">{t('readyForAuth')}</p>
                                   </div>
                                 </div>
                                 <div className="w-2 h-2 bg-green-500 rounded-full"></div>
@@ -1000,26 +999,26 @@ export default function SettingsPage() {
                                 className="w-full text-red-600 border-red-300 hover:bg-red-50"
                               >
                                 <Trash2 className="h-4 w-4 mr-2" />
-                                Remove Biometric Authentication
+                                {t('removeBiometricAuth')}
                               </Button>
                             </div>
                           )}
                         </div>
 
                         <div className="pt-4 border-t border-gray-200">
-                          <h4 className="font-medium text-black mb-3">How to use biometric authentication:</h4>
+                          <h4 className="font-medium text-black mb-3">{t('howToUseBiometric')}:</h4>
                           <ul className="space-y-2 text-sm text-black">
                             <li className="flex items-start gap-2">
                               <span className="font-medium text-primary">1.</span>
-                              Set up biometric authentication using the button above
+                              {t('setupBiometricStep')}
                             </li>
                             <li className="flex items-start gap-2">
                               <span className="font-medium text-primary">2.</span>
-                              Go to the login page and use the &quot;{biometricType}&quot; button
+                              {t('goToLoginStep', { biometricType })}
                             </li>
                             <li className="flex items-start gap-2">
                               <span className="font-medium text-primary">3.</span>
-                              Follow your device's biometric prompts to sign in securely
+                              {t('followDevicePrompts')}
                             </li>
                           </ul>
                         </div>
