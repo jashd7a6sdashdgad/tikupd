@@ -5,6 +5,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Slider } from '@/components/ui/slider';
 import { useThemeContext, defaultPresets, type ThemePreset } from '@/contexts/ThemeContext';
 import { 
   Palette, 
@@ -16,12 +20,61 @@ import {
   Monitor,
   Smartphone,
   Tablet,
-  Target
+  Target,
+  Layout,
+  Mic,
+  Bell,
+  Volume2,
+  Moon,
+  Sun,
+  Zap,
+  Globe,
+  User,
+  Camera,
+  MessageSquare,
+  Calendar
 } from 'lucide-react';
 
 export default function CustomizationPage() {
   const { currentTheme, customPresets, applyTheme, saveCustomPreset, updateCurrentTheme } = useThemeContext();
   const [previewMode, setPreviewMode] = useState<'desktop' | 'tablet' | 'mobile'>('desktop');
+  const [activeTab, setActiveTab] = useState('themes');
+  
+  // UI Preferences State
+  const [uiSettings, setUISettings] = useState({
+    darkMode: false,
+    reducedMotions: false,
+    fontSize: 16,
+    borderRadius: 8,
+    animationSpeed: 300,
+    compactMode: false,
+    showAvatars: true,
+    cardShadows: true,
+    blurEffects: true
+  });
+  
+  // Voice & Audio Settings
+  const [voiceSettings, setVoiceSettings] = useState({
+    voiceEnabled: true,
+    voiceSpeed: 1.0,
+    voiceVolume: 0.8,
+    autoPlayResponses: true,
+    voiceFeedback: true,
+    soundEffects: true,
+    notificationSounds: true
+  });
+  
+  // Dashboard Layout Settings
+  const [layoutSettings, setLayoutSettings] = useState({
+    widgetSpacing: 'normal',
+    cardsPerRow: 3,
+    showWeather: true,
+    showQuickActions: true,
+    showRecentActivity: true,
+    sidebarCollapsed: false,
+    headerStyle: 'modern',
+    footerVisible: true
+  });
 
   const updateThemeColors = (colorKey: keyof ThemePreset['colors'], value: string) => {
     updateCurrentTheme({
@@ -85,19 +138,42 @@ export default function CustomizationPage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
-          {/* Main Controls */}
-          <div className="xl:col-span-2 space-y-6">
-            {/* Current Theme Info */}
-            <Card className="bg-white/70 backdrop-blur-xl border-2 border-white/30 rounded-3xl shadow-xl">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-3">
-                  <Target className="h-5 w-5 text-blue-600" />
-                  Current Theme
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center justify-between">
+        {/* Main Customization Tabs */}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          <TabsList className="grid w-full grid-cols-4 bg-white/70 backdrop-blur-xl border-2 border-white/30 rounded-2xl p-2 shadow-lg">
+            <TabsTrigger value="themes" className="flex items-center space-x-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-purple-600 data-[state=active]:text-white rounded-xl py-3 px-4">
+              <Palette className="h-4 w-4" />
+              <span className="hidden sm:inline">Themes</span>
+            </TabsTrigger>
+            <TabsTrigger value="interface" className="flex items-center space-x-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-blue-600 data-[state=active]:text-white rounded-xl py-3 px-4">
+              <Layout className="h-4 w-4" />
+              <span className="hidden sm:inline">Interface</span>
+            </TabsTrigger>
+            <TabsTrigger value="voice" className="flex items-center space-x-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-green-500 data-[state=active]:to-green-600 data-[state=active]:text-white rounded-xl py-3 px-4">
+              <Mic className="h-4 w-4" />
+              <span className="hidden sm:inline">Voice & Audio</span>
+            </TabsTrigger>
+            <TabsTrigger value="layout" className="flex items-center space-x-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-orange-500 data-[state=active]:to-orange-600 data-[state=active]:text-white rounded-xl py-3 px-4">
+              <Settings className="h-4 w-4" />
+              <span className="hidden sm:inline">Layout</span>
+            </TabsTrigger>
+          </TabsList>
+
+          {/* Themes Tab */}
+          <TabsContent value="themes" className="space-y-6">
+            <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+              {/* Theme Controls */}
+              <div className="xl:col-span-2 space-y-6">
+                {/* Current Theme Info */}
+                <Card className="bg-white/70 backdrop-blur-xl border-2 border-white/30 rounded-3xl shadow-xl">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-3">
+                      <Target className="h-5 w-5 text-blue-600" />
+                      Current Theme
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex items-center justify-between">
                   <div>
                     <h3 className="font-semibold text-lg">{currentTheme.name}</h3>
                     <p className="text-gray-600">{currentTheme.description}</p>
@@ -373,6 +449,54 @@ export default function CustomizationPage() {
             </Card>
           </div>
         </div>
+      </TabsContent>
+
+      {/* Interface Tab */}
+      <TabsContent value="interface" className="space-y-6">
+        <Card className="bg-white/70 backdrop-blur-xl border-2 border-white/30 rounded-3xl shadow-xl">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-3">
+              <Layout className="h-5 w-5 text-blue-600" />
+              Interface Settings
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-gray-600">Interface customization options coming soon...</p>
+          </CardContent>
+        </Card>
+      </TabsContent>
+
+      {/* Voice Tab */}
+      <TabsContent value="voice" className="space-y-6">
+        <Card className="bg-white/70 backdrop-blur-xl border-2 border-white/30 rounded-3xl shadow-xl">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-3">
+              <Mic className="h-5 w-5 text-green-600" />
+              Voice & Audio Settings
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-gray-600">Voice customization options coming soon...</p>
+          </CardContent>
+        </Card>
+      </TabsContent>
+
+      {/* Layout Tab */}
+      <TabsContent value="layout" className="space-y-6">
+        <Card className="bg-white/70 backdrop-blur-xl border-2 border-white/30 rounded-3xl shadow-xl">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-3">
+              <Settings className="h-5 w-5 text-orange-600" />
+              Layout Settings
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-gray-600">Layout customization options coming soon...</p>
+          </CardContent>
+        </Card>
+      </TabsContent>
+
+      </Tabs>
       </div>
     </div>
   );

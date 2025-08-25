@@ -50,6 +50,7 @@ export default function SmartQuickActions({
 }: SmartQuickActionsProps) {
   const router = useRouter();
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [showAllActions, setShowAllActions] = useState(false);
 
   const generateSmartActions = (): QuickAction[] => {
     const now = new Date();
@@ -332,7 +333,7 @@ export default function SmartQuickActions({
       
       <CardContent>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          {filteredActions.slice(0, 9).map((action) => (
+          {(showAllActions ? filteredActions : filteredActions.slice(0, 9)).map((action) => (
             <Card 
               key={action.id} 
               className={`cursor-pointer hover:shadow-md transition-all border ${
@@ -375,9 +376,13 @@ export default function SmartQuickActions({
         
         {filteredActions.length > 9 && (
           <div className="mt-4 text-center">
-            <Button variant="outline" size="sm">
-              Show More Actions
-              <ArrowRight className="h-3 w-3 ml-1" />
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => setShowAllActions(!showAllActions)}
+            >
+              {showAllActions ? 'Show Less' : `Show More Actions (${filteredActions.length - 9} more)`}
+              <ArrowRight className={`h-3 w-3 ml-1 transition-transform ${showAllActions ? 'rotate-180' : ''}`} />
             </Button>
           </div>
         )}

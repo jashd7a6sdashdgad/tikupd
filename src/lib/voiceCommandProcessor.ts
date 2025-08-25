@@ -46,10 +46,16 @@ export class VoiceCommandProcessor {
 
       // Navigation commands
       {
-        pattern: /^(go to|navigate to|open|show me) (dashboard|social media|email|calendar|expenses|photos|contacts|settings|diary|budget)/i,
+        pattern: /^(go to|navigate to|open|show me|take me to) (dashboard|social media|email|calendar|expenses|photos|contacts|settings|diary|budget|tracking|analytics|chat|voice chat|shopping|weather|accessibility|islamic settings|customization|joke|jokes)/i,
         action: 'navigate',
         handler: (matches, _transcript) => {
-          const destination = matches[2].toLowerCase().replace(' ', '-');
+          const destination = matches[2].toLowerCase()
+            .replace(/\s+/g, '-')
+            .replace('voice-chat', 'voice-chat')
+            .replace('islamic-settings', 'islamic-settings')
+            .replace('social-media', 'social-media')
+            .replace('jokes', 'voice-joke-ai')
+            .replace('joke', 'voice-joke-ai');
           return {
             action: 'navigate',
             response: `Navigating to ${matches[2]}. Let me take you there!`,
@@ -58,7 +64,7 @@ export class VoiceCommandProcessor {
             data: { destination }
           };
         },
-        examples: ['Go to dashboard', 'Open social media', 'Show me calendar'],
+        examples: ['Go to dashboard', 'Open chat', 'Show me tracking', 'Navigate to analytics'],
         description: 'Navigate to different sections'
       },
 

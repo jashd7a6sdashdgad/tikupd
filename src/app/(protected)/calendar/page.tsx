@@ -220,9 +220,27 @@ export default function CalendarPage() {
     const departureAirport = combined.includes('muscat') ? 'MUSCAT MCT' : 'Unknown';
     const arrivalAirport = combined.includes('bangkok') ? 'BANGKOK SUVARNABH BKK' : 'Unknown';
     
-    // Extract times
-    const departureTimeMatch = combined.match(/(\d{1,2}:\d{2}[ap]m).*?local time.*?bangkok/i);
-    const arrivalTimeMatch = combined.match(/bangkok.*?(\d{1,2}:\d{2}[ap]m).*?local time/i);
+    // Extract times - more flexible patterns
+    const timePattern = /(\d{1,2}:\d{2}\s*[ap]m)/gi;
+    const allTimes = combined.match(timePattern);
+    
+    // Try multiple patterns for departure time
+    let departureTimeMatch = combined.match(/departure[:\s]*(\d{1,2}:\d{2}\s*[ap]m)/i) ||
+                            combined.match(/depart[:\s]*(\d{1,2}:\d{2}\s*[ap]m)/i) ||
+                            combined.match(/(\d{1,2}:\d{2}\s*[ap]m).*?muscat/i);
+    
+    // Try multiple patterns for arrival time  
+    let arrivalTimeMatch = combined.match(/arrival[:\s]*(\d{1,2}:\d{2}\s*[ap]m)/i) ||
+                          combined.match(/arrive[:\s]*(\d{1,2}:\d{2}\s*[ap]m)/i) ||
+                          combined.match(/bangkok.*?(\d{1,2}:\d{2}\s*[ap]m)/i);
+    
+    // If specific patterns don't work, use first and last times found
+    if (!departureTimeMatch && allTimes && allTimes.length >= 1) {
+      departureTimeMatch = ['', allTimes[0]];
+    }
+    if (!arrivalTimeMatch && allTimes && allTimes.length >= 2) {
+      arrivalTimeMatch = ['', allTimes[allTimes.length - 1]];
+    }
 
     return {
       isFlightEvent: true,

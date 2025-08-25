@@ -64,6 +64,8 @@ export default function EmailPage() {
   const [showTemplates, setShowTemplates] = useState(false);
   const [showAIInsights, setShowAIInsights] = useState(false);
   const [smartMessages, setSmartMessages] = useState<EmailMessage[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [filteredMessages, setFilteredMessages] = useState<EmailMessage[]>([]);
 
   const { 
     isListening, 
@@ -142,6 +144,52 @@ export default function EmailPage() {
       console.error('Error fetching unread count:', error);
     }
   };
+
+  // Filter messages by category
+  const filterMessagesByCategory = (messages: EmailMessage[], category: string) => {
+    if (category === 'all') {
+      return messages;
+    }
+
+    return messages.filter(message => {
+      switch (category) {
+        case 'urgent':
+          return message.priority === 'urgent';
+        case 'high':
+          return message.priority === 'high';
+        case 'medium':
+          return message.priority === 'medium';
+        case 'low':
+          return message.priority === 'low';
+        case 'spam':
+          return message.isSpam === true;
+        case 'business':
+          return message.category === 'business';
+        case 'personal':
+          return message.category === 'personal';
+        case 'finance':
+          return message.category === 'finance';
+        case 'travel':
+          return message.category === 'travel';
+        case 'social':
+          return message.category === 'social';
+        case 'positive':
+          return message.sentiment === 'positive';
+        case 'negative':
+          return message.sentiment === 'negative';
+        case 'neutral':
+          return message.sentiment === 'neutral';
+        default:
+          return true;
+      }
+    });
+  };
+
+  // Update filtered messages when category or messages change
+  useEffect(() => {
+    const filtered = filterMessagesByCategory(smartMessages, selectedCategory);
+    setFilteredMessages(filtered);
+  }, [smartMessages, selectedCategory]);
 
   const parseVoiceEmail = (voiceInput: string) => {
     const input = voiceInput.toLowerCase();
@@ -570,12 +618,132 @@ export default function EmailPage() {
           </CardContent>
         </Card>
 
+        {/* Category Filter */}
+        <Card className="mb-8">
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <Tag className="h-5 w-5 mr-2" />
+              Filter by Category
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-wrap gap-2">
+              {/* Priority Categories */}
+              <Button
+                onClick={() => setSelectedCategory('all')}
+                variant={selectedCategory === 'all' ? 'primary' : 'outline'}
+                size="sm"
+              >
+                All ({smartMessages.length})
+              </Button>
+              <Button
+                onClick={() => setSelectedCategory('urgent')}
+                variant={selectedCategory === 'urgent' ? 'primary' : 'outline'}
+                size="sm"
+                className="text-red-600 border-red-200"
+              >
+                🚨 Urgent ({filterMessagesByCategory(smartMessages, 'urgent').length})
+              </Button>
+              <Button
+                onClick={() => setSelectedCategory('high')}
+                variant={selectedCategory === 'high' ? 'primary' : 'outline'}
+                size="sm"
+                className="text-orange-600 border-orange-200"
+              >
+                🔥 High ({filterMessagesByCategory(smartMessages, 'high').length})
+              </Button>
+              <Button
+                onClick={() => setSelectedCategory('medium')}
+                variant={selectedCategory === 'medium' ? 'primary' : 'outline'}
+                size="sm"
+                className="text-yellow-600 border-yellow-200"
+              >
+                ⚡ Medium ({filterMessagesByCategory(smartMessages, 'medium').length})
+              </Button>
+              <Button
+                onClick={() => setSelectedCategory('low')}
+                variant={selectedCategory === 'low' ? 'primary' : 'outline'}
+                size="sm"
+                className="text-green-600 border-green-200"
+              >
+                📝 Low ({filterMessagesByCategory(smartMessages, 'low').length})
+              </Button>
+
+              {/* Content Categories */}
+              <Button
+                onClick={() => setSelectedCategory('business')}
+                variant={selectedCategory === 'business' ? 'primary' : 'outline'}
+                size="sm"
+              >
+                💼 Business ({filterMessagesByCategory(smartMessages, 'business').length})
+              </Button>
+              <Button
+                onClick={() => setSelectedCategory('personal')}
+                variant={selectedCategory === 'personal' ? 'primary' : 'outline'}
+                size="sm"
+              >
+                👤 Personal ({filterMessagesByCategory(smartMessages, 'personal').length})
+              </Button>
+              <Button
+                onClick={() => setSelectedCategory('finance')}
+                variant={selectedCategory === 'finance' ? 'primary' : 'outline'}
+                size="sm"
+              >
+                💰 Finance ({filterMessagesByCategory(smartMessages, 'finance').length})
+              </Button>
+              <Button
+                onClick={() => setSelectedCategory('travel')}
+                variant={selectedCategory === 'travel' ? 'primary' : 'outline'}
+                size="sm"
+              >
+                ✈️ Travel ({filterMessagesByCategory(smartMessages, 'travel').length})
+              </Button>
+
+              {/* Sentiment Categories */}
+              <Button
+                onClick={() => setSelectedCategory('positive')}
+                variant={selectedCategory === 'positive' ? 'primary' : 'outline'}
+                size="sm"
+                className="text-green-600 border-green-200"
+              >
+                😊 Positive ({filterMessagesByCategory(smartMessages, 'positive').length})
+              </Button>
+              <Button
+                onClick={() => setSelectedCategory('negative')}
+                variant={selectedCategory === 'negative' ? 'primary' : 'outline'}
+                size="sm"
+                className="text-red-600 border-red-200"
+              >
+                😞 Negative ({filterMessagesByCategory(smartMessages, 'negative').length})
+              </Button>
+
+              {/* Special Categories */}
+              <Button
+                onClick={() => setSelectedCategory('spam')}
+                variant={selectedCategory === 'spam' ? 'primary' : 'outline'}
+                size="sm"
+                className="text-red-800 border-red-300"
+              >
+                🚫 Spam ({filterMessagesByCategory(smartMessages, 'spam').length})
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Messages List */}
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center">
-              <Inbox className="h-5 w-5 mr-2" />
-              {t('message')}
+            <CardTitle className="flex items-center justify-between">
+              <div className="flex items-center">
+                <Inbox className="h-5 w-5 mr-2" />
+                {t('message')}
+              </div>
+              <div className="text-sm text-gray-600 font-normal">
+                {selectedCategory === 'all' 
+                  ? `${filteredMessages.length} emails` 
+                  : `${filteredMessages.length} of ${smartMessages.length} emails`
+                }
+              </div>
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -587,9 +755,9 @@ export default function EmailPage() {
                   </div>
                 ))}
               </div>
-            ) : messages.length > 0 ? (
+            ) : filteredMessages.length > 0 ? (
               <div className="space-y-4">
-                {messages.map((message) => {
+                {filteredMessages.map((message) => {
                   const from = getHeaderValue(message.payload.headers, 'From');
                   const subject = getHeaderValue(message.payload.headers, 'Subject');
                   const date = getHeaderValue(message.payload.headers, 'Date');
@@ -694,9 +862,12 @@ export default function EmailPage() {
             ) : (
               <div className="text-center py-12">
                 <Mail className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-                <p className="text-black">No emails to display</p>
+                <p className="text-black">
+                  {smartMessages.length > 0 ? 'No emails match the selected category' : 'No emails to display'}
+                </p>
                 <p className="text-sm text-black mt-2">
-                  {searchQuery ? 'Try adjusting your search.' : 'You can still use templates to compose emails.'}
+                  {smartMessages.length > 0 ? 'Try selecting a different category or "All" to see all emails.' : 
+                   searchQuery ? 'Try adjusting your search.' : 'You can still use templates to compose emails.'}
                 </p>
                 <div className="flex gap-3 justify-center mt-6">
                   <Button 

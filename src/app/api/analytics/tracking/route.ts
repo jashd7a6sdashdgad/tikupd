@@ -531,7 +531,16 @@ export async function GET(request: NextRequest) {
     // Calculate analytics with safety checks to avoid suspicious "100" values
     const rawEventCount = processedData.events.length;
     const rawEmailCount = processedData.emails.length;
-    const rawContactCount = processedData.contacts.length;
+    // Filter out header rows and empty contacts like the contacts API does
+    const rawContactCount = processedData.contacts.length > 1 ? 
+      processedData.contacts.slice(1).filter((row: any) => {
+        // Skip empty rows and ensure we have actual contact data
+        if (!Array.isArray(row) || row.length < 2) return false;
+        const name = row[0]?.toString().trim();
+        const email = row[1]?.toString().trim();
+        // Must have at least a name or email to be a valid contact
+        return name || email;
+      }).length : 0;
     
     // Calculate additional productivity metrics
     const shoppingListCount = await getShoppingListCount(googleTokens);

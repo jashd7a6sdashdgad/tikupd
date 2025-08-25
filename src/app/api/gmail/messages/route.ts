@@ -162,7 +162,7 @@ export async function GET(request: NextRequest) {
     // Get query parameters
     const { searchParams } = new URL(request.url);
     const query = searchParams.get('q') || '';
-    const maxResults = parseInt(searchParams.get('maxResults') || '10');
+    const maxResults = parseInt(searchParams.get('maxResults') || '20');
     
     // Test the access token first with a simple API call
     const tokenTestResponse = await fetch(

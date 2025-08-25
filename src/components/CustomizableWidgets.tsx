@@ -129,22 +129,58 @@ const AnalyticsWidget = ({ widget }: { widget: Widget }) => (
   </div>
 );
 
-const WeatherWidget = ({ widget }: { widget: Widget }) => (
-  <div className="p-4">
-    <div className="flex items-center gap-2 mb-4">
-      <Sun className="h-5 w-5 text-yellow-600" />
-      <h3 className="font-semibold text-gray-800">{widget.title}</h3>
-    </div>
-    <div className="text-center">
-      <div className="text-4xl font-bold text-yellow-600 mb-2">28°C</div>
-      <p className="text-sm text-gray-600 mb-2">Sunny</p>
-      <div className="flex justify-between text-xs text-gray-500">
-        <span>High: 32°C</span>
-        <span>Low: 24°C</span>
+const WeatherWidget = ({ widget }: { widget: Widget }) => {
+  const [weather, setWeather] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchWeather = async () => {
+      try {
+        const response = await fetch('/api/weather?q=muscat');
+        const data = await response.json();
+        if (data.success) {
+          setWeather(data.data);
+        }
+      } catch (error) {
+        console.error('Weather fetch error:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchWeather();
+    // Update every minute
+    const interval = setInterval(fetchWeather, 60000);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <div className="p-4">
+      <div className="flex items-center gap-2 mb-4">
+        <Sun className="h-5 w-5 text-yellow-600" />
+        <h3 className="font-semibold text-gray-800">{widget.title}</h3>
+      </div>
+      <div className="text-center">
+        {loading ? (
+          <div className="text-2xl text-gray-400">Loading...</div>
+        ) : weather ? (
+          <>
+            <div className="text-4xl font-bold text-yellow-600 mb-2">
+              {Math.round(weather.current.temperature_c)}°C
+            </div>
+            <p className="text-sm text-gray-600 mb-2">{weather.current.condition}</p>
+            <div className="flex justify-between text-xs text-gray-500">
+              <span>Feels: {Math.round(weather.current.feelslike_c)}°C</span>
+              <span>UV: {weather.current.uv}</span>
+            </div>
+          </>
+        ) : (
+          <div className="text-2xl text-gray-400">No data</div>
+        )}
       </div>
     </div>
-  </div>
-);
+  );
+};
 
 const TasksWidget = ({ widget }: { widget: Widget }) => (
   <div className="p-4">
@@ -359,8 +395,8 @@ export const CustomizableWidgets: React.FC<CustomizableWidgetsProps> = ({
   const getWidgetSizeClass = (size: string) => {
     switch (size) {
       case 'small': return 'col-span-1 row-span-1';
-      case 'medium': return 'col-span-1 md:col-span-2 row-span-2';
-      case 'large': return 'col-span-1 md:col-span-3 row-span-3';
+      case 'medium': return 'col-span-1 sm:col-span-2 row-span-2';
+      case 'large': return 'col-span-1 sm:col-span-2 lg:col-span-3 row-span-3';
       default: return 'col-span-1 row-span-1';
     }
   };
@@ -368,39 +404,43 @@ export const CustomizableWidgets: React.FC<CustomizableWidgetsProps> = ({
   return (
     <div className={`space-y-6 ${className}`}>
       {/* Control Panel */}
-      <ModernCard gradient="blue" blur="lg" className="p-6">
-        <div className="flex items-center justify-between">
+      <ModernCard gradient="blue" blur="lg" className="p-4 sm:p-6">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl">
-              <Settings className="h-6 w-6 text-white" />
+              <Settings className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
             </div>
             <div>
-              <h2 className="text-2xl font-bold text-gray-800">Dashboard Widgets</h2>
-              <p className="text-gray-600">Customize your dashboard layout</p>
+              <h2 className="text-xl sm:text-2xl font-bold text-gray-800">Dashboard Widgets</h2>
+              <p className="text-sm sm:text-base text-gray-600">Customize your dashboard layout</p>
             </div>
           </div>
           
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
             <Button
               onClick={() => setShowAddWidget(!showAddWidget)}
-              className="bg-green-500 hover:bg-green-600 text-white"
+              className="bg-green-500 hover:bg-green-600 text-white flex-1 sm:flex-none min-h-[44px] touch-manipulation"
             >
               <Plus className="h-4 w-4 mr-2" />
-              Add Widget
+              <span className="hidden sm:inline">Add Widget</span>
+              <span className="sm:hidden">Add</span>
             </Button>
             <Button
               onClick={() => setIsEditMode(!isEditMode)}
               variant={isEditMode ? "destructive" : "outline"}
+              className="flex-1 sm:flex-none min-h-[44px] touch-manipulation"
             >
               {isEditMode ? (
                 <>
                   <Eye className="h-4 w-4 mr-2" />
-                  Exit Edit
+                  <span className="hidden sm:inline">Exit Edit</span>
+                  <span className="sm:hidden">Exit</span>
                 </>
               ) : (
                 <>
                   <Settings className="h-4 w-4 mr-2" />
-                  Edit Mode
+                  <span className="hidden sm:inline">Edit Mode</span>
+                  <span className="sm:hidden">Edit</span>
                 </>
               )}
             </Button>
@@ -409,20 +449,20 @@ export const CustomizableWidgets: React.FC<CustomizableWidgetsProps> = ({
 
         {/* Add Widget Panel */}
         {showAddWidget && (
-          <div className="mt-6 p-4 bg-white/80 backdrop-blur-sm border border-gray-200 rounded-xl">
-            <h3 className="font-semibold text-gray-800 mb-4">Available Widgets</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-white/80 backdrop-blur-sm border border-gray-200 rounded-xl">
+            <h3 className="font-semibold text-gray-800 mb-3 sm:mb-4 text-sm sm:text-base">Available Widgets</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
               {WIDGET_TYPES.map(widgetType => (
                 <div
                   key={widgetType.id}
-                  className="p-4 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-lg cursor-pointer transition-colors"
+                  className="p-3 sm:p-4 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-lg cursor-pointer transition-colors touch-manipulation min-h-[60px] flex items-center"
                   onClick={() => addWidget(widgetType.id)}
                 >
                   <div className="flex items-center gap-3">
                     {widgetType.icon}
                     <div>
-                      <h4 className="font-medium text-gray-800">{widgetType.name}</h4>
-                      <p className="text-sm text-gray-600">{widgetType.description}</p>
+                      <h4 className="font-medium text-gray-800 text-sm sm:text-base">{widgetType.name}</h4>
+                      <p className="text-xs sm:text-sm text-gray-600">{widgetType.description}</p>
                     </div>
                   </div>
                 </div>
@@ -439,7 +479,7 @@ export const CustomizableWidgets: React.FC<CustomizableWidgetsProps> = ({
             <div
               {...provided.droppableProps}
               ref={provided.innerRef}
-              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 auto-rows-min"
+              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 auto-rows-min"
             >
               {widgets
                 .filter(widget => widget.visible)
@@ -467,16 +507,16 @@ export const CustomizableWidgets: React.FC<CustomizableWidgetsProps> = ({
                         >
                           {/* Edit Mode Controls */}
                           {isEditMode && (
-                            <div className="absolute top-2 right-2 flex gap-2 z-10">
+                            <div className="absolute top-2 right-2 flex gap-1 sm:gap-2 z-10">
                               <div
                                 {...provided.dragHandleProps}
-                                className="p-1 bg-white/90 hover:bg-white rounded cursor-move shadow-sm"
+                                className="p-2 bg-white/90 hover:bg-white rounded cursor-move shadow-sm touch-manipulation min-w-[36px] min-h-[36px] flex items-center justify-center"
                               >
                                 <Move className="h-4 w-4 text-gray-600" />
                               </div>
                               <button
                                 onClick={() => toggleWidgetVisibility(widget.id)}
-                                className="p-1 bg-white/90 hover:bg-white rounded shadow-sm"
+                                className="p-2 bg-white/90 hover:bg-white rounded shadow-sm touch-manipulation min-w-[36px] min-h-[36px] flex items-center justify-center"
                               >
                                 {widget.visible ? (
                                   <Eye className="h-4 w-4 text-green-600" />
@@ -486,7 +526,7 @@ export const CustomizableWidgets: React.FC<CustomizableWidgetsProps> = ({
                               </button>
                               <button
                                 onClick={() => removeWidget(widget.id)}
-                                className="p-1 bg-white/90 hover:bg-white rounded shadow-sm"
+                                className="p-2 bg-white/90 hover:bg-white rounded shadow-sm touch-manipulation min-w-[36px] min-h-[36px] flex items-center justify-center"
                               >
                                 <Trash2 className="h-4 w-4 text-red-600" />
                               </button>
@@ -508,8 +548,8 @@ export const CustomizableWidgets: React.FC<CustomizableWidgetsProps> = ({
 
       {/* Hidden Widgets */}
       {widgets.some(w => !w.visible) && (
-        <ModernCard gradient="none" blur="lg" className="p-6">
-          <h3 className="font-semibold text-gray-800 mb-4">Hidden Widgets</h3>
+        <ModernCard gradient="none" blur="lg" className="p-4 sm:p-6">
+          <h3 className="font-semibold text-gray-800 mb-3 sm:mb-4 text-sm sm:text-base">Hidden Widgets</h3>
           <div className="flex flex-wrap gap-2">
             {widgets
               .filter(w => !w.visible)
@@ -517,10 +557,10 @@ export const CustomizableWidgets: React.FC<CustomizableWidgetsProps> = ({
                 <button
                   key={widget.id}
                   onClick={() => toggleWidgetVisibility(widget.id)}
-                  className="px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm transition-colors"
+                  className="px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-xs sm:text-sm transition-colors touch-manipulation min-h-[40px] flex items-center"
                 >
-                  <EyeOff className="h-4 w-4 inline mr-2" />
-                  {widget.title}
+                  <EyeOff className="h-4 w-4 inline mr-2 flex-shrink-0" />
+                  <span className="truncate">{widget.title}</span>
                 </button>
               ))}
           </div>

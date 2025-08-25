@@ -585,6 +585,74 @@ class PrayerTimesService {
     };
   }
 
+  // Play Adhan sound functionality
+  async playAdhanSound(): Promise<void> {
+    if (!this.prayerSettings.notifications.adhanSound) {
+      console.log('Adhan sound is disabled in settings');
+      return;
+    }
+
+    try {
+      // Create audio element for adhan
+      const audio = new Audio();
+      
+      // Use a placeholder adhan sound URL (you can replace with actual adhan file)
+      const adhanSoundUrl = '/sounds/adhan.mp3'; // You'll need to add this file to public/sounds/
+      
+      audio.src = adhanSoundUrl;
+      audio.volume = 0.7;
+      
+      // Play the adhan
+      await audio.play();
+      
+      console.log('Adhan sound played successfully');
+      
+      // Optional: Show notification
+      if ('Notification' in window && Notification.permission === 'granted') {
+        new Notification('Prayer Time', {
+          body: 'It\'s time for prayer',
+          icon: '/icons/mosque.png'
+        });
+      }
+      
+    } catch (error) {
+      console.warn('Failed to play adhan sound:', error);
+      
+      // Fallback: show notification without sound
+      if ('Notification' in window && Notification.permission === 'granted') {
+        new Notification('Prayer Time', {
+          body: 'It\'s time for prayer (sound unavailable)',
+          icon: '/icons/mosque.png'
+        });
+      }
+    }
+  }
+
+  // Test adhan sound (for settings page)
+  async testAdhanSound(): Promise<void> {
+    console.log('Testing adhan sound...');
+    await this.playAdhanSound();
+  }
+
+  // Request notification permission
+  async requestNotificationPermission(): Promise<boolean> {
+    if (!('Notification' in window)) {
+      console.warn('Notifications not supported');
+      return false;
+    }
+
+    if (Notification.permission === 'granted') {
+      return true;
+    }
+
+    if (Notification.permission !== 'denied') {
+      const permission = await Notification.requestPermission();
+      return permission === 'granted';
+    }
+
+    return false;
+  }
+
   private saveSettings(): void {
     try {
       if (typeof localStorage !== 'undefined') {

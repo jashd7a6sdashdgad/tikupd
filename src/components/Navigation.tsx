@@ -371,12 +371,13 @@ export function Navigation() {
 
       {/* Mobile menu */}
       <div className="lg:hidden">
-        {/* Mobile menu button */}
+        {/* Mobile menu button - Optimized for touch */}
         <div className="fixed top-0 left-0 z-50 flex h-16 w-full items-center gap-x-4 bg-gradient-to-r from-slate-50/95 via-blue-50/95 to-indigo-100/95 backdrop-blur-xl border-b border-white/20 shadow-xl px-4 sm:gap-x-6 sm:px-6">
           <button
             type="button"
-            className="-m-2.5 p-2.5 text-gray-700 hover:text-blue-700 hover:bg-white/70 rounded-xl transition-all duration-300 lg:hidden"
+            className="-m-1 p-4 text-gray-700 hover:text-blue-700 hover:bg-white/70 rounded-2xl transition-all duration-300 lg:hidden active:scale-95 touch-manipulation min-w-[48px] min-h-[48px] flex items-center justify-center"
             onClick={() => setIsMobileMenuOpen(true)}
+            aria-label="Open navigation menu"
           >
             <Menu className="h-6 w-6" />
           </button>
@@ -395,24 +396,25 @@ export function Navigation() {
           <div className="fixed inset-0 z-50 lg:hidden">
             <div className="fixed inset-0 bg-black/20 backdrop-blur-sm" onClick={() => setIsMobileMenuOpen(false)} />
             
-            <div className="fixed inset-y-0 left-0 z-50 w-full overflow-y-auto bg-gradient-to-br from-slate-50/95 via-blue-50/95 to-indigo-100/95 backdrop-blur-xl px-6 py-6 shadow-2xl sm:max-w-sm border-r border-white/20">
-              <div className="flex items-center justify-between mb-8">
+            <div className="fixed inset-y-0 left-0 z-50 w-full overflow-y-auto bg-gradient-to-br from-slate-50/95 via-blue-50/95 to-indigo-100/95 backdrop-blur-xl px-4 py-4 shadow-2xl sm:max-w-sm md:max-w-md border-r border-white/20">
+              <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center bg-gradient-to-r from-blue-500 to-indigo-600 rounded-xl p-3 shadow-lg">
-                  <h1 className="text-lg font-bold text-white bg-gradient-to-r from-white to-blue-100 bg-clip-text text-transparent">
+                  <h1 className="text-base sm:text-lg font-bold text-white bg-gradient-to-r from-white to-blue-100 bg-clip-text text-transparent">
                     {language === 'ar' ? 'المساعد الشخصي' : 'Personal Assistant'}
                   </h1>
                 </div>
                 <button
                   type="button"
-                  className="-m-2.5 rounded-xl p-2.5 text-gray-700 hover:text-blue-700 hover:bg-white/70 transition-all duration-300"
+                  className="-m-2 rounded-xl p-3 text-gray-700 hover:text-blue-700 hover:bg-white/70 transition-all duration-300 min-w-[44px] min-h-[44px] flex items-center justify-center touch-manipulation"
                   onClick={() => setIsMobileMenuOpen(false)}
+                  aria-label="Close navigation menu"
                 >
-                  <X className="h-6 w-6" />
+                  <X className="h-5 w-5" />
                 </button>
               </div>
               
-              <nav className="mt-6">
-                <ul role="list" className="space-y-1">
+              <nav className="mt-4">
+                <ul role="list" className="space-y-2">
                   {navigation.map((item: NavigationItem) => {
                     const isActive = pathname === item.href;
                     return (
@@ -421,23 +423,30 @@ export function Navigation() {
                           href={item.href as any}
                           onClick={() => setIsMobileMenuOpen(false)}
                           className={cn(
-                            'group flex gap-x-3 rounded-xl p-3 text-sm leading-6 font-semibold transition-all duration-300 ease-in-out relative overflow-hidden',
+                            'group flex gap-x-4 rounded-xl p-4 text-base leading-6 font-semibold transition-all duration-300 ease-in-out relative overflow-hidden min-h-[56px] touch-manipulation',
                             isActive
-                              ? 'bg-gradient-to-r from-primary to-primary/80 text-black font-bold shadow-lg shadow-primary/20 scale-105'
-                              : 'text-black hover:text-primary hover:bg-gradient-to-r hover:from-primary/10 hover:to-primary/5 hover:shadow-md hover:shadow-primary/10 hover:scale-102 hover:translate-x-1'
+                              ? 'bg-gradient-to-r from-blue-500/20 to-indigo-500/20 text-blue-700 font-bold shadow-lg border border-blue-200/50 scale-[1.02]'
+                              : 'text-gray-700 hover:text-blue-700 hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 hover:shadow-md hover:scale-[1.01] active:scale-[0.99]'
                           )}
                         >
-                          <item.icon className={cn(
-                            "h-6 w-6 shrink-0 transition-all duration-300",
-                            isActive 
-                              ? "text-black font-bold transform rotate-3 scale-110" 
-                              : "group-hover:text-primary group-hover:scale-110 group-hover:rotate-3"
-                          )} />
-                          <span className="transition-all duration-300 group-hover:translate-x-1">
+                          <div className={cn(
+                            "p-2 rounded-lg transition-all duration-300",
+                            isActive
+                              ? "bg-gradient-to-br from-blue-500 to-indigo-600 shadow-md"
+                              : "bg-gray-100 group-hover:bg-gradient-to-br group-hover:from-blue-500 group-hover:to-indigo-600 group-hover:shadow-md"
+                          )}>
+                            <item.icon className={cn(
+                              "h-5 w-5 shrink-0 transition-all duration-300",
+                              isActive 
+                                ? "text-white transform scale-110" 
+                                : "text-gray-600 group-hover:text-white group-hover:scale-110"
+                            )} />
+                          </div>
+                          <span className="transition-all duration-300 flex-1 self-center">
                             {item.name}
                           </span>
                           {isActive && (
-                            <div className="absolute inset-0 bg-gradient-to-r from-white/10 to-transparent opacity-50 animate-pulse"></div>
+                            <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 to-transparent opacity-50 animate-pulse rounded-xl"></div>
                           )}
                         </Link>
                       </li>
@@ -446,88 +455,91 @@ export function Navigation() {
                   
                   
                   {/* Google Connect Button for Mobile */}
-                  <li className="mb-4">
-                    <div className="px-3">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="w-full bg-white/60 backdrop-blur-sm hover:bg-white/80 border-2 border-blue-200 hover:border-blue-400 text-gray-700 hover:text-blue-700 font-semibold py-2 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
-                        onClick={handleGoogleConnect}
-                        disabled={isConnectingGoogle}
-                      >
-                        {isConnectingGoogle ? (
-                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current mr-2"></div>
-                        ) : (
-                          <svg className="h-4 w-4 mr-2" viewBox="0 0 24 24">
-                            <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                            <path fill="currentColor" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                            <path fill="currentColor" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-                            <path fill="currentColor" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-                          </svg>
-                        )}
-                        <span>{isConnectingGoogle ? t('connecting') : t('connectGoogle')}</span>
-                      </Button>
-                    </div>
+                  <li className="mt-6 mb-4">
+                    <Button
+                      size="lg"
+                      variant="outline"
+                      className="w-full bg-white/70 backdrop-blur-sm hover:bg-white/90 border-2 border-blue-200 hover:border-blue-400 text-gray-700 hover:text-blue-700 font-semibold py-4 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] min-h-[56px] touch-manipulation"
+                      onClick={handleGoogleConnect}
+                      disabled={isConnectingGoogle}
+                    >
+                      {isConnectingGoogle ? (
+                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-current mr-3"></div>
+                      ) : (
+                        <svg className="h-5 w-5 mr-3" viewBox="0 0 24 24">
+                          <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                          <path fill="currentColor" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                          <path fill="currentColor" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                          <path fill="currentColor" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                        </svg>
+                      )}
+                      <span className="text-base">{isConnectingGoogle ? t('connecting') : t('connectGoogle')}</span>
+                    </Button>
                   </li>
 
                   {/* Hindi Music Toggle for Mobile */}
                   <li className="mb-4">
-                    <div className="px-3">
-                      <Button
-                        onClick={toggleGlobalMusic}
-                        className={cn(
-                          'group flex w-full gap-x-3 rounded-xl p-3 text-sm leading-6 font-semibold transition-all duration-300 ease-in-out relative overflow-hidden',
+                    <Button
+                      onClick={toggleGlobalMusic}
+                      className={cn(
+                        'group flex w-full gap-x-4 rounded-xl p-4 text-base leading-6 font-semibold transition-all duration-300 ease-in-out relative overflow-hidden min-h-[56px] touch-manipulation',
+                        isGlobalMusicEnabled
+                          ? 'bg-gradient-to-r from-orange-100/70 to-orange-50/70 text-orange-700 font-bold shadow-lg border border-orange-200/50 scale-[1.02]'
+                          : 'text-gray-700 hover:text-orange-700 hover:bg-gradient-to-r hover:from-orange-50 hover:to-orange-25 hover:shadow-md hover:scale-[1.01] active:scale-[0.99]'
+                      )}
+                      variant="ghost"
+                    >
+                      <div className={cn(
+                        "p-2 rounded-lg transition-all duration-300",
+                        isGlobalMusicEnabled
+                          ? "bg-gradient-to-br from-orange-500 to-red-600 shadow-md"
+                          : "bg-gray-100 group-hover:bg-gradient-to-br group-hover:from-orange-500 group-hover:to-red-600 group-hover:shadow-md"
+                      )}>
+                        <Music className={cn(
+                          "h-5 w-5 shrink-0 transition-all duration-300",
                           isGlobalMusicEnabled
-                            ? 'bg-gradient-to-r from-orange-100 to-orange-50 text-orange-700 font-bold shadow-lg shadow-orange-500/20 border border-orange-200/50'
-                            : 'text-gray-700 hover:text-orange-700 hover:bg-gradient-to-r hover:from-orange-50 hover:to-orange-25 hover:shadow-md hover:shadow-orange-500/10 hover:border hover:border-orange-200/30 hover:scale-102 hover:translate-x-1'
-                        )}
-                        variant="ghost"
-                      >
-                        <div className={cn(
-                          "p-2 rounded-xl transition-all duration-300",
-                          isGlobalMusicEnabled
-                            ? "bg-gradient-to-br from-orange-500 to-red-600 shadow-lg"
-                            : "bg-gray-100 group-hover:bg-gradient-to-br group-hover:from-orange-500 group-hover:to-red-600 group-hover:shadow-lg"
-                        )}>
-                          <Music className={cn(
-                            "h-5 w-5 shrink-0 transition-all duration-300",
-                            isGlobalMusicEnabled
-                              ? "text-white transform scale-110" 
-                              : "text-gray-600 group-hover:text-white group-hover:scale-110 group-hover:rotate-6"
-                          )} />
-                        </div>
-                        <span className="transition-all duration-300 group-hover:translate-x-1 flex-1">
-                          Hindi Music {isGlobalMusicEnabled ? 'ON' : 'OFF'}
-                        </span>
-                        {isGlobalMusicEnabled && (
-                          <div className="absolute inset-0 bg-gradient-to-r from-orange-500/10 to-transparent opacity-50 animate-pulse rounded-xl"></div>
-                        )}
-                      </Button>
-                    </div>
+                            ? "text-white transform scale-110" 
+                            : "text-gray-600 group-hover:text-white group-hover:scale-110"
+                        )} />
+                      </div>
+                      <span className="transition-all duration-300 flex-1 self-center">
+                        Hindi Music {isGlobalMusicEnabled ? 'ON' : 'OFF'}
+                      </span>
+                      {isGlobalMusicEnabled && (
+                        <div className="absolute inset-0 bg-gradient-to-r from-orange-500/5 to-transparent opacity-50 animate-pulse rounded-xl"></div>
+                      )}
+                    </Button>
                   </li>
 
-                  <li className="mt-8">
+                  <li className="mt-6">
                     <Link
                       href="/settings"
                       onClick={() => setIsMobileMenuOpen(false)}
                       className={cn(
-                        'group flex gap-x-3 rounded-xl p-3 text-sm leading-6 font-semibold transition-all duration-300 ease-in-out relative overflow-hidden',
+                        'group flex gap-x-4 rounded-xl p-4 text-base leading-6 font-semibold transition-all duration-300 ease-in-out relative overflow-hidden min-h-[56px] touch-manipulation',
                         pathname === '/settings'
-                          ? 'bg-gradient-to-r from-primary to-primary/80 text-black font-bold shadow-lg shadow-primary/20 scale-105'
-                          : 'text-black hover:text-primary hover:bg-gradient-to-r hover:from-primary/10 hover:to-primary/5 hover:shadow-md hover:shadow-primary/10 hover:scale-102 hover:translate-x-1'
+                          ? 'bg-gradient-to-r from-blue-500/20 to-indigo-500/20 text-blue-700 font-bold shadow-lg border border-blue-200/50 scale-[1.02]'
+                          : 'text-gray-700 hover:text-blue-700 hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 hover:shadow-md hover:scale-[1.01] active:scale-[0.99]'
                       )}
                     >
-                      <Settings className={cn(
-                        "h-6 w-6 shrink-0 transition-all duration-300",
+                      <div className={cn(
+                        "p-2 rounded-lg transition-all duration-300",
                         pathname === '/settings'
-                          ? "text-black font-bold transform rotate-3 scale-110" 
-                          : "group-hover:text-primary group-hover:scale-110 group-hover:rotate-3"
-                      )} />
-                      <span className="transition-all duration-300 group-hover:translate-x-1">
+                          ? "bg-gradient-to-br from-blue-500 to-indigo-600 shadow-md"
+                          : "bg-gray-100 group-hover:bg-gradient-to-br group-hover:from-blue-500 group-hover:to-indigo-600 group-hover:shadow-md"
+                      )}>
+                        <Settings className={cn(
+                          "h-5 w-5 shrink-0 transition-all duration-300",
+                          pathname === '/settings'
+                            ? "text-white transform scale-110" 
+                            : "text-gray-600 group-hover:text-white group-hover:scale-110"
+                        )} />
+                      </div>
+                      <span className="transition-all duration-300 flex-1 self-center">
                         {t('settings')}
                       </span>
                       {pathname === '/settings' && (
-                        <div className="absolute inset-0 bg-gradient-to-r from-white/10 to-transparent opacity-50 animate-pulse"></div>
+                        <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 to-transparent opacity-50 animate-pulse rounded-xl"></div>
                       )}
                     </Link>
                   </li>
@@ -538,10 +550,12 @@ export function Navigation() {
                         setIsMobileMenuOpen(false);
                         handleLogout();
                       }}
-                      className="group flex w-full gap-x-3 rounded-xl p-3 text-sm leading-6 font-semibold text-black hover:text-red-600 hover:bg-gradient-to-r hover:from-red-50 hover:to-red-100 hover:shadow-md hover:shadow-red-200/50 hover:scale-102 hover:translate-x-1 transition-all duration-300 ease-in-out"
+                      className="group flex w-full gap-x-4 rounded-xl p-4 text-base leading-6 font-semibold text-gray-700 hover:text-red-600 hover:bg-gradient-to-r hover:from-red-50 hover:to-red-100 hover:shadow-md hover:scale-[1.01] active:scale-[0.99] transition-all duration-300 ease-in-out min-h-[56px] touch-manipulation"
                     >
-                      <LogOut className="h-6 w-6 shrink-0 transition-all duration-300 group-hover:scale-110 group-hover:rotate-3 group-hover:text-red-600" />
-                      <span className="transition-all duration-300 group-hover:translate-x-1">
+                      <div className="p-2 rounded-lg bg-gray-100 group-hover:bg-gradient-to-br group-hover:from-red-500 group-hover:to-red-600 group-hover:shadow-md transition-all duration-300">
+                        <LogOut className="h-5 w-5 shrink-0 transition-all duration-300 text-gray-600 group-hover:text-white group-hover:scale-110" />
+                      </div>
+                      <span className="transition-all duration-300 flex-1 self-center">
                         {t('signOut')}
                       </span>
                     </button>

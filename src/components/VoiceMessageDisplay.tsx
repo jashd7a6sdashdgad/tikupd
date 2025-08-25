@@ -257,15 +257,11 @@ export default function VoiceMessageDisplay({
           </span>
         </div>
 
-        {/* Transcription toggle */}
-        {message.transcription && (
+        {/* Transcription toggle - only show for sent messages */}
+        {message.transcription && message.type === 'sent' && (
           <Button
             onClick={() => setShowTranscription(!showTranscription)}
-            className={`w-full text-xs p-1 rounded ${
-              message.type === 'sent'
-                ? 'bg-blue-400 hover:bg-blue-300'
-                : 'bg-gray-300 hover:bg-gray-400'
-            }`}
+            className="w-full text-xs p-1 rounded bg-blue-400 hover:bg-blue-300"
             size="sm"
           >
             <MessageSquare className="h-3 w-3 mr-1" />
@@ -273,13 +269,9 @@ export default function VoiceMessageDisplay({
           </Button>
         )}
 
-        {/* Transcription text */}
-        {showTranscription && message.transcription && (
-          <div className={`mt-2 p-2 rounded text-xs ${
-            message.type === 'sent'
-              ? 'bg-blue-400 bg-opacity-50'
-              : 'bg-gray-100'
-          }`}>
+        {/* Transcription text - only show for sent messages */}
+        {showTranscription && message.transcription && message.type === 'sent' && (
+          <div className="mt-2 p-2 rounded text-xs bg-blue-400 bg-opacity-50">
             <p className="italic">"{message.transcription}"</p>
           </div>
         )}

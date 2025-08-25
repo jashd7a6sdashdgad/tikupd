@@ -73,7 +73,7 @@ export default function ExpensesPage() {
   const [smartExpenses, setSmartExpenses] = useState<SmartExpense[]>([]);
 
   // New features state
-  const [selectedBank, setSelectedBank] = useState<'all' | 'ahli' | 'wafrah'>('all');
+  const [selectedBank, setSelectedBank] = useState<'all' | 'ahli-saving' | 'ahli-wafrah' | 'ahli-overdraft' | 'ahli-main-credit' | 'bank-muscat'>('all');
   const [sortMethod, setSortMethod] = useState<string>('date-recent');
   const [isAISorting, setIsAISorting] = useState(false);
   const [showAIAdvisor, setShowAIAdvisor] = useState(false);
@@ -345,16 +345,32 @@ export default function ExpensesPage() {
   const getFilteredExpenses = () => {
     let filteredExpenses = expenses;
     
-    if (selectedBank === 'ahli') {
-      filteredExpenses = expenses.filter(expense => 
-        expense.from?.toLowerCase().includes('ahli') || 
-        expense.from?.toLowerCase().includes('noreply@cards.ahlibank.om')
-      );
-    } else if (selectedBank === 'wafrah') {
-      filteredExpenses = expenses.filter(expense => 
-        expense.from?.toLowerCase().includes('wafrah') ||
-        expense.from?.toLowerCase().includes('bankmuscat') // If Wafrah data comes from Bank Muscat
-      );
+    switch (selectedBank) {
+      case 'ahli-saving':
+        filteredExpenses = expenses.filter(expense => 
+          expense.accountTypeName?.toLowerCase().includes('saving debit account (tofer)')
+        );
+        break;
+      case 'ahli-wafrah':
+        filteredExpenses = expenses.filter(expense => 
+          expense.accountTypeName?.toLowerCase().includes('debit card (wafrah)')
+        );
+        break;
+      case 'ahli-overdraft':
+        filteredExpenses = expenses.filter(expense => 
+          expense.accountTypeName?.toLowerCase().includes('overdraft current account')
+        );
+        break;
+      case 'ahli-main-credit':
+        filteredExpenses = expenses.filter(expense => 
+          expense.accountTypeName?.toLowerCase().includes('credit card')
+        );
+        break;
+      case 'bank-muscat':
+        filteredExpenses = expenses.filter(expense => 
+          expense.accountTypeName?.toLowerCase().includes('bank muscat ibky/ibe main debit account')
+        );
+        break;
     }
     
     // Return filtered expenses (API already returns them sorted newest first)
@@ -535,7 +551,7 @@ export default function ExpensesPage() {
             <div className="flex items-center gap-3">
               <Building2 className="h-5 w-5 text-gray-600" />
               <span className="text-sm font-medium text-gray-700">Bank Filter:</span>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
                 <Button
                   variant={selectedBank === 'all' ? 'secondary' : 'outline'}
                   size="sm"
@@ -544,22 +560,47 @@ export default function ExpensesPage() {
                   All Banks
                 </Button>
                 <Button
-                  variant={selectedBank === 'ahli' ? 'secondary' : 'outline'}
+                  variant={selectedBank === 'ahli-saving' ? 'secondary' : 'outline'}
                   size="sm"
-                  onClick={() => setSelectedBank('ahli')}
-                  className={selectedBank === 'ahli' ? 'bg-blue-600 text-white' : ''}
+                  onClick={() => setSelectedBank('ahli-saving')}
+                  className={selectedBank === 'ahli-saving' ? 'bg-blue-600 text-white' : ''}
                 >
                   <CreditCard className="h-4 w-4 mr-1" />
-                  Ahli
+                  Ahli Bank Saving
                 </Button>
                 <Button
-                  variant={selectedBank === 'wafrah' ? 'secondary' : 'outline'}
+                  variant={selectedBank === 'ahli-wafrah' ? 'secondary' : 'outline'}
                   size="sm"
-                  onClick={() => setSelectedBank('wafrah')}
-                  className={selectedBank === 'wafrah' ? 'bg-green-600 text-white' : ''}
+                  onClick={() => setSelectedBank('ahli-wafrah')}
+                  className={selectedBank === 'ahli-wafrah' ? 'bg-green-600 text-white' : ''}
                 >
                   <CreditCard className="h-4 w-4 mr-1" />
-                  Wafrah
+                  Ahli (Wafrah)
+                </Button>
+                <Button
+                  variant={selectedBank === 'ahli-overdraft' ? 'secondary' : 'outline'}
+                  size="sm"
+                  onClick={() => setSelectedBank('ahli-overdraft')}
+                  className={selectedBank === 'ahli-overdraft' ? 'bg-red-600 text-white' : ''}
+                >
+                  <CreditCard className="h-4 w-4 mr-1" />
+                  Ahli Bank Overdraft
+                </Button>
+                <Button
+                  variant={selectedBank === 'ahli-main-credit' ? 'secondary' : 'outline'}
+                  size="sm"
+                  onClick={() => setSelectedBank('ahli-main-credit')}
+                  className={selectedBank === 'ahli-main-credit' ? 'bg-purple-600 text-white' : ''}
+                >
+                  💳 Ahli Bank Main Credit
+                </Button>
+                <Button
+                  variant={selectedBank === 'bank-muscat' ? 'secondary' : 'outline'}
+                  size="sm"
+                  onClick={() => setSelectedBank('bank-muscat')}
+                  className={selectedBank === 'bank-muscat' ? 'bg-orange-600 text-white' : ''}
+                >
+                  🏛️ 💸 Bank Muscat Main
                 </Button>
               </div>
             </div>
@@ -602,7 +643,13 @@ export default function ExpensesPage() {
             <div className="flex items-center justify-between text-sm text-gray-600">
               <span>
                 Showing {getFilteredExpenses().length} expenses 
-                {selectedBank !== 'all' && ` from ${selectedBank === 'ahli' ? 'Ahli Bank' : 'Wafrah Bank'}`}
+                {selectedBank !== 'all' && ` from ${
+                  selectedBank === 'ahli-saving' ? 'Ahli Bank Saving' :
+                  selectedBank === 'ahli-wafrah' ? 'Ahli (Wafrah)' :
+                  selectedBank === 'ahli-overdraft' ? 'Ahli Bank Overdraft' :
+                  selectedBank === 'ahli-main-credit' ? 'Ahli Bank Main Credit' :
+                  selectedBank === 'bank-muscat' ? 'Bank Muscat Main' : ''
+                }`}
               </span>
               {sortMethod && (
                 <span className="flex items-center gap-1">
@@ -620,7 +667,15 @@ export default function ExpensesPage() {
           <div className="mb-8">
             <AISpendingAdvisor 
               expenses={getFilteredExpenses()} 
-              selectedBank={selectedBank}
+              selectedBank={
+                selectedBank === "ahli-saving" || selectedBank === "ahli-main-credit" || selectedBank === "ahli-overdraft"
+                  ? "ahli"
+                  : selectedBank === "ahli-wafrah"
+                  ? "wafrah"
+                  : selectedBank === "all" || selectedBank === undefined
+                  ? "all"
+                  : undefined
+              }
             />
           </div>
         )}

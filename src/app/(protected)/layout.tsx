@@ -26,12 +26,14 @@ function ProtectedLayoutContent({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-background">
       <Navigation />
-      <main className="lg:pl-72 pt-16 lg:pt-0" role="main" tabIndex={-1}>
-        {children}
+      <main className="lg:pl-72 pt-16 lg:pt-0 px-4 sm:px-6 lg:px-8" role="main" tabIndex={-1}>
+        <div className="max-w-full">
+          {children}
+        </div>
       </main>
       
       {/* Voice Navigation System - Modern floating widget */}
-      <div className="fixed bottom-6 left-6 z-50 lg:left-78">
+      <div className="fixed bottom-4 left-4 z-50 lg:bottom-6 lg:left-78">
         <VoiceNavigationSystem compact={true} />
       </div>
       

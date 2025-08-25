@@ -314,28 +314,48 @@ export default function CulturalSettings() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="flex items-center space-x-2">
-                    <Switch
-                      checked={prayerSettings.notifications.enabled}
-                      onCheckedChange={(checked) =>
-                        handlePrayerSettingsChange({
-                          notifications: { ...prayerSettings.notifications, enabled: checked }
-                        })
-                      }
-                    />
-                    <Label>Enable prayer time notifications</Label>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <Switch
+                        checked={prayerSettings.notifications.enabled}
+                        onCheckedChange={(checked) =>
+                          handlePrayerSettingsChange({
+                            notifications: { ...prayerSettings.notifications, enabled: checked }
+                          })
+                        }
+                      />
+                      <Label>Enable prayer time notifications</Label>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => prayerTimesService.requestNotificationPermission()}
+                      className="text-xs"
+                    >
+                      🔔 Allow Notifications
+                    </Button>
                   </div>
 
-                  <div className="flex items-center space-x-2">
-                    <Switch
-                      checked={prayerSettings.notifications.adhanSound}
-                      onCheckedChange={(checked) =>
-                        handlePrayerSettingsChange({
-                          notifications: { ...prayerSettings.notifications, adhanSound: checked }
-                        })
-                      }
-                    />
-                    <Label>Play Adhan sound</Label>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <Switch
+                        checked={prayerSettings.notifications.adhanSound}
+                        onCheckedChange={(checked) =>
+                          handlePrayerSettingsChange({
+                            notifications: { ...prayerSettings.notifications, adhanSound: checked }
+                          })
+                        }
+                      />
+                      <Label>Play Adhan sound</Label>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => prayerTimesService.testAdhanSound()}
+                      className="text-xs"
+                    >
+                      🔊 Test Sound
+                    </Button>
                   </div>
 
                   <div className="flex items-center space-x-2">

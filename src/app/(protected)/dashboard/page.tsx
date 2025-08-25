@@ -465,35 +465,46 @@ if (calendarResponse && calendarResponse.ok) {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 p-4 lg:p-8 relative">
-      <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 relative">
+      <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8 py-4 lg:py-8">
         {/* Modern Header Card */}
-        <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/20 p-6 mb-8 hover:shadow-3xl transition-all duration-300">
-          <div className="flex justify-between items-center">
-            <div>
-              <div className="flex items-center gap-4">
-                <div className="p-3 bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl shadow-lg">
-                  <Brain className="h-8 w-8 text-black font-bold" />
+        <div className="bg-white/80 backdrop-blur-xl rounded-2xl sm:rounded-3xl shadow-2xl border border-white/20 p-4 sm:p-6 mb-6 sm:mb-8 hover:shadow-3xl transition-all duration-300">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div className="w-full">
+              <div className="flex items-center gap-3 sm:gap-4">
+                <div className="p-2 sm:p-3 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl sm:rounded-2xl shadow-lg">
+                  <Brain className="h-6 w-6 sm:h-8 sm:w-8 text-black font-bold" />
                 </div>
-                <div>
-                  <h1 className="text-4xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
-                    Smart Dashboard
-                  </h1>
-                  <p className="text-sm text-gray-600 font-medium">AI-powered insights and unified control</p>
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 sm:gap-3">
+                    <h1 className="text-xl sm:text-2xl lg:text-4xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
+                      Personal Assistant
+                    </h1>
+                    <div className="relative">
+                      <Image
+                        src="/ComfyUI_00097_.png"
+                        alt="Profile"
+                        width={40}
+                        height={40}
+                        className="w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 rounded-full border-2 border-white shadow-lg object-cover"
+                      />
+                    </div>
+                  </div>
+                  <p className="text-xs sm:text-sm text-gray-600 font-medium mt-1">AI-powered insights and unified control</p>
                 </div>
               </div>
-              <div className="flex items-center space-x-6 mt-3">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-6 mt-3">
                 <div className="flex items-center space-x-2">
                   <div className="h-2 w-2 rounded-full bg-green-400 animate-pulse"></div>
-                  <p className="text-gray-700 font-medium">{t('welcomeBack', { username: user?.username || '' })}</p>
+                  <p className="text-sm sm:text-base text-gray-700 font-medium">{t('welcomeBack', { username: user?.username || '' })}</p>
                 </div>
                 {isLoading ? (
-                  <div className="flex items-center space-x-3 px-4 py-2 bg-blue-50 rounded-full">
-                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-blue-500 border-t-transparent"></div>
-                    <span className="text-sm font-medium text-blue-700">{t('loadingDashboard')}</span>
+                  <div className="flex items-center space-x-2 sm:space-x-3 px-3 sm:px-4 py-2 bg-blue-50 rounded-full">
+                    <div className="animate-spin rounded-full h-3 w-3 sm:h-4 sm:w-4 border-2 border-blue-500 border-t-transparent"></div>
+                    <span className="text-xs sm:text-sm font-medium text-blue-700">{t('loadingDashboard')}</span>
                   </div>
                 ) : (
-                  <div className="flex items-center space-x-3 px-4 py-2 bg-green-50 rounded-full">
+                  <div className="flex items-center space-x-2 sm:space-x-3 px-3 sm:px-4 py-2 bg-green-50 rounded-full">
                     <div className={`h-3 w-3 rounded-full ${
                       dataLoadingStatus.weather === 'success' && 
                       dataLoadingStatus.calendar === 'success' && 
@@ -503,7 +514,7 @@ if (calendarResponse && calendarResponse.ok) {
                         ? 'bg-green-500 animate-pulse' 
                         : 'bg-amber-500 animate-pulse'
                     }`}></div>
-                    <span className="text-sm font-medium text-gray-700">
+                    <span className="text-xs sm:text-sm font-medium text-gray-700">
                       {Object.values(dataLoadingStatus).filter((status: string) => status === 'success').length}/5 {t('dataSourcesConnected')}
                     </span>
                   </div>
@@ -514,7 +525,7 @@ if (calendarResponse && calendarResponse.ok) {
           </div>
         </div>
         {/* Modern Card Grid - AI Insights Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-10">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8 mb-6 sm:mb-10">
           {/* Enhanced AI Insights Card */}
           <div className="lg:col-span-2 group">
             <div className="glass-widget p-6">
@@ -538,17 +549,17 @@ if (calendarResponse && calendarResponse.ok) {
         </div>
 
         {/* Modern Stats Overview Card */}
-        <div className="mb-10">
-          <div className="glass-widget-dark p-6">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="p-3 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl shadow-lg">
-                <BarChart3 className="h-6 w-6 text-black font-bold" />
+        <div className="mb-6 sm:mb-10">
+          <div className="glass-widget-dark p-4 sm:p-6">
+            <div className="flex items-center gap-3 mb-4 sm:mb-6">
+              <div className="p-2 sm:p-3 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl sm:rounded-2xl shadow-lg">
+                <BarChart3 className="h-5 w-5 sm:h-6 sm:w-6 text-black font-bold" />
               </div>
               <div>
-                <h2 className="text-2xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
+                <h2 className="text-lg sm:text-xl lg:text-2xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
                   Analytics Overview
                 </h2>
-                <p className="text-gray-600 font-medium">Real-time insights across all platforms</p>
+                <p className="text-sm sm:text-base text-gray-600 font-medium">Real-time insights across all platforms</p>
               </div>
             </div>
             <UnifiedStats
@@ -561,19 +572,19 @@ if (calendarResponse && calendarResponse.ok) {
         </div>
 
         {/* Modern Actions & Activity Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-10">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 lg:gap-8 mb-6 sm:mb-10">
           {/* Enhanced Quick Actions Card */}
           <div className="group">
-            <div className="glass-widget p-6">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="p-3 bg-gradient-to-br from-orange-500 to-red-600 rounded-2xl shadow-lg">
-                  <Activity className="h-6 w-6 text-black font-bold" />
+            <div className="glass-widget p-4 sm:p-6">
+              <div className="flex items-center gap-3 mb-4 sm:mb-6">
+                <div className="p-2 sm:p-3 bg-gradient-to-br from-orange-500 to-red-600 rounded-xl sm:rounded-2xl shadow-lg">
+                  <Activity className="h-5 w-5 sm:h-6 sm:w-6 text-black font-bold" />
                 </div>
                 <div>
-                  <h2 className="text-xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
+                  <h2 className="text-lg sm:text-xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
                     Quick Actions
                   </h2>
-                  <p className="text-gray-600 font-medium">Smart shortcuts</p>
+                  <p className="text-sm sm:text-base text-gray-600 font-medium">Smart shortcuts</p>
                 </div>
               </div>
               <SmartQuickActions
@@ -586,16 +597,16 @@ if (calendarResponse && calendarResponse.ok) {
           
           {/* Enhanced Activity Timeline Card */}
           <div className="group">
-            <div className="glass-widget p-6">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="p-3 bg-gradient-to-br from-blue-500 to-cyan-600 rounded-2xl shadow-lg">
-                  <Clock className="h-6 w-6 text-black font-bold" />
+            <div className="glass-widget p-4 sm:p-6">
+              <div className="flex items-center gap-3 mb-4 sm:mb-6">
+                <div className="p-2 sm:p-3 bg-gradient-to-br from-blue-500 to-cyan-600 rounded-xl sm:rounded-2xl shadow-lg">
+                  <Clock className="h-5 w-5 sm:h-6 sm:w-6 text-black font-bold" />
                 </div>
                 <div>
-                  <h2 className="text-xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
+                  <h2 className="text-lg sm:text-xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
                     Activity Timeline
                   </h2>
-                  <p className="text-gray-600 font-medium">Recent updates</p>
+                  <p className="text-sm sm:text-base text-gray-600 font-medium">Recent updates</p>
                 </div>
               </div>
               <ActivityTimeline
@@ -755,9 +766,9 @@ if (calendarResponse && calendarResponse.ok) {
         </div>
 
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
           {/* Left Column */}
-          <div className="lg:col-span-2 space-y-6">
+          <div className="lg:col-span-2 space-y-4 sm:space-y-6">
             {/* Upcoming Events */}
             <Card className="card-3d glass-widget p-4">
               <CardHeader>
@@ -882,7 +893,7 @@ if (calendarResponse && calendarResponse.ok) {
           </div>
 
           {/* Right Column */}
-          <div className="space-y-6">
+          <div className="space-y-4 sm:space-y-6">
             {/* Quick Actions */}
             <Card className="card-3d glass-widget p-4">
               <CardHeader>
@@ -890,42 +901,42 @@ if (calendarResponse && calendarResponse.ok) {
                 <CardDescription className="text-black">{t('navigateToFavoriteTools')}</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-2 gap-2 sm:gap-3">
                   {/* Primary Actions - Row 1 */}
                   <Button 
-                    className="h-16 flex flex-col items-center justify-center text-black hover:bg-purple-50 hover:text-purple-700 transition-all duration-200 hover:scale-105" 
+                    className="h-14 sm:h-16 flex flex-col items-center justify-center text-black hover:bg-purple-50 hover:text-purple-700 transition-all duration-200 hover:scale-105 touch-manipulation" 
                     variant="outline"
                     onClick={() => router.push('/calendar')}
                   >
-                    <Calendar className="h-5 w-5 mb-1" />
+                    <Calendar className="h-4 w-4 sm:h-5 sm:w-5 mb-1" />
                     <span className="text-xs font-medium">{t('calendar')}</span>
                   </Button>
                   
                   <Button 
-                    className="h-16 flex flex-col items-center justify-center text-black hover:bg-purple-50 hover:text-purple-700 transition-all duration-200 hover:scale-105" 
+                    className="h-14 sm:h-16 flex flex-col items-center justify-center text-black hover:bg-purple-50 hover:text-purple-700 transition-all duration-200 hover:scale-105 touch-manipulation" 
                     variant="outline"
                     onClick={() => router.push('/email')}
                   >
-                    <Mail className="h-5 w-5 mb-1" />
+                    <Mail className="h-4 w-4 sm:h-5 sm:w-5 mb-1" />
                     <span className="text-xs font-medium">{t('email')}</span>
                   </Button>
                   
                   {/* Primary Actions - Row 2 */}
                   <Button 
-                    className="h-16 flex flex-col items-center justify-center text-black hover:bg-purple-50 hover:text-purple-700 transition-all duration-200 hover:scale-105" 
+                    className="h-14 sm:h-16 flex flex-col items-center justify-center text-black hover:bg-purple-50 hover:text-purple-700 transition-all duration-200 hover:scale-105 touch-manipulation" 
                     variant="outline"
                     onClick={() => router.push('/expenses')}
                   >
-                    <DollarSign className="h-5 w-5 mb-1" />
+                    <DollarSign className="h-4 w-4 sm:h-5 sm:w-5 mb-1" />
                     <span className="text-xs font-medium">{t('expenses')}</span>
                   </Button>
                   
                   <Button 
-                    className="h-16 flex flex-col items-center justify-center text-black hover:bg-purple-50 hover:text-purple-700 transition-all duration-200 hover:scale-105" 
+                    className="h-14 sm:h-16 flex flex-col items-center justify-center text-black hover:bg-purple-50 hover:text-purple-700 transition-all duration-200 hover:scale-105 touch-manipulation" 
                     variant="outline"
                     onClick={() => router.push('/diary')}
                   >
-                    <BookOpen className="h-5 w-5 mb-1" />
+                    <BookOpen className="h-4 w-4 sm:h-5 sm:w-5 mb-1" />
                     <span className="text-xs font-medium">{t('diary')}</span>
                   </Button>
                 </div>
@@ -1037,7 +1048,7 @@ if (calendarResponse && calendarResponse.ok) {
         </div>
 
         {/* Modern Feature Shortcuts Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 mb-10">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4 mb-6 sm:mb-10">
           {[
             { name: 'Calendar', icon: Calendar, route: '/calendar', color: 'from-blue-500 to-cyan-600' },
             { name: 'Email', icon: Mail, route: '/email', color: 'from-green-500 to-emerald-600' },
@@ -1053,11 +1064,11 @@ if (calendarResponse && calendarResponse.ok) {
                 className="group cursor-pointer"
                 onClick={() => router.push(feature.route)}
               >
-                <div className="glass-widget-light p-4">
-                  <div className={`p-3 bg-gradient-to-br ${feature.color} rounded-xl shadow-md mb-3 mx-auto w-fit`}>
-                    <IconComponent className="h-6 w-6 text-black font-bold" />
+                <div className="glass-widget-light p-3 sm:p-4">
+                  <div className={`p-2 sm:p-3 bg-gradient-to-br ${feature.color} rounded-lg sm:rounded-xl shadow-md mb-2 sm:mb-3 mx-auto w-fit`}>
+                    <IconComponent className="h-5 w-5 sm:h-6 sm:w-6 text-black font-bold" />
                   </div>
-                  <p className="text-center text-sm font-semibold text-gray-700 group-hover:text-gray-900 transition-colors">
+                  <p className="text-center text-xs sm:text-sm font-semibold text-gray-700 group-hover:text-gray-900 transition-colors">
                     {feature.name}
                   </p>
                 </div>
