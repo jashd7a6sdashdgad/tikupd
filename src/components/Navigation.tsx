@@ -27,7 +27,8 @@ import {
   Compass,
   Key,
   Briefcase,
-  Music
+  Music,
+  Languages
 } from 'lucide-react';
 import { useState, ComponentType } from 'react';
 import { useAuth } from '@/hooks/useAuth';
@@ -152,6 +153,12 @@ const getNavigation = (t: (key: string) => string): NavigationItem[] => [
     name: t('apiTokens'),
     href: '/api-tokens',
     icon: Key
+  },
+  {
+    key: 'translate',
+    name: t('translate'),
+    href: '/translate',
+    icon: Languages
   },
 ];
 

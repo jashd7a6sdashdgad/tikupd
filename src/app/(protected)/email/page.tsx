@@ -34,6 +34,7 @@ interface EmailMessage {
       value: string;
     }>;
   };
+  labelIds?: string[]; // Gmail labels including IMPORTANT
   // AI-enhanced properties
   priority?: 'urgent' | 'high' | 'medium' | 'low';
   category?: string;
@@ -165,12 +166,14 @@ export default function EmailPage() {
           return message.isSpam === true;
         case 'business':
           return message.category === 'business';
-        case 'personal':
-          return message.category === 'personal';
+        case 'family':
+          return message.category === 'Family';
         case 'finance':
           return message.category === 'finance';
         case 'travel':
           return message.category === 'travel';
+        case 'banks':
+          return message.category === 'Banks';
         case 'social':
           return message.category === 'social';
         case 'positive':
@@ -678,11 +681,11 @@ export default function EmailPage() {
                 💼 Business ({filterMessagesByCategory(smartMessages, 'business').length})
               </Button>
               <Button
-                onClick={() => setSelectedCategory('personal')}
-                variant={selectedCategory === 'personal' ? 'primary' : 'outline'}
+                onClick={() => setSelectedCategory('family')}
+                variant={selectedCategory === 'family' ? 'primary' : 'outline'}
                 size="sm"
               >
-                👤 Personal ({filterMessagesByCategory(smartMessages, 'personal').length})
+                👨‍👩‍👧‍👦 Family ({filterMessagesByCategory(smartMessages, 'family').length})
               </Button>
               <Button
                 onClick={() => setSelectedCategory('finance')}
@@ -697,6 +700,13 @@ export default function EmailPage() {
                 size="sm"
               >
                 ✈️ Travel ({filterMessagesByCategory(smartMessages, 'travel').length})
+              </Button>
+              <Button
+                onClick={() => setSelectedCategory('banks')}
+                variant={selectedCategory === 'banks' ? 'primary' : 'outline'}
+                size="sm"
+              >
+                🏦 Banks ({filterMessagesByCategory(smartMessages, 'banks').length})
               </Button>
 
               {/* Sentiment Categories */}

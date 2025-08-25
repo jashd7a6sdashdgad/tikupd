@@ -9,6 +9,7 @@ export interface EmailMessage {
       value: string;
     }>;
   };
+  labelIds?: string[]; // Gmail labels
   // AI-enhanced properties
   priority?: 'urgent' | 'high' | 'medium' | 'low';
   category?: string;
@@ -61,7 +62,7 @@ export class EmailIntelligence {
         icon: 'briefcase'
       },
       {
-        name: 'Personal',
+        name: 'Family',
         description: 'Personal correspondence and family emails',
         keywords: ['family', 'friend', 'personal', 'birthday', 'wedding', 'vacation', 'dinner', 'weekend', 'holiday'],
         urgencyMultiplier: 0.8,
@@ -115,6 +116,14 @@ export class EmailIntelligence {
         urgencyMultiplier: 1.0,
         color: '#059669',
         icon: 'book'
+      },
+      {
+        name: 'Banks',
+        description: 'Banking communications and statements',
+        keywords: ['bank', 'statement', 'balance', 'transaction', 'atm', 'debit', 'credit card', 'account', 'banking', 'transfer'],
+        urgencyMultiplier: 1.4,
+        color: '#16A34A',
+        icon: 'building'
       }
     ];
   }
@@ -210,11 +219,11 @@ export class EmailIntelligence {
     const snippet = email.snippet.toLowerCase();
     const content = `${subject} ${from} ${snippet}`;
 
-    // Categorize email
-    const category = this.categorizeEmail(content);
+    // Categorize email (pass entire email object to check labels)
+    const category = this.categorizeEmailWithLabels(content, email);
     
-    // Calculate priority
-    const priority = this.calculatePriority(content, category);
+    // Calculate priority (pass entire email object to check labels)
+    const priority = this.calculatePriority(content, category, email);
     
     // Detect spam
     const isSpam = this.detectSpam(content);
@@ -243,8 +252,112 @@ export class EmailIntelligence {
     };
   }
 
+  private categorizeEmailWithLabels(content: string, email?: EmailMessage): EmailCategory {
+    // Check for specific email addresses first - highest priority
+    if (email?.payload?.headers) {
+      const fromEmail = this.getHeaderValue(email.payload.headers, 'From').toLowerCase();
+      
+      // Bank email filters
+      const bankEmails = [
+        'ahlibank@ahlibank.om',
+        'noreply@cards.ahlibank.om',
+        'noreply@bankmuscat.com'
+      ];
+      
+      if (bankEmails.some(bankEmail => fromEmail.includes(bankEmail.toLowerCase()))) {
+        console.log(`📧 Email ${email.id} from bank address ${fromEmail} - categorizing as Banks`);
+        return this.categories.find(c => c.name === 'Banks') || this.categories[this.categories.length - 1];
+      }
+      
+      // Travel/Flight provider email filters
+      const travelEmails = [
+        // Oman Air - General
+        'noreply@omanair.com',
+        'booking@omanair.com',
+        'customer@omanair.com',
+        'reservations@omanair.com',
+        'easyupgrade@omanair.com',
+        'webbooking@omanair.com',
+        // Oman Air - Specific Services
+        'sindbad@omanair.com',         // Sindbad Frequent Flyer Program
+        'rpt@omanair.com',             // Card Authorization
+        'holidays@omanair.com',        // Oman Air Holidays
+        'l&d@omanair.com',             // Training (general)
+        'technical.training@omanair.com', // Technical Training
+        // Oman Air Cargo
+        'cargosdu.mct@omanair.com',    // Muscat Service Centre
+        'cargosdu.nsc@omanair.com',    // Network Service Center
+        'cargosdu.clm@omanair.com',    // Cargo Claims
+        'cargosdu.spl@omanair.com',    // Dangerous Goods & Special Cargo
+        // Major Airlines
+        'noreply@emirates.com',
+        'booking@emirates.com',
+        'noreply@etihad.com',
+        'reservations@etihad.com',
+        'noreply@qatarairways.com',
+        'booking@qatarairways.com',
+        'noreply@flydubai.com',
+        'booking@flydubai.com',
+        // International Airlines
+        'noreply@lufthansa.com',
+        'noreply@klm.com',
+        'noreply@britishairways.com',
+        'noreply@airfrance.com',
+        'noreply@turkishairlines.com',
+        'noreply@saudia.com',
+        // Flight booking platforms
+        'noreply@booking.com',
+        'noreply@expedia.com',
+        'noreply@kayak.com',
+        'noreply@skyscanner.com',
+        'noreply@momondo.com',
+        'noreply@travelocity.com',
+        'noreply@priceline.com',
+        // Travel agencies
+        'noreply@almosafer.com',
+        'noreply@cleartrip.com',
+        'noreply@makemytrip.com'
+      ];
+      
+      if (travelEmails.some(travelEmail => fromEmail.includes(travelEmail.toLowerCase()))) {
+        console.log(`📧 Email ${email.id} from travel/flight provider ${fromEmail} - categorizing as Travel`);
+        return this.categories.find(c => c.name === 'Travel') || this.categories[4];
+      }
+    }
+
+    // Check Gmail labels - they override content-based categorization
+    if (email?.labelIds) {
+      // Check for family label - categorize as Family
+      if (email.labelIds.some(label => 
+        label.toLowerCase() === 'family' || 
+        label.toLowerCase().includes('family') ||
+        label === 'CATEGORY_PERSONAL' ||
+        label === 'Label_1' // Sometimes Gmail uses Label_1 for family
+      )) {
+        console.log(`📧 Email ${email.id} has family label - categorizing as Family`);
+        return this.categories.find(c => c.name === 'Family') || this.categories[1];
+      }
+      
+      // Check for other common Gmail category labels
+      if (email.labelIds.includes('CATEGORY_PROMOTIONS')) {
+        return this.categories.find(c => c.name === 'Shopping') || this.categories[3];
+      }
+      
+      if (email.labelIds.includes('CATEGORY_SOCIAL')) {
+        return this.categories.find(c => c.name === 'Family') || this.categories[1];
+      }
+      
+      if (email.labelIds.includes('CATEGORY_UPDATES')) {
+        return this.categories.find(c => c.name === 'Newsletters') || this.categories[5];
+      }
+    }
+
+    // Fall back to content-based categorization
+    return this.categorizeEmail(content);
+  }
+
   private categorizeEmail(content: string): EmailCategory {
-    let bestMatch = this.categories[1]; // Default to Personal
+    let bestMatch = this.categories[1]; // Default to Family
     let maxScore = 0;
 
     for (const category of this.categories) {
@@ -263,8 +376,14 @@ export class EmailIntelligence {
     return bestMatch;
   }
 
-  private calculatePriority(content: string, category: EmailCategory): 'urgent' | 'high' | 'medium' | 'low' {
+  private calculatePriority(content: string, category: EmailCategory, email?: EmailMessage): 'urgent' | 'high' | 'medium' | 'low' {
     let priorityScore = 1;
+
+    // Check Gmail Important label first - this overrides other priority calculations
+    if (email?.labelIds && email.labelIds.includes('IMPORTANT')) {
+      console.log(`📧 Email ${email.id} marked as IMPORTANT by Gmail - setting to urgent`);
+      return 'urgent';
+    }
 
     // Check for priority keywords
     for (const [keyword, multiplier] of Object.entries(this.priorityKeywords)) {

@@ -173,7 +173,7 @@ export default function VoiceJokeAIPage() {
 
   const startListening = () => {
     if (!recognitionRef.current) {
-      setError('Speech recognition not available');
+      setError(t('speechRecognitionNotAvailable'));
       return;
     }
 
@@ -184,7 +184,7 @@ export default function VoiceJokeAIPage() {
     try {
       recognitionRef.current.start();
     } catch (error) {
-      setError('Could not start speech recognition. Please try again.');
+      setError(t('couldNotStartSpeechRecognition'));
     }
   };
 
@@ -442,11 +442,11 @@ export default function VoiceJokeAIPage() {
         <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/20 p-6 mb-8">
           <div className="text-center">
             <h1 className="text-4xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent mb-4">
-              🎭 Voice Joke AI
+              🎭 {t('voiceJokeAI')}
             </h1>
-            <p className="text-gray-600 text-lg mb-2">Your Voice-Powered Comedy Companion</p>
+            <p className="text-gray-600 text-lg mb-2">{t('voicePoweredComedyCompanion')}</p>
             <p className="text-gray-500">
-              Click the microphone and speak your request for jokes! Ask for specific types, topics, or just say "tell me a joke" to get started.
+              {t('clickMicrophoneForJokes')}
             </p>
           </div>
         </div>
@@ -454,11 +454,11 @@ export default function VoiceJokeAIPage() {
         {/* Language Selector */}
         <Card className="mb-8">
           <CardHeader>
-            <CardTitle className="text-center">Language Selection</CardTitle>
+            <CardTitle className="text-center">{t('languageSelection')}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex flex-col items-center space-y-4">
-              <p className="text-gray-600 text-sm">Choose your language for speech recognition:</p>
+              <p className="text-gray-600 text-sm">{t('chooseLanguageForSpeech')}:</p>
               <select
                 value={selectedLanguage}
                 onChange={(e) => handleLanguageChange(e.target.value)}
@@ -472,7 +472,7 @@ export default function VoiceJokeAIPage() {
                 ))}
               </select>
               <p className="text-xs text-gray-500 text-center">
-                Selected: <strong>{supportedLanguages.find(l => l.code === selectedLanguage)?.name}</strong>
+                {t('selected')}: <strong>{supportedLanguages.find(l => l.code === selectedLanguage)?.name}</strong>
               </p>
               <Button
                 onClick={testVoice}
@@ -482,7 +482,7 @@ export default function VoiceJokeAIPage() {
                 className="flex items-center gap-2"
               >
                 <Volume2 className="w-4 h-4" />
-                Test Voice
+                {t('testVoice')}
               </Button>
             </div>
           </CardContent>
@@ -491,7 +491,7 @@ export default function VoiceJokeAIPage() {
         {/* Voice Interface */}
         <Card className="mb-8">
           <CardHeader>
-            <CardTitle className="text-center">Voice Interface</CardTitle>
+            <CardTitle className="text-center">{t('voiceInterface')}</CardTitle>
           </CardHeader>
           <CardContent className="text-center space-y-6">
             {/* Voice Button */}
@@ -523,17 +523,17 @@ export default function VoiceJokeAIPage() {
 
             {/* Status */}
             <div className="text-lg font-medium">
-              {isListening && `🎤 Listening in ${supportedLanguages.find(l => l.code === selectedLanguage)?.name}... Speak now!`}
-              {isProcessing && "⚡ Processing your request..."}
-              {isSpeaking && "🔊 Playing joke..."}
-              {!isListening && !isProcessing && !isSpeaking && "Click the microphone to start talking"}
+              {isListening && `🎤 ${t('listeningInLanguage', { language: supportedLanguages.find(l => l.code === selectedLanguage)?.name || '' })}... ${t('speakNow')}!`}
+              {isProcessing && `⚡ ${t('processingRequest')}...`}
+              {isSpeaking && `🔊 ${t('playingJoke')}...`}
+              {!isListening && !isProcessing && !isSpeaking && t('clickMicrophoneToStart')}
             </div>
 
             {/* Transcript */}
             {transcript && (
               <Card className="bg-blue-50">
                 <CardContent className="p-4">
-                  <p className="text-sm text-gray-600 mb-1">You said:</p>
+                  <p className="text-sm text-gray-600 mb-1">{t('youSaid')}:</p>
                   <p className="text-gray-800 font-medium">"{transcript}"</p>
                 </CardContent>
               </Card>
@@ -543,7 +543,7 @@ export default function VoiceJokeAIPage() {
             {currentJoke && (
               <Card className="bg-green-50">
                 <CardContent className="p-4">
-                  <p className="text-sm text-gray-600 mb-1">Latest Joke:</p>
+                  <p className="text-sm text-gray-600 mb-1">{t('latestJoke')}:</p>
                   <p className="text-gray-800 font-medium">{currentJoke}</p>
                 </CardContent>
               </Card>
@@ -574,7 +574,7 @@ export default function VoiceJokeAIPage() {
                 className="flex items-center gap-2"
               >
                 <VolumeX className="w-4 h-4" />
-                Stop Speaking
+                {t('stopSpeaking')}
               </Button>
               <Button
                 onClick={repeatLastJoke}
@@ -583,7 +583,7 @@ export default function VoiceJokeAIPage() {
                 className="flex items-center gap-2"
               >
                 <RotateCcw className="w-4 h-4" />
-                Repeat Joke
+                {t('repeatJoke')}
               </Button>
               <Button
                 onClick={() => processJokeRequest("Tell me a funny joke")}
@@ -592,7 +592,7 @@ export default function VoiceJokeAIPage() {
                 className="flex items-center gap-2"
               >
                 <CheckCircle className="w-4 h-4" />
-                Test Webhook
+                {t('testWebhook')}
               </Button>
               <Button
                 onClick={clearHistory}
@@ -600,7 +600,7 @@ export default function VoiceJokeAIPage() {
                 className="flex items-center gap-2"
               >
                 <Trash2 className="w-4 h-4" />
-                Clear History
+                {t('clearHistory')}
               </Button>
               <Button
                 onClick={generateNewSession}
@@ -608,7 +608,7 @@ export default function VoiceJokeAIPage() {
                 className="flex items-center gap-2"
               >
                 <RotateCcw className="w-4 h-4" />
-                New Session
+                {t('newSession')}
               </Button>
             </div>
           </CardContent>
@@ -618,7 +618,7 @@ export default function VoiceJokeAIPage() {
         {chatHistory.length > 0 && (
           <Card>
             <CardHeader>
-              <CardTitle>Conversation History</CardTitle>
+              <CardTitle>{t('conversationHistory')}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-4 max-h-96 overflow-y-auto">
@@ -632,7 +632,7 @@ export default function VoiceJokeAIPage() {
                     }`}
                   >
                     <div className="text-sm text-gray-600 mb-1">
-                      {entry.sender === 'user' ? 'You' : 'Joke AI'}:
+                      {entry.sender === 'user' ? t('you') : t('jokeAI')}:
                     </div>
                     <div className="text-gray-800">{entry.message}</div>
                   </div>
@@ -646,19 +646,19 @@ export default function VoiceJokeAIPage() {
         <Card className="mt-8 bg-blue-50 border-blue-200">
           <CardContent className="p-4">
             <div className="text-center">
-              <h4 className="font-medium text-blue-800 mb-2">Session Information</h4>
+              <h4 className="font-medium text-blue-800 mb-2">{t('sessionInformation')}</h4>
               <div className="space-y-2 text-sm text-blue-600">
                 <p>
-                  <strong>Session ID:</strong> <code className="bg-blue-100 px-2 py-1 rounded text-xs">{sessionId}</code>
+                  <strong>{t('sessionID')}:</strong> <code className="bg-blue-100 px-2 py-1 rounded text-xs">{sessionId}</code>
                 </p>
                 <p>
-                  <strong>Language:</strong> <span className="bg-blue-100 px-2 py-1 rounded text-xs">
+                  <strong>{t('language')}:</strong> <span className="bg-blue-100 px-2 py-1 rounded text-xs">
                     {supportedLanguages.find(l => l.code === selectedLanguage)?.flag} {supportedLanguages.find(l => l.code === selectedLanguage)?.name}
                   </span>
                 </p>
               </div>
               <p className="text-xs text-blue-500 mt-2">
-                This ID helps the AI remember our conversation. Click "New Session" to start fresh or reset memory.
+                {t('sessionIDHelps')}
               </p>
             </div>
           </CardContent>
@@ -671,8 +671,7 @@ export default function VoiceJokeAIPage() {
               <div className="flex items-center gap-2 text-yellow-700">
                 <AlertCircle className="w-5 h-5" />
                 <span>
-                  Some features may not work properly in this browser. 
-                  Please use Chrome, Edge, or Safari for the best experience.
+                  {t('browserCompatibilityWarning')}
                 </span>
               </div>
             </CardContent>

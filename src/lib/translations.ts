@@ -30,6 +30,7 @@ export const translations: Record<string, Translation> = {
     customization: "Customization",
     apiTokens: "API Tokens",
     accessibility: "Accessibility",
+    translate: "Translate",
     balanceReport: "Balance Report",
     featuresDemo: "Features Demo",
     emailIntelligence: "Email Intelligence",
@@ -705,6 +706,7 @@ export const translations: Record<string, Translation> = {
     // Navigation
     dashboard: "لوحة التحكم",
     calendar: "التقويم",
+    translate: "ترجمة",
     email: "البريد الإلكتروني",
     contacts: "جهات الاتصال",
     expenses: "المصروفات",
