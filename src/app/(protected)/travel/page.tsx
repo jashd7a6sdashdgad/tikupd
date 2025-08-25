@@ -909,6 +909,15 @@ export default function TravelCompanionPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-cyan-100 p-4 lg:p-8">
+      {/* Floating Action Button for Currency Converter (mobile only) */}
+      <button
+        onClick={() => setActiveTab('convert')}
+        className="fixed bottom-6 right-6 z-50 flex items-center gap-2 px-5 py-3 rounded-full shadow-lg bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-bold text-lg md:hidden hover:scale-105 transition-all"
+        aria-label="Open Currency Converter"
+      >
+        <DollarSign className="h-6 w-6 mr-1" />
+        Convert
+      </button>
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/20 p-8 mb-8">
