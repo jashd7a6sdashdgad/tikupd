@@ -415,578 +415,578 @@ export default function CustomizationPage() {
             </Card>
           </div>
         </div>
-      </TabsContent>
+        </TabsContent>
 
-      {/* Interface Tab */}
-      <TabsContent value="interface" className="space-y-6">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Display & Appearance */}
-          <Card className="bg-white/70 backdrop-blur-xl border-2 border-white/30 rounded-3xl shadow-xl">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-3">
-                <Eye className="h-5 w-5 text-blue-600" />
-                Display & Appearance
-              </CardTitle>
-              <CardDescription>
-                Customize the visual appearance and accessibility
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {/* Dark Mode */}
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label className="text-base font-medium flex items-center gap-2">
-                    <Moon className="h-4 w-4" />
-                    Dark Mode
-                  </Label>
-                  <p className="text-sm text-gray-600">Switch to dark theme</p>
-                </div>
-                <Switch
-                  checked={uiSettings.darkMode}
-                  onCheckedChange={(checked) => updateUISettings({ darkMode: checked })}
-                />
-              </div>
-              
-              {/* Reduced Motion */}
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label className="text-base font-medium flex items-center gap-2">
-                    <Zap className="h-4 w-4" />
-                    Reduce Animations
-                  </Label>
-                  <p className="text-sm text-gray-600">Minimize motion for accessibility</p>
-                </div>
-                <Switch
-                  checked={uiSettings.reducedMotions}
-                  onCheckedChange={(checked) => updateUISettings({ reducedMotions: checked })}
-                />
-              </div>
-              
-              {/* Font Size */}
-              <div className="space-y-3">
-                <Label className="text-base font-medium">Font Size</Label>
-                <div className="space-y-2">
-                  <Slider
-                    value={[uiSettings.fontSize]}
-                    onValueChange={([value]) => updateUISettings({ fontSize: value })}
-                    max={24}
-                    min={12}
-                    step={1}
-                    className="w-full"
+        {/* Interface Tab */}
+        <TabsContent value="interface" className="space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Display & Appearance */}
+            <Card className="bg-white/70 backdrop-blur-xl border-2 border-white/30 rounded-3xl shadow-xl">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-3">
+                  <Eye className="h-5 w-5 text-blue-600" />
+                  Display & Appearance
+                </CardTitle>
+                <CardDescription>
+                  Customize the visual appearance and accessibility
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Dark Mode */}
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label className="text-base font-medium flex items-center gap-2">
+                      <Moon className="h-4 w-4" />
+                      Dark Mode
+                    </Label>
+                    <p className="text-sm text-gray-600">Switch to dark theme</p>
+                  </div>
+                  <Switch
+                    checked={uiSettings.darkMode}
+                    onCheckedChange={(checked) => updateUISettings({ darkMode: checked })}
                   />
-                  <div className="flex justify-between text-sm text-gray-600">
-                    <span>Small (12px)</span>
-                    <span className="font-medium">{uiSettings.fontSize}px</span>
-                    <span>Large (24px)</span>
+                </div>
+                
+                {/* Reduced Motion */}
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label className="text-base font-medium flex items-center gap-2">
+                      <Zap className="h-4 w-4" />
+                      Reduce Animations
+                    </Label>
+                    <p className="text-sm text-gray-600">Minimize motion for accessibility</p>
+                  </div>
+                  <Switch
+                    checked={uiSettings.reducedMotions}
+                    onCheckedChange={(checked) => updateUISettings({ reducedMotions: checked })}
+                  />
+                </div>
+                
+                {/* Font Size */}
+                <div className="space-y-3">
+                  <Label className="text-base font-medium">Font Size</Label>
+                  <div className="space-y-2">
+                    <Slider
+                      value={[uiSettings.fontSize]}
+                      onValueChange={([value]) => updateUISettings({ fontSize: value })}
+                      max={24}
+                      min={12}
+                      step={1}
+                      className="w-full"
+                    />
+                    <div className="flex justify-between text-sm text-gray-600">
+                      <span>Small (12px)</span>
+                      <span className="font-medium">{uiSettings.fontSize}px</span>
+                      <span>Large (24px)</span>
+                    </div>
                   </div>
                 </div>
-              </div>
-              
-              {/* Border Radius */}
-              <div className="space-y-3">
-                <Label className="text-base font-medium">Border Roundness</Label>
-                <div className="space-y-2">
-                  <Slider
-                    value={[uiSettings.borderRadius]}
-                    onValueChange={([value]) => updateUISettings({ borderRadius: value })}
-                    max={24}
-                    min={0}
-                    step={2}
-                    className="w-full"
-                  />
-                  <div className="flex justify-between text-sm text-gray-600">
-                    <span>Sharp</span>
-                    <span className="font-medium">{uiSettings.borderRadius}px</span>
-                    <span>Round</span>
+                
+                {/* Border Radius */}
+                <div className="space-y-3">
+                  <Label className="text-base font-medium">Border Roundness</Label>
+                  <div className="space-y-2">
+                    <Slider
+                      value={[uiSettings.borderRadius]}
+                      onValueChange={([value]) => updateUISettings({ borderRadius: value })}
+                      max={24}
+                      min={0}
+                      step={2}
+                      className="w-full"
+                    />
+                    <div className="flex justify-between text-sm text-gray-600">
+                      <span>Sharp</span>
+                      <span className="font-medium">{uiSettings.borderRadius}px</span>
+                      <span>Round</span>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+            
+            {/* UI Elements */}
+            <Card className="bg-white/70 backdrop-blur-xl border-2 border-white/30 rounded-3xl shadow-xl">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-3">
+                  <Settings className="h-5 w-5 text-purple-600" />
+                  UI Elements
+                </CardTitle>
+                <CardDescription>
+                  Toggle various interface elements
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Compact Mode */}
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label className="text-base font-medium">Compact Mode</Label>
+                    <p className="text-sm text-gray-600">Reduce spacing for more content</p>
+                  </div>
+                  <Switch
+                    checked={uiSettings.compactMode}
+                    onCheckedChange={(checked) => updateUISettings({ compactMode: checked })}
+                  />
+                </div>
+                
+                {/* Show Avatars */}
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label className="text-base font-medium flex items-center gap-2">
+                      <User className="h-4 w-4" />
+                      Show Avatars
+                    </Label>
+                    <p className="text-sm text-gray-600">Display profile pictures</p>
+                  </div>
+                  <Switch
+                    checked={uiSettings.showAvatars}
+                    onCheckedChange={(checked) => updateUISettings({ showAvatars: checked })}
+                  />
+                </div>
+                
+                {/* Card Shadows */}
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label className="text-base font-medium">Card Shadows</Label>
+                    <p className="text-sm text-gray-600">Add depth with shadows</p>
+                  </div>
+                  <Switch
+                    checked={uiSettings.cardShadows}
+                    onCheckedChange={(checked) => updateUISettings({ cardShadows: checked })}
+                  />
+                </div>
+                
+                {/* Blur Effects */}
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label className="text-base font-medium">Blur Effects</Label>
+                    <p className="text-sm text-gray-600">Background blur on cards</p>
+                  </div>
+                  <Switch
+                    checked={uiSettings.blurEffects}
+                    onCheckedChange={(checked) => updateUISettings({ blurEffects: checked })}
+                  />
+                </div>
+                
+                {/* Animation Speed */}
+                <div className="space-y-3">
+                  <Label className="text-base font-medium">Animation Speed</Label>
+                  <div className="space-y-2">
+                    <Slider
+                      value={[uiSettings.animationSpeed]}
+                      onValueChange={([value]) => updateUISettings({ animationSpeed: value })}
+                      max={1000}
+                      min={100}
+                      step={50}
+                      className="w-full"
+                    />
+                    <div className="flex justify-between text-sm text-gray-600">
+                      <span>Fast</span>
+                      <span className="font-medium">{uiSettings.animationSpeed}ms</span>
+                      <span>Slow</span>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
           
-          {/* UI Elements */}
+          {/* Save Button */}
           <Card className="bg-white/70 backdrop-blur-xl border-2 border-white/30 rounded-3xl shadow-xl">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-3">
-                <Settings className="h-5 w-5 text-purple-600" />
-                UI Elements
-              </CardTitle>
-              <CardDescription>
-                Toggle various interface elements
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {/* Compact Mode */}
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label className="text-base font-medium">Compact Mode</Label>
-                  <p className="text-sm text-gray-600">Reduce spacing for more content</p>
-                </div>
-                <Switch
-                  checked={uiSettings.compactMode}
-                  onCheckedChange={(checked) => updateUISettings({ compactMode: checked })}
-                />
-              </div>
-              
-              {/* Show Avatars */}
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label className="text-base font-medium flex items-center gap-2">
-                    <User className="h-4 w-4" />
-                    Show Avatars
-                  </Label>
-                  <p className="text-sm text-gray-600">Display profile pictures</p>
-                </div>
-                <Switch
-                  checked={uiSettings.showAvatars}
-                  onCheckedChange={(checked) => updateUISettings({ showAvatars: checked })}
-                />
-              </div>
-              
-              {/* Card Shadows */}
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label className="text-base font-medium">Card Shadows</Label>
-                  <p className="text-sm text-gray-600">Add depth with shadows</p>
-                </div>
-                <Switch
-                  checked={uiSettings.cardShadows}
-                  onCheckedChange={(checked) => updateUISettings({ cardShadows: checked })}
-                />
-              </div>
-              
-              {/* Blur Effects */}
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label className="text-base font-medium">Blur Effects</Label>
-                  <p className="text-sm text-gray-600">Background blur on cards</p>
-                </div>
-                <Switch
-                  checked={uiSettings.blurEffects}
-                  onCheckedChange={(checked) => updateUISettings({ blurEffects: checked })}
-                />
-              </div>
-              
-              {/* Animation Speed */}
-              <div className="space-y-3">
-                <Label className="text-base font-medium">Animation Speed</Label>
-                <div className="space-y-2">
-                  <Slider
-                    value={[uiSettings.animationSpeed]}
-                    onValueChange={([value]) => updateUISettings({ animationSpeed: value })}
-                    max={1000}
-                    min={100}
-                    step={50}
-                    className="w-full"
-                  />
-                  <div className="flex justify-between text-sm text-gray-600">
-                    <span>Fast</span>
-                    <span className="font-medium">{uiSettings.animationSpeed}ms</span>
-                    <span>Slow</span>
-                  </div>
-                </div>
-              </div>
+            <CardContent className="pt-6">
+              <Button 
+                className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-bold"
+                onClick={() => {
+                  alert('✅ Interface settings are automatically saved!');
+                }}
+              >
+                <Save className="h-4 w-4 mr-2" />
+                Interface Settings Auto-Saved
+              </Button>
             </CardContent>
           </Card>
-        </div>
-        
-        {/* Save Button */}
-        <Card className="bg-white/70 backdrop-blur-xl border-2 border-white/30 rounded-3xl shadow-xl">
-          <CardContent className="pt-6">
-            <Button 
-              className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-bold"
-              onClick={() => {
-                alert('✅ Interface settings are automatically saved!');
-              }}
-            >
-              <Save className="h-4 w-4 mr-2" />
-              Interface Settings Auto-Saved
-            </Button>
-          </CardContent>
-        </Card>
-      </TabsContent>
+        </TabsContent>
 
-      {/* Voice Tab */}
-      <TabsContent value="voice" className="space-y-6">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Voice Settings */}
-          <Card className="bg-white/70 backdrop-blur-xl border-2 border-white/30 rounded-3xl shadow-xl">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-3">
-                <Mic className="h-5 w-5 text-green-600" />
-                Voice Assistant Settings
-              </CardTitle>
-              <CardDescription>
-                Configure voice recognition and responses
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {/* Voice Enabled */}
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label className="text-base font-medium flex items-center gap-2">
-                    <Mic className="h-4 w-4" />
-                    Enable Voice Assistant
-                  </Label>
-                  <p className="text-sm text-gray-600">Turn on voice commands</p>
-                </div>
-                <Switch
-                  checked={voiceSettings.voiceEnabled}
-                  onCheckedChange={(checked) => updateVoiceSettings({ voiceEnabled: checked })}
-                />
-              </div>
-              
-              {/* Voice Speed */}
-              <div className="space-y-3">
-                <Label className="text-base font-medium">Speech Speed</Label>
-                <div className="space-y-2">
-                  <Slider
-                    value={[voiceSettings.voiceSpeed]}
-                    onValueChange={([value]) => updateVoiceSettings({ voiceSpeed: value })}
-                    max={2.0}
-                    min={0.5}
-                    step={0.1}
-                    className="w-full"
+        {/* Voice Tab */}
+        <TabsContent value="voice" className="space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Voice Settings */}
+            <Card className="bg-white/70 backdrop-blur-xl border-2 border-white/30 rounded-3xl shadow-xl">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-3">
+                  <Mic className="h-5 w-5 text-green-600" />
+                  Voice Assistant Settings
+                </CardTitle>
+                <CardDescription>
+                  Configure voice recognition and responses
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Voice Enabled */}
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label className="text-base font-medium flex items-center gap-2">
+                      <Mic className="h-4 w-4" />
+                      Enable Voice Assistant
+                    </Label>
+                    <p className="text-sm text-gray-600">Turn on voice commands</p>
+                  </div>
+                  <Switch
+                    checked={voiceSettings.voiceEnabled}
+                    onCheckedChange={(checked) => updateVoiceSettings({ voiceEnabled: checked })}
                   />
-                  <div className="flex justify-between text-sm text-gray-600">
-                    <span>Slow (0.5x)</span>
-                    <span className="font-medium">{voiceSettings.voiceSpeed.toFixed(1)}x</span>
-                    <span>Fast (2.0x)</span>
+                </div>
+                
+                {/* Voice Speed */}
+                <div className="space-y-3">
+                  <Label className="text-base font-medium">Speech Speed</Label>
+                  <div className="space-y-2">
+                    <Slider
+                      value={[voiceSettings.voiceSpeed]}
+                      onValueChange={([value]) => updateVoiceSettings({ voiceSpeed: value })}
+                      max={2.0}
+                      min={0.5}
+                      step={0.1}
+                      className="w-full"
+                    />
+                    <div className="flex justify-between text-sm text-gray-600">
+                      <span>Slow (0.5x)</span>
+                      <span className="font-medium">{voiceSettings.voiceSpeed.toFixed(1)}x</span>
+                      <span>Fast (2.0x)</span>
+                    </div>
                   </div>
                 </div>
-              </div>
-              
-              {/* Voice Volume */}
-              <div className="space-y-3">
-                <Label className="text-base font-medium flex items-center gap-2">
-                  <Volume2 className="h-4 w-4" />
-                  Voice Volume
-                </Label>
-                <div className="space-y-2">
-                  <Slider
-                    value={[voiceSettings.voiceVolume]}
-                    onValueChange={([value]) => updateVoiceSettings({ voiceVolume: value })}
-                    max={1.0}
-                    min={0.0}
-                    step={0.1}
-                    className="w-full"
-                  />
-                  <div className="flex justify-between text-sm text-gray-600">
-                    <span>Quiet</span>
-                    <span className="font-medium">{Math.round(voiceSettings.voiceVolume * 100)}%</span>
-                    <span>Loud</span>
-                  </div>
-                </div>
-              </div>
-              
-              {/* Auto-play Responses */}
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label className="text-base font-medium">Auto-play Responses</Label>
-                  <p className="text-sm text-gray-600">Automatically speak AI responses</p>
-                </div>
-                <Switch
-                  checked={voiceSettings.autoPlayResponses}
-                  onCheckedChange={(checked) => updateVoiceSettings({ autoPlayResponses: checked })}
-                />
-              </div>
-              
-              {/* Voice Feedback */}
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label className="text-base font-medium">Voice Feedback</Label>
-                  <p className="text-sm text-gray-600">Confirm voice commands with audio</p>
-                </div>
-                <Switch
-                  checked={voiceSettings.voiceFeedback}
-                  onCheckedChange={(checked) => updateVoiceSettings({ voiceFeedback: checked })}
-                />
-              </div>
-            </CardContent>
-          </Card>
-          
-          {/* Audio & Notifications */}
-          <Card className="bg-white/70 backdrop-blur-xl border-2 border-white/30 rounded-3xl shadow-xl">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-3">
-                <Bell className="h-5 w-5 text-orange-600" />
-                Audio & Notifications
-              </CardTitle>
-              <CardDescription>
-                Control sounds and notification audio
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {/* Sound Effects */}
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
+                
+                {/* Voice Volume */}
+                <div className="space-y-3">
                   <Label className="text-base font-medium flex items-center gap-2">
                     <Volume2 className="h-4 w-4" />
-                    Sound Effects
+                    Voice Volume
                   </Label>
-                  <p className="text-sm text-gray-600">UI interaction sounds</p>
-                </div>
-                <Switch
-                  checked={voiceSettings.soundEffects}
-                  onCheckedChange={(checked) => updateVoiceSettings({ soundEffects: checked })}
-                />
-              </div>
-              
-              {/* Notification Sounds */}
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label className="text-base font-medium flex items-center gap-2">
-                    <Bell className="h-4 w-4" />
-                    Notification Sounds
-                  </Label>
-                  <p className="text-sm text-gray-600">Audio alerts for notifications</p>
-                </div>
-                <Switch
-                  checked={voiceSettings.notificationSounds}
-                  onCheckedChange={(checked) => updateVoiceSettings({ notificationSounds: checked })}
-                />
-              </div>
-              
-              {/* Voice Test */}
-              <div className="space-y-3">
-                <Label className="text-base font-medium">Test Voice Settings</Label>
-                <Button 
-                  variant="outline" 
-                  className="w-full"
-                  onClick={() => {
-                    if (voiceSettings.voiceEnabled && 'speechSynthesis' in window) {
-                      const utterance = new SpeechSynthesisUtterance(
-                        'Hello Mahboob! This is a test of your voice settings.'
-                      );
-                      utterance.rate = voiceSettings.voiceSpeed;
-                      utterance.volume = voiceSettings.voiceVolume;
-                      speechSynthesis.speak(utterance);
-                    } else {
-                      alert('Voice synthesis not available or disabled');
-                    }
-                  }}
-                >
-                  <Mic className="h-4 w-4 mr-2" />
-                  Test Voice Output
-                </Button>
-              </div>
-              
-              {/* Voice Commands Help */}
-              <div className="p-4 bg-green-50 border border-green-200 rounded-xl">
-                <h4 className="font-medium text-green-800 mb-2">Available Voice Commands:</h4>
-                <ul className="text-sm text-green-700 space-y-1">
-                  <li>• "Hey Mahboob, open [page name]"</li>
-                  <li>• "Show me my expenses"</li>
-                  <li>• "What's the weather like?"</li>
-                  <li>• "Add expense: [amount] for [description]"</li>
-                  <li>• "Send message to [contact]"</li>
-                </ul>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-        
-        {/* Save Button */}
-        <Card className="bg-white/70 backdrop-blur-xl border-2 border-white/30 rounded-3xl shadow-xl">
-          <CardContent className="pt-6">
-            <Button 
-              className="w-full bg-gradient-to-r from-green-500 to-blue-600 hover:from-green-600 hover:to-blue-700 text-white font-bold"
-              onClick={() => {
-                alert('🎤 Voice & Audio settings are automatically saved!');
-              }}
-            >
-              <Save className="h-4 w-4 mr-2" />
-              Voice Settings Auto-Saved
-            </Button>
-          </CardContent>
-        </Card>
-      </TabsContent>
-
-      {/* Layout Tab */}
-      <TabsContent value="layout" className="space-y-6">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Dashboard Layout */}
-          <Card className="bg-white/70 backdrop-blur-xl border-2 border-white/30 rounded-3xl shadow-xl">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-3">
-                <Layout className="h-5 w-5 text-orange-600" />
-                Dashboard Layout
-              </CardTitle>
-              <CardDescription>
-                Customize your dashboard appearance
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {/* Widget Spacing */}
-              <div className="space-y-3">
-                <Label className="text-base font-medium">Widget Spacing</Label>
-                <Select
-                  value={layoutSettings.widgetSpacing}
-                  onValueChange={(value) => updateLayoutSettings({ widgetSpacing: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="compact">Compact</SelectItem>
-                    <SelectItem value="normal">Normal</SelectItem>
-                    <SelectItem value="spacious">Spacious</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              {/* Cards Per Row */}
-              <div className="space-y-3">
-                <Label className="text-base font-medium">Cards Per Row (Desktop)</Label>
-                <div className="space-y-2">
-                  <Slider
-                    value={[layoutSettings.cardsPerRow]}
-                    onValueChange={([value]) => updateLayoutSettings({ cardsPerRow: value })}
-                    max={4}
-                    min={1}
-                    step={1}
-                    className="w-full"
-                  />
-                  <div className="flex justify-between text-sm text-gray-600">
-                    <span>1</span>
-                    <span className="font-medium">{layoutSettings.cardsPerRow} cards</span>
-                    <span>4</span>
+                  <div className="space-y-2">
+                    <Slider
+                      value={[voiceSettings.voiceVolume]}
+                      onValueChange={([value]) => updateVoiceSettings({ voiceVolume: value })}
+                      max={1.0}
+                      min={0.0}
+                      step={0.1}
+                      className="w-full"
+                    />
+                    <div className="flex justify-between text-sm text-gray-600">
+                      <span>Quiet</span>
+                      <span className="font-medium">{Math.round(voiceSettings.voiceVolume * 100)}%</span>
+                      <span>Loud</span>
+                    </div>
                   </div>
                 </div>
-              </div>
-              
-              {/* Header Style */}
-              <div className="space-y-3">
-                <Label className="text-base font-medium">Header Style</Label>
-                <Select
-                  value={layoutSettings.headerStyle}
-                  onValueChange={(value) => updateLayoutSettings({ headerStyle: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="classic">Classic</SelectItem>
-                    <SelectItem value="modern">Modern</SelectItem>
-                    <SelectItem value="minimal">Minimal</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              {/* Sidebar Settings */}
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label className="text-base font-medium">Collapsed Sidebar</Label>
-                  <p className="text-sm text-gray-600">Start with sidebar minimized</p>
+                
+                {/* Auto-play Responses */}
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label className="text-base font-medium">Auto-play Responses</Label>
+                    <p className="text-sm text-gray-600">Automatically speak AI responses</p>
+                  </div>
+                  <Switch
+                    checked={voiceSettings.autoPlayResponses}
+                    onCheckedChange={(checked) => updateVoiceSettings({ autoPlayResponses: checked })}
+                  />
                 </div>
-                <Switch
-                  checked={layoutSettings.sidebarCollapsed}
-                  onCheckedChange={(checked) => updateLayoutSettings({ sidebarCollapsed: checked })}
-                />
-              </div>
-              
-              {/* Footer Visible */}
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label className="text-base font-medium">Show Footer</Label>
-                  <p className="text-sm text-gray-600">Display footer information</p>
+                
+                {/* Voice Feedback */}
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label className="text-base font-medium">Voice Feedback</Label>
+                    <p className="text-sm text-gray-600">Confirm voice commands with audio</p>
+                  </div>
+                  <Switch
+                    checked={voiceSettings.voiceFeedback}
+                    onCheckedChange={(checked) => updateVoiceSettings({ voiceFeedback: checked })}
+                  />
                 </div>
-                <Switch
-                  checked={layoutSettings.footerVisible}
-                  onCheckedChange={(checked) => updateLayoutSettings({ footerVisible: checked })}
-                />
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+            
+            {/* Audio & Notifications */}
+            <Card className="bg-white/70 backdrop-blur-xl border-2 border-white/30 rounded-3xl shadow-xl">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-3">
+                  <Bell className="h-5 w-5 text-orange-600" />
+                  Audio & Notifications
+                </CardTitle>
+                <CardDescription>
+                  Control sounds and notification audio
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Sound Effects */}
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label className="text-base font-medium flex items-center gap-2">
+                      <Volume2 className="h-4 w-4" />
+                      Sound Effects
+                    </Label>
+                    <p className="text-sm text-gray-600">UI interaction sounds</p>
+                  </div>
+                  <Switch
+                    checked={voiceSettings.soundEffects}
+                    onCheckedChange={(checked) => updateVoiceSettings({ soundEffects: checked })}
+                  />
+                </div>
+                
+                {/* Notification Sounds */}
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label className="text-base font-medium flex items-center gap-2">
+                      <Bell className="h-4 w-4" />
+                      Notification Sounds
+                    </Label>
+                    <p className="text-sm text-gray-600">Audio alerts for notifications</p>
+                  </div>
+                  <Switch
+                    checked={voiceSettings.notificationSounds}
+                    onCheckedChange={(checked) => updateVoiceSettings({ notificationSounds: checked })}
+                  />
+                </div>
+                
+                {/* Voice Test */}
+                <div className="space-y-3">
+                  <Label className="text-base font-medium">Test Voice Settings</Label>
+                  <Button 
+                    variant="outline" 
+                    className="w-full"
+                    onClick={() => {
+                      if (voiceSettings.voiceEnabled && 'speechSynthesis' in window) {
+                        const utterance = new SpeechSynthesisUtterance(
+                          'Hello Mahboob! This is a test of your voice settings.'
+                        );
+                        utterance.rate = voiceSettings.voiceSpeed;
+                        utterance.volume = voiceSettings.voiceVolume;
+                        speechSynthesis.speak(utterance);
+                      } else {
+                        alert('Voice synthesis not available or disabled');
+                      }
+                    }}
+                  >
+                    <Mic className="h-4 w-4 mr-2" />
+                    Test Voice Output
+                  </Button>
+                </div>
+                
+                {/* Voice Commands Help */}
+                <div className="p-4 bg-green-50 border border-green-200 rounded-xl">
+                  <h4 className="font-medium text-green-800 mb-2">Available Voice Commands:</h4>
+                  <ul className="text-sm text-green-700 space-y-1">
+                    <li>• "Hey Mahboob, open [page name]"</li>
+                    <li>• "Show me my expenses"</li>
+                    <li>• "What's the weather like?"</li>
+                    <li>• "Add expense: [amount] for [description]"</li>
+                    <li>• "Send message to [contact]"</li>
+                  </ul>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
           
-          {/* Widget Visibility */}
+          {/* Save Button */}
           <Card className="bg-white/70 backdrop-blur-xl border-2 border-white/30 rounded-3xl shadow-xl">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-3">
-                <Eye className="h-5 w-5 text-blue-600" />
-                Widget Visibility
-              </CardTitle>
-              <CardDescription>
-                Choose which widgets to display
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {/* Show Weather */}
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label className="text-base font-medium flex items-center gap-2">
-                    <Globe className="h-4 w-4" />
-                    Weather Widget
-                  </Label>
-                  <p className="text-sm text-gray-600">Current weather information</p>
-                </div>
-                <Switch
-                  checked={layoutSettings.showWeather}
-                  onCheckedChange={(checked) => updateLayoutSettings({ showWeather: checked })}
-                />
-              </div>
-              
-              {/* Show Quick Actions */}
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label className="text-base font-medium flex items-center gap-2">
-                    <Zap className="h-4 w-4" />
-                    Quick Actions
-                  </Label>
-                  <p className="text-sm text-gray-600">Shortcuts to common tasks</p>
-                </div>
-                <Switch
-                  checked={layoutSettings.showQuickActions}
-                  onCheckedChange={(checked) => updateLayoutSettings({ showQuickActions: checked })}
-                />
-              </div>
-              
-              {/* Show Recent Activity */}
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label className="text-base font-medium flex items-center gap-2">
-                    <Calendar className="h-4 w-4" />
-                    Recent Activity
-                  </Label>
-                  <p className="text-sm text-gray-600">Timeline of recent actions</p>
-                </div>
-                <Switch
-                  checked={layoutSettings.showRecentActivity}
-                  onCheckedChange={(checked) => updateLayoutSettings({ showRecentActivity: checked })}
-                />
-              </div>
-              
-              {/* Layout Preview */}
-              <div className="p-4 bg-orange-50 border border-orange-200 rounded-xl">
-                <h4 className="font-medium text-orange-800 mb-2">Current Layout:</h4>
-                <div className="text-sm text-orange-700 space-y-1">
-                  <p>• Spacing: <span className="font-medium capitalize">{layoutSettings.widgetSpacing}</span></p>
-                  <p>• Cards per row: <span className="font-medium">{layoutSettings.cardsPerRow}</span></p>
-                  <p>• Header: <span className="font-medium capitalize">{layoutSettings.headerStyle}</span></p>
-                  <p>• Sidebar: <span className="font-medium">{layoutSettings.sidebarCollapsed ? 'Collapsed' : 'Expanded'}</span></p>
-                </div>
-              </div>
+            <CardContent className="pt-6">
+              <Button 
+                className="w-full bg-gradient-to-r from-green-500 to-blue-600 hover:from-green-600 hover:to-blue-700 text-white font-bold"
+                onClick={() => {
+                  alert('🎤 Voice & Audio settings are automatically saved!');
+                }}
+              >
+                <Save className="h-4 w-4 mr-2" />
+                Voice Settings Auto-Saved
+              </Button>
             </CardContent>
           </Card>
-        </div>
-        
-        {/* Save Button */}
-        <Card className="bg-white/70 backdrop-blur-xl border-2 border-white/30 rounded-3xl shadow-xl">
-          <CardContent className="pt-6">
-            <Button 
-              className="w-full bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white font-bold"
-              onClick={() => {
-                alert('🎯 Layout settings are automatically saved!');
-              }}
-            >
-              <Save className="h-4 w-4 mr-2" />
-              Layout Settings Auto-Saved
-            </Button>
-          </CardContent>
-        </Card>
-      </TabsContent>
+        </TabsContent>
 
-      </Tabs>
+        {/* Layout Tab */}
+        <TabsContent value="layout" className="space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Dashboard Layout */}
+            <Card className="bg-white/70 backdrop-blur-xl border-2 border-white/30 rounded-3xl shadow-xl">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-3">
+                  <Layout className="h-5 w-5 text-orange-600" />
+                  Dashboard Layout
+                </CardTitle>
+                <CardDescription>
+                  Customize your dashboard appearance
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Widget Spacing */}
+                <div className="space-y-3">
+                  <Label className="text-base font-medium">Widget Spacing</Label>
+                  <Select
+                    value={layoutSettings.widgetSpacing}
+                    onValueChange={(value) => updateLayoutSettings({ widgetSpacing: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="compact">Compact</SelectItem>
+                      <SelectItem value="normal">Normal</SelectItem>
+                      <SelectItem value="spacious">Spacious</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                {/* Cards Per Row */}
+                <div className="space-y-3">
+                  <Label className="text-base font-medium">Cards Per Row (Desktop)</Label>
+                  <div className="space-y-2">
+                    <Slider
+                      value={[layoutSettings.cardsPerRow]}
+                      onValueChange={([value]) => updateLayoutSettings({ cardsPerRow: value })}
+                      max={4}
+                      min={1}
+                      step={1}
+                      className="w-full"
+                    />
+                    <div className="flex justify-between text-sm text-gray-600">
+                      <span>1</span>
+                      <span className="font-medium">{layoutSettings.cardsPerRow} cards</span>
+                      <span>4</span>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Header Style */}
+                <div className="space-y-3">
+                  <Label className="text-base font-medium">Header Style</Label>
+                  <Select
+                    value={layoutSettings.headerStyle}
+                    onValueChange={(value) => updateLayoutSettings({ headerStyle: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="classic">Classic</SelectItem>
+                      <SelectItem value="modern">Modern</SelectItem>
+                      <SelectItem value="minimal">Minimal</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                {/* Sidebar Settings */}
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label className="text-base font-medium">Collapsed Sidebar</Label>
+                    <p className="text-sm text-gray-600">Start with sidebar minimized</p>
+                  </div>
+                  <Switch
+                    checked={layoutSettings.sidebarCollapsed}
+                    onCheckedChange={(checked) => updateLayoutSettings({ sidebarCollapsed: checked })}
+                  />
+                </div>
+                
+                {/* Footer Visible */}
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label className="text-base font-medium">Show Footer</Label>
+                    <p className="text-sm text-gray-600">Display footer information</p>
+                  </div>
+                  <Switch
+                    checked={layoutSettings.footerVisible}
+                    onCheckedChange={(checked) => updateLayoutSettings({ footerVisible: checked })}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+            
+            {/* Widget Visibility */}
+            <Card className="bg-white/70 backdrop-blur-xl border-2 border-white/30 rounded-3xl shadow-xl">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-3">
+                  <Eye className="h-5 w-5 text-blue-600" />
+                  Widget Visibility
+                </CardTitle>
+                <CardDescription>
+                  Choose which widgets to display
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Show Weather */}
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label className="text-base font-medium flex items-center gap-2">
+                      <Globe className="h-4 w-4" />
+                      Weather Widget
+                    </Label>
+                    <p className="text-sm text-gray-600">Current weather information</p>
+                  </div>
+                  <Switch
+                    checked={layoutSettings.showWeather}
+                    onCheckedChange={(checked) => updateLayoutSettings({ showWeather: checked })}
+                  />
+                </div>
+                
+                {/* Show Quick Actions */}
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label className="text-base font-medium flex items-center gap-2">
+                      <Zap className="h-4 w-4" />
+                      Quick Actions
+                    </Label>
+                    <p className="text-sm text-gray-600">Shortcuts to common tasks</p>
+                  </div>
+                  <Switch
+                    checked={layoutSettings.showQuickActions}
+                    onCheckedChange={(checked) => updateLayoutSettings({ showQuickActions: checked })}
+                  />
+                </div>
+                
+                {/* Show Recent Activity */}
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label className="text-base font-medium flex items-center gap-2">
+                      <Calendar className="h-4 w-4" />
+                      Recent Activity
+                    </Label>
+                    <p className="text-sm text-gray-600">Timeline of recent actions</p>
+                  </div>
+                  <Switch
+                    checked={layoutSettings.showRecentActivity}
+                    onCheckedChange={(checked) => updateLayoutSettings({ showRecentActivity: checked })}
+                  />
+                </div>
+                
+                {/* Layout Preview */}
+                <div className="p-4 bg-orange-50 border border-orange-200 rounded-xl">
+                  <h4 className="font-medium text-orange-800 mb-2">Current Layout:</h4>
+                  <div className="text-sm text-orange-700 space-y-1">
+                    <p>• Spacing: <span className="font-medium capitalize">{layoutSettings.widgetSpacing}</span></p>
+                    <p>• Cards per row: <span className="font-medium">{layoutSettings.cardsPerRow}</span></p>
+                    <p>• Header: <span className="font-medium capitalize">{layoutSettings.headerStyle}</span></p>
+                    <p>• Sidebar: <span className="font-medium">{layoutSettings.sidebarCollapsed ? 'Collapsed' : 'Expanded'}</span></p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+          
+          {/* Save Button */}
+          <Card className="bg-white/70 backdrop-blur-xl border-2 border-white/30 rounded-3xl shadow-xl">
+            <CardContent className="pt-6">
+              <Button 
+                className="w-full bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white font-bold"
+                onClick={() => {
+                  alert('🎯 Layout settings are automatically saved!');
+                }}
+              >
+                <Save className="h-4 w-4 mr-2" />
+                Layout Settings Auto-Saved
+              </Button>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        </Tabs>
       </div>
     </div>
   );

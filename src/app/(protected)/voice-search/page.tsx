@@ -540,7 +540,7 @@ export default function VoiceSearchPage() {
             {activeTab === 'web' && searchResults.length > 0 && (
               <div className="space-y-4">
                 {searchResults.slice(0, 10).map((result, index) => (
-                  <Card key={index} className="bg-white/70 backdrop-blur-xl border-2 border-white/30 rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300">
+                  <Card key={result.url || index} className="bg-white/70 backdrop-blur-xl border-2 border-white/30 rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300">
                     <CardContent className="pt-6">
                       <div className="flex items-start gap-4">
                         <div className="flex-1">
@@ -607,7 +607,7 @@ export default function VoiceSearchPage() {
                   }
                   
                   return (
-                    <div className="border rounded p-2 bg-white hover:shadow-lg transition-shadow cursor-pointer">
+                    <div key={image.url || index} className="border rounded p-2 bg-white hover:shadow-lg transition-shadow cursor-pointer">
                       <a href={image.url} target="_blank" rel="noopener noreferrer">
                         <img
                           src={imageUrl}
@@ -645,7 +645,7 @@ export default function VoiceSearchPage() {
             {activeTab === 'places' && placeResults.length > 0 && (
               <div className="space-y-4">
                 {placeResults.slice(0, 10).map((place, index) => (
-                  <Card key={index} className="bg-white/70 backdrop-blur-xl border-2 border-white/30 rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300">
+                  <Card key={place.url || index} className="bg-white/70 backdrop-blur-xl border-2 border-white/30 rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300">
                     <CardContent className="pt-6">
                       <div className="flex items-start gap-4">
                         <div className="flex-1">
