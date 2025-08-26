@@ -4,6 +4,7 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { ModernCard } from './ModernCard';
 import { cn } from '@/lib/utils';
+import { useSettings } from '@/contexts/SettingsContext';
 import {
   Mic,
   MicOff,
@@ -195,7 +196,10 @@ export function ModernVoiceWidget({
           playAudioFromBase64(result.audioResponse || result.audioBase64);
         } else {
           console.log('🗣️ Using text-to-speech for response');
-          speakText(aiResponseText);
+          // Only auto-play if enabled in settings
+          if (voiceSettings.autoPlayResponses) {
+            speakText(aiResponseText);
+          }
         }
 
         // Check for workflow commands
@@ -311,24 +315,51 @@ export function ModernVoiceWidget({
     }
   }, []);
 
-  // Text-to-speech
+  const { voiceSettings } = useSettings();
+  
+  // Text-to-speech with user settings
   const speakText = useCallback((text: string) => {
+    // Check if voice is enabled in settings
+    if (!voiceSettings.voiceEnabled) {
+      console.log('🔇 Voice is disabled in settings');
+      return;
+    }
+    
     if ('speechSynthesis' in window) {
       window.speechSynthesis.cancel();
       
       const utterance = new SpeechSynthesisUtterance(text);
-      utterance.rate = 0.9;
-      utterance.pitch = 1.0;
-      utterance.volume = 1.0;
       
-      utterance.onstart = () => setIsSpeaking(true);
-      utterance.onend = () => setIsSpeaking(false);
-      utterance.onerror = () => setIsSpeaking(false);
+      // Apply user settings
+      utterance.rate = voiceSettings.voiceSpeed;
+      utterance.pitch = 1.0; // Keep pitch constant for consistency
+      utterance.volume = voiceSettings.voiceVolume;
+      
+      utterance.onstart = () => {
+        setIsSpeaking(true);
+        if (voiceSettings.voiceFeedback) {
+          console.log('🗣️ Started speaking:', text.substring(0, 50));
+        }
+      };
+      
+      utterance.onend = () => {
+        setIsSpeaking(false);
+        if (voiceSettings.voiceFeedback) {
+          console.log('🔇 Finished speaking');
+        }
+      };
+      
+      utterance.onerror = (error) => {
+        setIsSpeaking(false);
+        if (voiceSettings.voiceFeedback) {
+          console.error('❌ Speech error:', error);
+        }
+      };
       
       window.speechSynthesis.speak(utterance);
       setIsSpeaking(true);
     }
-  }, []);
+  }, [voiceSettings]);
 
   // Stop all audio/speech
   const stopSpeaking = useCallback(() => {

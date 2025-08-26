@@ -390,7 +390,7 @@ export class GoogleDrive {
     const response = await this.drive.files.list({
       q: query,
       pageSize: maxResults,
-      fields: 'nextPageToken, files(id, name, size, mimeType, createdTime, modifiedTime, parents, webViewLink, webContentLink, thumbnailLink)',
+      fields: 'nextPageToken, files(id, name, size, mimeType, createdTime, modifiedTime, parents, webViewLink, webContentLink, thumbnailLink, imageMediaMetadata)',
       orderBy
     });
     return response.data.files || [];
@@ -456,7 +456,7 @@ export class GoogleDrive {
       const response = await this.drive.files.create({
         resource: fileMetadata,
         media: media,
-        fields: 'id, name, size, mimeType, createdTime, webViewLink, webContentLink, thumbnailLink',
+        fields: 'id, name, size, mimeType, createdTime, webViewLink, webContentLink, thumbnailLink, imageMediaMetadata',
         uploadType: 'multipart'
       });
 
@@ -466,6 +466,15 @@ export class GoogleDrive {
         size: response.data.size,
         mimeType: response.data.mimeType
       });
+      
+      // Log image metadata separately for high-quality images
+      if (response.data.imageMediaMetadata) {
+        console.log('📸 Image quality preserved:', {
+          dimensions: `${response.data.imageMediaMetadata.width}x${response.data.imageMediaMetadata.height}`,
+          rotation: response.data.imageMediaMetadata.rotation,
+          sizeBytes: response.data.size
+        });
+      }
 
       return response.data;
     } catch (error: any) {

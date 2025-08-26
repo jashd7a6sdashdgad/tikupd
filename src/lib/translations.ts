@@ -699,7 +699,26 @@ export const translations: Record<string, Translation> = {
     webhookLabel: "Webhook:",
     you: "You",
     assistant: "Assistant",
-    voiceMessage: "Voice Message"
+    voiceMessage: "Voice Message",
+    
+    // Tracking Page specific translations
+    productivityAnalytics: "Productivity Analytics",
+    expensesBreakdown: "Expenses Breakdown",
+    configurationRequired: "Configuration Required",
+    marketInsights: "Market Insights",
+    monthlyTrends: "Monthly Trends",
+    smartBankAnalytics: "Smart Bank Analytics",
+    smartInsights: "Smart Insights",
+    calendarReminders: "Calendar Reminders",
+    requiredSetup: "Required Setup",
+    categoryBreakdown: "Category Breakdown",
+    omaniHolidays: "Omani Holidays",
+    birthdays: "Birthdays",
+    islamicEvents: "Islamic Events",
+    accountsTracked: "accounts tracked",
+    avgHealthScore: "avg health score",
+    positiveNegativeBalances: "positive • negative balances",
+    mostActive: "Most active"
   },
   
   ar: {
@@ -714,6 +733,7 @@ export const translations: Record<string, Translation> = {
     diary: "المذكرات",
     weather: "الطقس",
     chat: "المحادثة",
+    voiceJokeAI: "الذكاء الاصطناعي النكت الصوتية",
     settings: "الإعدادات",
     facebook: "فيسبوك",
     instagram: "إنستغرام",
@@ -1324,11 +1344,48 @@ export const translations: Record<string, Translation> = {
     messageHistory: "سجل الرسائل",
     whatsappStyleBubbles: "فقاعات بنمط واتساب",
     
-    // Voice Recording Features
-    supportedAudioFormats: "تنسيقات WebM/OGG الصوتية",
-    realTimeDurationTracking: "تتبع المدة في الوقت الفعلي",
-    audioWaveformDisplay: "تصور الموجة الصوتية",
-    n8nBase64Encoding: "ترميز Base64 لـ N8N",
+    // Voice Recording Features (Chat Page)
+    chatWebmOggFormats: "تنسيقات WebM/OGG الصوتية",
+    chatRealTimeDurationTracking: "تتبع المدة في الوقت الفعلي",
+    chatWaveformVisualization: "تصور الموجة الصوتية",
+    chatBase64EncodingN8n: "ترميز Base64 لـ N8N",
+    
+    // AI Processing Features (Chat Page)
+    chatAutomaticTranscription: "النسخ التلقائي",
+    chatAiResponseGeneration: "توليد الردود بالذكاء الاصطناعي",
+    chatVoiceSynthesis: "تركيب الصوت",
+    chatContextAwareness: "الوعي بالسياق",
+    chatMultiLanguageSupport: "دعم متعدد اللغات",
+    
+    // Playback Features (Chat Page)
+    chatInstantAudioPlayback: "تشغيل صوتي فوري",
+    chatProgressVisualization: "تصور التقدم",
+    chatAutoPlayAiResponses: "تشغيل ردود الذكاء الاصطناعي تلقائياً",
+    chatSeekScrubControls: "أدوات التحكم في البحث",
+    chatMixedMessageTypes: "أنواع رسائل مختلطة",
+    
+    // Usage Instructions
+    typeMessageInput: "اكتب رسالتك في مربع النص",
+    pressEnterSend: "اضغط على Enter أو انقر على زر الإرسال",
+    messageAppearsChat: "تظهر الرسالة فوراً في المحادثة",
+    aiProcessesResponds: "الذكاء الاصطناعي يعالج ويستجيب",
+    responseAppearsText: "تظهر الاستجابة كفقاعة نصية",
+    pressMicrophoneRecord: "اضغط على زر الميكروفون للتسجيل",
+    chatSpeakMessage: "تحدث برسالتك (الحد الأقصى {maxDuration} ثانية)",
+    chatPressStopFinish: "اضغط على إيقاف لإنهاء التسجيل",
+    chatPreviewPlayback: "معاينة وتشغيل رسالتك",
+    chatPressSendSubmit: "اضغط على إرسال لتقديمها إلى N8N",
+    receiveAiTranscription: "تلقي النسخ والاستجابة من الذكاء الاصطناعي",
+    receivesTextVoice: "يستقبل الرسائل النصية أو الصوتية",
+    processesAudioTranscription: "يعالج النسخ الصوتي إذا لزم الأمر",
+    generatesContextualAi: "يولد ردود ذكاء اصطناعي سياقية",
+    returnsTextAudio: "يرجع ردود نصية أو صوتية",
+    supportsMixedConversation: "يدعم أنواع محادثات مختلطة",
+    
+    // Quality Options (Chat Page)
+    chatLowQuality: "منخفضة (64kbps)",
+    chatMediumQuality: "متوسطة (128kbps)",
+    chatHighQuality: "عالية (256kbps)",
     
     // Voice Chat Interface
     chatAssistant: "مساعد المحادثة",
@@ -1361,7 +1418,27 @@ export const translations: Record<string, Translation> = {
     webhookLabel: "الويب هوك:",
     you: "أنت",
     assistant: "المساعد",
-    voiceMessage: "رسالة صوتية"
+    voiceMessage: "رسالة صوتية",
+    chatClose: "إغلاق",
+    
+    // Tracking Page specific translations
+    productivityAnalytics: "تحليلات الإنتاجية",
+    expensesBreakdown: "تفصيل المصروفات",
+    configurationRequired: "مطلوب تكوين",
+    marketInsights: "رؤى السوق",
+    monthlyTrends: "الاتجاهات الشهرية",
+    smartBankAnalytics: "تحليلات البنوك الذكية",
+    smartInsights: "رؤى ذكية",
+    calendarReminders: "تذكيرات التقويم",
+    requiredSetup: "الإعداد المطلوب",
+    categoryBreakdown: "تفصيل حسب الفئة",
+    omaniHolidays: "العطل العمانية",
+    birthdays: "أعياد الميلاد",
+    islamicEvents: "المناسبات الإسلامية",
+    accountsTracked: "حسابات متتبعة",
+    avgHealthScore: "متوسط درجة الصحة",
+    positiveNegativeBalances: "أرصدة إيجابية ● سلبية أرصدة",
+    mostActive: "الأكثر نشاطاً"
   }
 };
 

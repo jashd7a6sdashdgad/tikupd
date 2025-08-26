@@ -46,7 +46,7 @@ export default function DashboardPage() {
   const cardHoverEffects = "hover:shadow-3xl hover:scale-[1.02] transition-all duration-500 transform";
   const { user } = useAuth();
   const router = useRouter();
-  const { language } = useSettings();
+  const { language, layoutSettings } = useSettings();
   const { t } = useTranslation(language);
   const [dashboardData, setDashboardData] = useState<DashboardData>({
     todayEvents: [],
@@ -525,7 +525,7 @@ if (calendarResponse && calendarResponse.ok) {
           </div>
         </div>
         {/* Modern Card Grid - AI Insights Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8 mb-6 sm:mb-10">
+        <div className="dashboard-grid grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8 mb-6 sm:mb-10 widget-container">
           {/* Enhanced AI Insights Card */}
           <div className="lg:col-span-2 group">
             <div className="glass-widget p-6">
@@ -538,14 +538,16 @@ if (calendarResponse && calendarResponse.ok) {
           </div>
           
           {/* Enhanced Notifications Card */}
-          <div className="group">
-            <div className="glass-widget p-6">
-              <SmartNotifications 
-                dashboardData={dashboardData}
-                className="[&>*]:!bg-transparent [&>*]:!shadow-none [&>*]:!border-none"
-              />
+          {layoutSettings.showWeather && (
+            <div className="group weather-widget">
+              <div className="glass-widget p-6">
+                <SmartNotifications 
+                  dashboardData={dashboardData}
+                  className="[&>*]:!bg-transparent [&>*]:!shadow-none [&>*]:!border-none"
+                />
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
         {/* Modern Stats Overview Card */}
@@ -572,49 +574,53 @@ if (calendarResponse && calendarResponse.ok) {
         </div>
 
         {/* Modern Actions & Activity Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 lg:gap-8 mb-6 sm:mb-10">
+        <div className="dashboard-grid grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 lg:gap-8 mb-6 sm:mb-10 widget-container">
           {/* Enhanced Quick Actions Card */}
-          <div className="group">
-            <div className="glass-widget p-4 sm:p-6">
-              <div className="flex items-center gap-3 mb-4 sm:mb-6">
-                <div className="p-2 sm:p-3 bg-gradient-to-br from-orange-500 to-red-600 rounded-xl sm:rounded-2xl shadow-lg">
-                  <Activity className="h-5 w-5 sm:h-6 sm:w-6 text-black font-bold" />
+          {layoutSettings.showQuickActions && (
+            <div className="group quick-actions-widget">
+              <div className="glass-widget p-4 sm:p-6">
+                <div className="flex items-center gap-3 mb-4 sm:mb-6">
+                  <div className="p-2 sm:p-3 bg-gradient-to-br from-orange-500 to-red-600 rounded-xl sm:rounded-2xl shadow-lg">
+                    <Activity className="h-5 w-5 sm:h-6 sm:w-6 text-black font-bold" />
+                  </div>
+                  <div>
+                    <h2 className="text-lg sm:text-xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
+                      Quick Actions
+                    </h2>
+                    <p className="text-sm sm:text-base text-gray-600 font-medium">Smart shortcuts</p>
+                  </div>
                 </div>
-                <div>
-                  <h2 className="text-lg sm:text-xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
-                    Quick Actions
-                  </h2>
-                  <p className="text-sm sm:text-base text-gray-600 font-medium">Smart shortcuts</p>
-                </div>
+                <SmartQuickActions
+                  dashboardData={dashboardData}
+                  weeklyStats={weeklyStats}
+                  className="[&>*]:!bg-transparent [&>*]:!shadow-none [&>*]:!border-none"
+                />
               </div>
-              <SmartQuickActions
-                dashboardData={dashboardData}
-                weeklyStats={weeklyStats}
-                className="[&>*]:!bg-transparent [&>*]:!shadow-none [&>*]:!border-none"
-              />
             </div>
-          </div>
+          )}
           
           {/* Enhanced Activity Timeline Card */}
-          <div className="group">
-            <div className="glass-widget p-4 sm:p-6">
-              <div className="flex items-center gap-3 mb-4 sm:mb-6">
-                <div className="p-2 sm:p-3 bg-gradient-to-br from-blue-500 to-cyan-600 rounded-xl sm:rounded-2xl shadow-lg">
-                  <Clock className="h-5 w-5 sm:h-6 sm:w-6 text-black font-bold" />
+          {layoutSettings.showRecentActivity && (
+            <div className="group activity-timeline-widget">
+              <div className="glass-widget p-4 sm:p-6">
+                <div className="flex items-center gap-3 mb-4 sm:mb-6">
+                  <div className="p-2 sm:p-3 bg-gradient-to-br from-blue-500 to-cyan-600 rounded-xl sm:rounded-2xl shadow-lg">
+                    <Clock className="h-5 w-5 sm:h-6 sm:w-6 text-black font-bold" />
+                  </div>
+                  <div>
+                    <h2 className="text-lg sm:text-xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
+                      Activity Timeline
+                    </h2>
+                    <p className="text-sm sm:text-base text-gray-600 font-medium">Recent updates</p>
+                  </div>
                 </div>
-                <div>
-                  <h2 className="text-lg sm:text-xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
-                    Activity Timeline
-                  </h2>
-                  <p className="text-sm sm:text-base text-gray-600 font-medium">Recent updates</p>
-                </div>
+                <ActivityTimeline
+                  dashboardData={dashboardData}
+                  className="[&>*]:!bg-transparent [&>*]:!shadow-none [&>*]:!border-none"
+                />
               </div>
-              <ActivityTimeline
-                dashboardData={dashboardData}
-                className="[&>*]:!bg-transparent [&>*]:!shadow-none [&>*]:!border-none"
-              />
             </div>
-          </div>
+          )}
         </div>
 
 
@@ -766,7 +772,7 @@ if (calendarResponse && calendarResponse.ok) {
         </div>
 
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
+        <div className="dashboard-grid grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8 widget-container">
           {/* Left Column */}
           <div className="lg:col-span-2 space-y-4 sm:space-y-6">
             {/* Upcoming Events */}

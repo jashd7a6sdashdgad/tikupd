@@ -1720,3 +1720,210 @@ a, button, [role="button"], [role="link"], [tabindex] {
     transform: translateY(-50vh);
   }
 }
+
+/* Dynamic customization styles */
+:root {
+  --app-font-size: 16px;
+  --app-border-radius: 8px;
+  --app-animation-speed: 300ms;
+}
+
+/* Apply font size globally */
+body {
+  font-size: var(--app-font-size);
+}
+
+/* Apply border radius to cards and buttons */
+.card, .btn, button, input, select, textarea {
+  border-radius: var(--app-border-radius);
+}
+
+/* Apply animation speed */
+* {
+  transition-duration: var(--app-animation-speed) !important;
+}
+
+/* Reduced motion support */
+.reduce-motion * {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+}
+
+/* Compact mode spacing */
+.compact-mode .card {
+  padding: 0.75rem !important;
+  margin-bottom: 0.5rem !important;
+}
+
+.compact-mode .space-y-4 > * + * {
+  margin-top: 0.75rem !important;
+}
+
+.compact-mode .space-y-6 > * + * {
+  margin-top: 1rem !important;
+}
+
+/* Avatar visibility */
+[data-show-avatars="false"] .avatar {
+  display: none !important;
+}
+
+/* Card shadows */
+[data-card-shadows="false"] .shadow,
+[data-card-shadows="false"] .shadow-sm,
+[data-card-shadows="false"] .shadow-md,
+[data-card-shadows="false"] .shadow-lg {
+  box-shadow: none !important;
+}
+
+/* Blur effects */
+[data-blur-effects="false"] .backdrop-blur,
+[data-blur-effects="false"] .backdrop-blur-sm,
+[data-blur-effects="false"] .backdrop-blur-md,
+[data-blur-effects="false"] .backdrop-blur-lg {
+  backdrop-filter: none !important;
+}
+
+/* Dark mode styles */
+.dark {
+  --color-background: 222.2 84% 4.9%;
+  --color-foreground: 210 40% 98%;
+  --color-card: 222.2 84% 4.9%;
+  --color-card-foreground: 210 40% 98%;
+  --color-primary: 210 40% 98%;
+  --color-primary-foreground: 222.2 84% 4.9%;
+  --color-secondary: 217.2 32.6% 17.5%;
+  --color-secondary-foreground: 210 40% 98%;
+  --color-muted: 217.2 32.6% 17.5%;
+  --color-muted-foreground: 215 20.2% 65.1%;
+  --color-accent: 217.2 32.6% 17.5%;
+  --color-accent-foreground: 210 40% 98%;
+  --color-border: 217.2 32.6% 17.5%;
+}
+
+/* Widget spacing classes */
+[data-widget-spacing="compact"] .widget {
+  margin: 0.25rem !important;
+}
+
+[data-widget-spacing="normal"] .widget {
+  margin: 0.5rem !important;
+}
+
+[data-widget-spacing="spacious"] .widget {
+  margin: 1rem !important;
+}
+
+/* Enhanced layout customization styles */
+/* Cards per row */
+[data-cards-per-row="1"] .dashboard-grid {
+  grid-template-columns: 1fr !important;
+}
+
+[data-cards-per-row="2"] .dashboard-grid {
+  grid-template-columns: repeat(2, 1fr) !important;
+}
+
+[data-cards-per-row="3"] .dashboard-grid {
+  grid-template-columns: repeat(3, 1fr) !important;
+}
+
+[data-cards-per-row="4"] .dashboard-grid {
+  grid-template-columns: repeat(4, 1fr) !important;
+}
+
+/* Header styles */
+[data-header-style="classic"] .app-header {
+  background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+  border-bottom: 2px solid #dee2e6;
+  padding: 1rem !important;
+}
+
+[data-header-style="modern"] .app-header {
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  padding: 0.75rem 1rem !important;
+}
+
+[data-header-style="minimal"] .app-header {
+  background: transparent;
+  border-bottom: none;
+  padding: 0.5rem 1rem !important;
+}
+
+/* Sidebar collapsed state */
+[data-sidebar-collapsed="true"] .sidebar {
+  width: 64px !important;
+  min-width: 64px !important;
+}
+
+[data-sidebar-collapsed="true"] .sidebar .nav-text {
+  display: none !important;
+}
+
+[data-sidebar-collapsed="true"] .sidebar .nav-item {
+  justify-content: center !important;
+  padding: 0.5rem !important;
+}
+
+/* Footer visibility */
+[data-footer-visible="false"] .app-footer {
+  display: none !important;
+}
+
+/* Widget visibility */
+[data-show-weather="false"] .weather-widget {
+  display: none !important;
+}
+
+[data-show-quick-actions="false"] .quick-actions-widget {
+  display: none !important;
+}
+
+[data-show-recent-activity="false"] .activity-timeline {
+  display: none !important;
+}
+
+/* Enhanced widget spacing */
+[data-widget-spacing="compact"] .widget-container {
+  gap: 0.5rem !important;
+}
+
+[data-widget-spacing="compact"] .widget {
+  margin: 0.25rem !important;
+  padding: 0.75rem !important;
+}
+
+[data-widget-spacing="normal"] .widget-container {
+  gap: 1rem !important;
+}
+
+[data-widget-spacing="normal"] .widget {
+  margin: 0.5rem !important;
+  padding: 1rem !important;
+}
+
+[data-widget-spacing="spacious"] .widget-container {
+  gap: 2rem !important;
+}
+
+[data-widget-spacing="spacious"] .widget {
+  margin: 1rem !important;
+  padding: 1.5rem !important;
+}
+
+/* Responsive grid adjustments */
+@media (max-width: 768px) {
+  [data-cards-per-row] .dashboard-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+@media (min-width: 769px) and (max-width: 1024px) {
+  [data-cards-per-row="3"] .dashboard-grid,
+  [data-cards-per-row="4"] .dashboard-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+}

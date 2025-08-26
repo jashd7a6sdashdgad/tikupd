@@ -286,13 +286,7 @@ export default function AuthPage() {
     return credentials.username === authorizedUsername || user?.username === authorizedUsername;
   };
 
-  // Debug function to test biometric support manually
-  const testBiometricSupport = async () => {
-    console.log('🧪 Manual biometric test started...');
-    const result = await checkMobileBiometricSupport();
-    console.log('🧪 Manual test result:', result);
-    alert(`Biometric support test result: ${result ? 'SUPPORTED' : 'NOT SUPPORTED'}\nCheck console for detailed logs.`);
-  };
+  // Removed testBiometricSupport function - biometric is now automatically enabled
 
   // Check biometric support on component mount and when credentials change
   useEffect(() => {
@@ -304,8 +298,7 @@ export default function AuthPage() {
     checkBiometricSupport();
   }, [credentials.username, user]);
 
-  // Add test button in development
-  const isDevelopment = process.env.NODE_ENV === 'development';
+  // Removed development test button - biometric is now always available for mahboob
 
   const checkBiometricSupport = async () => {
     try {
@@ -316,60 +309,64 @@ export default function AuthPage() {
         return;
       }
 
-      // Check biometric support
+      // Always show biometric options for authorized users (mahboob)
+      // The actual functionality will be tested when user tries to use it
+      console.log('🔓 Always enabling biometric UI for authorized user (mahboob)');
+      setBiometricSupported(true);
+      
+      // Still check actual biometric support for better UX and error handling
       const available = await checkMobileBiometricSupport();
-      setBiometricSupported(available);
+      console.log('🔍 Actual biometric support detected:', available);
 
-      if (available) {
-        // Set device-specific biometric type
-        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-        const isAndroid = /Android/.test(navigator.userAgent);
-        const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-        const isWindows = /Windows/.test(navigator.userAgent);
-        const isMac = /Mac/.test(navigator.userAgent);
-        
-        if (isIOS) {
-          setBiometricType('Face ID / Touch ID');
-        } else if (isAndroid) {
-          setBiometricType('Fingerprint / Face Unlock');
-        } else if (isWindows) {
-          setBiometricType('Windows Hello / PIN');
-        } else if (isMac) {
-          setBiometricType('Touch ID');
-        } else if (isMobile) {
-          setBiometricType('Mobile Biometric');
-        } else {
-          setBiometricType('Biometric Authentication');
-        }
-
-        // Check if there's a stored mobile credential for authorized user
-        const storedCredentialId = localStorage.getItem('mobile_biometric_credential_id');
-        const storedUserEmail = localStorage.getItem('mobile_biometric_user_email');
-        const storedUsername = localStorage.getItem('mobile_biometric_username');
-        
-        // Only show stored credential if it belongs to authorized user (mahboob)
-        const isValidStoredCredential = storedCredentialId && (
-          storedUserEmail === 'mahboob@gmail.com' || 
-          storedUsername === 'mahboob'
-        );
-        
-        if (isValidStoredCredential) {
-          setHasStoredCredential(true);
-        } else {
-          setHasStoredCredential(false);
-          // Clear invalid credentials
-          if (storedCredentialId && !isValidStoredCredential) {
-            localStorage.removeItem('mobile_biometric_credential_id');
-            localStorage.removeItem('mobile_biometric_raw_id');
-            localStorage.removeItem('mobile_biometric_device_type');
-            localStorage.removeItem('mobile_biometric_user_email');
-            localStorage.removeItem('mobile_biometric_username');
-          }
-        }
-        
-        console.log('Mobile biometric support available for authorized user:', available);
-        console.log('Has stored mobile credential for authorized user:', !!storedCredentialId && storedUserEmail === 'mahboob@gmail.com');
+      // Always set device-specific biometric type for authorized users
+      const isIOS = /iPad|iPhone|iPad|iPod/.test(navigator.userAgent);
+      const isAndroid = /Android/.test(navigator.userAgent);
+      const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      const isWindows = /Windows/.test(navigator.userAgent);
+      const isMac = /Mac/.test(navigator.userAgent);
+      
+      if (isIOS) {
+        setBiometricType('Face ID / Touch ID');
+      } else if (isAndroid) {
+        setBiometricType('Fingerprint / Face Unlock');
+      } else if (isWindows) {
+        setBiometricType('Windows Hello / PIN');
+      } else if (isMac) {
+        setBiometricType('Touch ID');
+      } else if (isMobile) {
+        setBiometricType('Mobile Biometric');
+      } else {
+        setBiometricType('Biometric Authentication');
       }
+
+      // Check if there's a stored mobile credential for authorized user
+      const storedCredentialId = localStorage.getItem('mobile_biometric_credential_id');
+      const storedUserEmail = localStorage.getItem('mobile_biometric_user_email');
+      const storedUsername = localStorage.getItem('mobile_biometric_username');
+      
+      // Only show stored credential if it belongs to authorized user (mahboob)
+      const isValidStoredCredential = storedCredentialId && (
+        storedUserEmail === 'mahboob@gmail.com' || 
+        storedUsername === 'mahboob'
+      );
+      
+      if (isValidStoredCredential) {
+        setHasStoredCredential(true);
+      } else {
+        setHasStoredCredential(false);
+        // Clear invalid credentials
+        if (storedCredentialId && !isValidStoredCredential) {
+          localStorage.removeItem('mobile_biometric_credential_id');
+          localStorage.removeItem('mobile_biometric_raw_id');
+          localStorage.removeItem('mobile_biometric_device_type');
+          localStorage.removeItem('mobile_biometric_user_email');
+          localStorage.removeItem('mobile_biometric_username');
+        }
+      }
+      
+      console.log('🔓 Biometric UI enabled for authorized user (mahboob)');
+      console.log('📱 Actual biometric support detected:', available);
+      console.log('💾 Has stored credential for mahboob:', isValidStoredCredential);
     } catch (error) {
       console.error('Error checking mobile biometric support:', error);
     }
@@ -385,7 +382,13 @@ export default function AuthPage() {
         throw new Error('Biometric authentication is only available for mahboob@gmail.com');
       }
 
-      console.log('Starting mobile biometric registration for authorized user...');
+      // First check if biometric support is actually available
+      const actualSupport = await checkMobileBiometricSupport();
+      if (!actualSupport) {
+        throw new Error('Biometric authentication is not supported on this device. Please ensure you have Face ID, Touch ID, or fingerprint authentication enabled in your device settings.');
+      }
+
+      console.log('🔐 Starting mobile biometric registration for authorized user...');
       const result = await registerMobileBiometric();
       
       if (result.success) {
@@ -393,17 +396,26 @@ export default function AuthPage() {
         localStorage.setItem('mobile_biometric_user_email', 'mahboob@gmail.com');
         localStorage.setItem('mobile_biometric_username', 'mahboob');
         setHasStoredCredential(true);
-        console.log('Mobile biometric credential registered successfully for mahboob');
+        console.log('✅ Mobile biometric credential registered successfully for mahboob');
         
         // Show success message with device-specific text
         const deviceName = result.deviceType === 'ios' ? 'Face ID/Touch ID' : 'Fingerprint/Face Unlock';
-        alert(`${deviceName} registration successful for mahboob@gmail.com! You can now use biometric authentication.`);
+        alert(`🎉 ${deviceName} registration successful for mahboob@gmail.com!\n\nYou can now use biometric authentication to sign in quickly.`);
       } else {
         throw new Error(result.error || 'Registration failed');
       }
     } catch (error: any) {
-      console.error('Mobile biometric registration failed:', error);
-      setError(error.message || 'Mobile biometric registration failed');
+      console.error('❌ Mobile biometric registration failed:', error);
+      
+      // Show user-friendly error message
+      let userMessage = error.message || 'Mobile biometric registration failed';
+      if (error.message?.includes('not supported')) {
+        userMessage = 'Your device does not support biometric authentication, or it is not enabled. Please check your device settings.';
+      } else if (error.message?.includes('NotAllowedError')) {
+        userMessage = 'Biometric authentication permission was denied. Please enable it in your browser/device settings and try again.';
+      }
+      
+      setError(userMessage);
     } finally {
       setBiometricLoading(false);
     }
@@ -426,17 +438,17 @@ export default function AuthPage() {
         throw new Error('Stored biometric credential is not authorized for this user');
       }
 
-      console.log('Starting mobile biometric authentication for authorized user...');
+      console.log('🔐 Starting mobile biometric authentication for authorized user...');
       const result = await authenticateWithMobileBiometric();
       
       if (result.success) {
-        console.log(`Mobile biometric authentication successful for mahboob@gmail.com: ${result.type}`);
+        console.log(`✅ Mobile biometric authentication successful for mahboob@gmail.com: ${result.type}`);
         
         // Simulate successful login after biometric verification for authorized user
         const loginResult = await login({ username: 'mahboob', password: 'mahboob123' });
         
         if (loginResult.success) {
-          alert(`${result.type} authentication successful! Welcome back, Mahboob!`);
+          alert(`🎉 ${result.type} authentication successful!\nWelcome back, Mahboob!`);
           router.push('/dashboard');
         } else {
           setError('Biometric authentication successful but login failed. Please try again.');
@@ -445,8 +457,21 @@ export default function AuthPage() {
         throw new Error(result.error || 'Authentication failed');
       }
     } catch (error: any) {
-      console.error('Mobile biometric authentication failed:', error);
-      setError(error.message || 'Mobile biometric authentication failed');
+      console.error('❌ Mobile biometric authentication failed:', error);
+      
+      // Show user-friendly error message
+      let userMessage = error.message || 'Mobile biometric authentication failed';
+      if (error.message?.includes('cancelled')) {
+        userMessage = 'Biometric authentication was cancelled. Please try again and use your fingerprint or Face ID.';
+      } else if (error.message?.includes('invalid')) {
+        userMessage = 'Your biometric credential has become invalid. Please set up biometric authentication again.';
+      } else if (error.message?.includes('timed out')) {
+        userMessage = 'Authentication timed out. Please try again.';
+      } else if (error.message?.includes('No mobile biometric credential')) {
+        userMessage = 'No biometric credential found. Please set up biometric authentication first.';
+      }
+      
+      setError(userMessage);
     } finally {
       setBiometricLoading(false);
     }
@@ -740,16 +765,7 @@ export default function AuthPage() {
                   </div>
                 </div>
 
-                {/* Debug Test Button - Always visible for testing */}
-                <div className="mt-6">
-                  <Button
-                    onClick={testBiometricSupport}
-                    variant="outline"
-                    className="w-full text-xs"
-                  >
-                    🧪 Test Biometric Support (Debug)
-                  </Button>
-                </div>
+                {/* Removed debug button - biometric support is now automatically enabled for mahboob */}
                 
               </CardContent>
             </Card>

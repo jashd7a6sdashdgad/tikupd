@@ -16,7 +16,7 @@ export default function ImageUpload({
   onImageSelected, 
   onError, 
   onClose,
-  maxSizeMB = 5 
+  maxSizeMB = 25 // Increase max size to allow high-quality photos 
 }: ImageUploadProps) {
   const [isCapturing, setIsCapturing] = useState(false);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
@@ -41,9 +41,11 @@ export default function ImageUpload({
       // Request camera access with high quality settings
       const stream = await navigator.mediaDevices.getUserMedia({
         video: {
-          width: { ideal: 1920, max: 1920 },
-          height: { ideal: 1080, max: 1080 },
-          facingMode: 'environment' // Prefer back camera on mobile
+          width: { ideal: 1920, max: 4096 }, // Allow up to 4K width
+          height: { ideal: 1080, max: 2160 }, // Allow up to 4K height
+          facingMode: 'environment', // Prefer back camera on mobile
+          frameRate: { ideal: 30 }, // Ensure good frame rate
+          aspectRatio: { ideal: 16/9 } // Maintain good aspect ratio
         }
       });
 
@@ -90,13 +92,15 @@ export default function ImageUpload({
     // Draw current video frame to canvas
     context.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-    // Convert to high-quality PNG
+    // Convert to maximum quality PNG with enhanced settings
     canvas.toBlob(
       (blob) => {
         if (blob) {
           const fileName = `camera_capture_${Date.now()}.png`;
           setSelectedFile(new File([blob], fileName, { type: 'image/png' }));
+          // Use maximum quality for preview as well
           setPreviewImage(canvas.toDataURL('image/png', 1.0));
+          console.log(`📸 Camera capture: ${canvas.width}x${canvas.height} at maximum quality (${Math.round(blob.size / 1024)}KB)`);
         }
       },
       'image/png',
@@ -136,7 +140,7 @@ export default function ImageUpload({
   }, [maxSizeMB, onError]);
 
   /**
-   * Convert image to optimized format and base64
+   * Convert image to high-quality format with minimal compression
    */
   const processImage = useCallback(async (file: File): Promise<{ base64: string; mimeType: string; fileName: string }> => {
     return new Promise((resolve, reject) => {
@@ -145,10 +149,11 @@ export default function ImageUpload({
       const img = new Image();
 
       img.onload = () => {
-        // Calculate optimal dimensions (max 1920x1080 while maintaining aspect ratio)
-        const maxWidth = 1920;
-        const maxHeight = 1080;
+        // Only resize if image is extremely large (over 4K) to prevent memory issues
+        const maxWidth = 3840; // 4K width
+        const maxHeight = 2160; // 4K height
         let { width, height } = img;
+        let needsResize = false;
 
         if (width > maxWidth || height > maxHeight) {
           const aspectRatio = width / height;
@@ -159,33 +164,56 @@ export default function ImageUpload({
             height = maxHeight;
             width = height * aspectRatio;
           }
+          needsResize = true;
+          console.log(`📸 Image will be resized to preserve quality: ${width}x${height}`);
+        } else {
+          console.log(`📸 Image will be kept at original size: ${width}x${height}`);
         }
 
-        // Set canvas dimensions
+        // Set canvas dimensions to maintain quality
         canvas.width = width;
         canvas.height = height;
 
-        // Draw and compress image
-        ctx?.drawImage(img, 0, 0, width, height);
-
-        // Determine optimal format
-        let outputFormat = 'image/png';
-        let quality = 1.0;
-
-        if (file.type === 'image/jpeg') {
-          outputFormat = 'image/jpeg';
-          quality = 0.9; // High quality JPEG
-        } else if (file.type === 'image/webp') {
-          outputFormat = 'image/webp';
-          quality = 0.9; // High quality WebP
+        // Configure high-quality drawing
+        if (ctx) {
+          ctx.imageSmoothingEnabled = true;
+          ctx.imageSmoothingQuality = 'high';
+          ctx.drawImage(img, 0, 0, width, height);
         }
 
-        // Convert to base64
+        // Preserve original format or use PNG for highest quality
+        let outputFormat = file.type;
+        let quality = 1.0; // Maximum quality
+
+        // For photos from camera, keep PNG at maximum quality
+        if (file.name.includes('camera_capture')) {
+          outputFormat = 'image/png';
+          quality = 1.0;
+        } else {
+          // For uploaded files, maintain original format with highest quality
+          if (file.type === 'image/jpeg') {
+            outputFormat = 'image/jpeg';
+            quality = 1.0; // Maximum JPEG quality
+          } else if (file.type === 'image/webp') {
+            outputFormat = 'image/webp';
+            quality = 1.0; // Lossless WebP
+          } else {
+            // Default to PNG for other formats
+            outputFormat = 'image/png';
+            quality = 1.0;
+          }
+        }
+
+        console.log(`📸 Processing image: ${outputFormat} at quality ${quality}${needsResize ? ' (resized)' : ' (original size)'}`);
+
+        // Convert to base64 with maximum quality
         const base64 = canvas.toDataURL(outputFormat, quality);
         
         // Generate filename with proper extension
         const extension = outputFormat.split('/')[1];
-        const fileName = `expense_image_${Date.now()}.${extension}`;
+        const fileName = `high_quality_photo_${Date.now()}.${extension}`;
+
+        console.log(`📸 Final image size: ${Math.round(base64.length / 1024)}KB`);
 
         resolve({
           base64,
@@ -332,7 +360,7 @@ export default function ImageUpload({
                   <AlertCircle className="h-3 w-3 mr-1" />
                   Supported formats
                 </div>
-                PNG, JPEG, WebP • Max {maxSizeMB}MB
+                PNG, JPEG, WebP • Max {maxSizeMB}MB (High Quality Mode)
               </div>
             </div>
           )}

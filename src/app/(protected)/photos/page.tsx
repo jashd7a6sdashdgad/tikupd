@@ -69,12 +69,21 @@ const formatFileSize = (size: string | number | undefined) => {
   return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
 };
 
-// --- DriveImage Component ---
-const DriveImage = ({ photo, alt, className, quality = 85 }: { photo: Photo, alt: string, className?: string, quality?: number }) => {
+// --- DriveImage Component - Improved for better quality ---
+const DriveImage = ({ photo, alt, className, quality = 85, preferHighRes = false }: { 
+  photo: Photo, 
+  alt: string, 
+  className?: string, 
+  quality?: number,
+  preferHighRes?: boolean 
+}) => {
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
 
-  const src = photo.thumbnailLink || photo.webContentLink;
+  // Use high-res source if preferred, otherwise thumbnail for grid view
+  const src = preferHighRes 
+    ? (photo.webContentLink || photo.webViewLink || photo.thumbnailLink)
+    : (photo.thumbnailLink || photo.webContentLink);
 
   if (!src) {
     return (
@@ -118,7 +127,9 @@ const DriveImage = ({ photo, alt, className, quality = 85 }: { photo: Photo, alt
         onLoadingComplete={handleLoadingComplete}
         onError={handleImageError}
         className={`${isLoading ? 'opacity-0' : 'opacity-100'} transition-opacity duration-300`}
-        quality={quality}
+        quality={preferHighRes ? 100 : quality}
+        unoptimized={preferHighRes}
+        priority={preferHighRes}
       />
     </div>
   );
@@ -153,6 +164,8 @@ export default function PhotosPage() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [duplicateGroups, setDuplicateGroups] = useState<string[][]>([]);
   const [voiceSearchQuery, setVoiceSearchQuery] = useState('');
+  const [isModalImageLoading, setIsModalImageLoading] = useState(false);
+  const [modalImageZoom, setModalImageZoom] = useState(1);
 
   // --- Hooks & Instances ---
   const photoIntelligence = useMemo(() => new PhotoIntelligence(), []);
@@ -474,6 +487,8 @@ export default function PhotosPage() {
     setCurrentPhotoIndex(index);
     setSelectedPhoto(photo);
     setIsModalOpen(true);
+    setModalImageZoom(1); // Reset zoom
+    setIsModalImageLoading(true); // Show loading
   }, [filteredPhotos]);
 
   const closePhotoModal = useCallback(() => {
@@ -493,6 +508,8 @@ export default function PhotosPage() {
     
     setCurrentPhotoIndex(newIndex);
     setSelectedPhoto(filteredPhotos[newIndex]);
+    setModalImageZoom(1); // Reset zoom
+    setIsModalImageLoading(true); // Show loading for new image
   }, [filteredPhotos, currentPhotoIndex]);
 
   // Handle keyboard navigation
@@ -786,26 +803,67 @@ export default function PhotosPage() {
             </Button>
           )}
 
-          {/* Main photo container */}
-          <div className="relative max-w-[70vw] max-h-[70vh] flex items-center justify-center">
+          {/* Main photo container - Fixed for high quality with loading */}
+          <div className="relative max-w-[90vw] max-h-[90vh] flex items-center justify-center">
             <div className="relative flex items-center justify-center bg-white rounded-lg shadow-lg overflow-hidden">
-              <Image
-                src={selectedPhoto.thumbnailLink || selectedPhoto.webContentLink || selectedPhoto.webViewLink || ''}
-                alt={selectedPhoto.name}
-                width={800}
-                height={600}
-                style={{ maxWidth: '70vw', maxHeight: '70vh', objectFit: 'contain' }}
-                quality={100}
-                onError={(e) => {
-                  console.error('Failed to load full-size image');
-                  // Try fallback to thumbnail
-                  const target = e.target as HTMLImageElement;
-                  if (selectedPhoto.thumbnailLink && target.src !== selectedPhoto.thumbnailLink) {
-                    target.src = selectedPhoto.thumbnailLink;
-                  }
+              {/* Loading spinner for modal image */}
+              {isModalImageLoading && (
+                <div className="absolute inset-0 flex items-center justify-center bg-gray-100 z-10">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+                  <span className="ml-3 text-gray-600">Loading high quality image...</span>
+                </div>
+              )}
+              
+              <div 
+                className="cursor-zoom-in"
+                onClick={() => setModalImageZoom(modalImageZoom === 1 ? 2 : 1)}
+                style={{ 
+                  transform: `scale(${modalImageZoom})`,
+                  transition: 'transform 0.3s ease'
                 }}
-              />
+              >
+                <Image
+                  src={selectedPhoto.webContentLink || selectedPhoto.webViewLink || selectedPhoto.thumbnailLink || ''}
+                  alt={selectedPhoto.name}
+                  width={1920}
+                  height={1080}
+                  style={{ 
+                    maxWidth: modalImageZoom === 1 ? '90vw' : 'none', 
+                    maxHeight: modalImageZoom === 1 ? '90vh' : 'none', 
+                    objectFit: 'contain',
+                    imageRendering: 'auto'
+                  }}
+                  quality={100}
+                  priority={true}
+                  unoptimized={true}
+                  onLoad={() => {
+                    setIsModalImageLoading(false);
+                    console.log('✅ High-quality image loaded successfully');
+                  }}
+                  onError={(e) => {
+                    console.error('Failed to load high-res image, trying fallback...');
+                    const target = e.target as HTMLImageElement;
+                    // Try webViewLink if webContentLink fails
+                    if (selectedPhoto.webViewLink && target.src !== selectedPhoto.webViewLink) {
+                      target.src = selectedPhoto.webViewLink;
+                    } else if (selectedPhoto.thumbnailLink && target.src !== selectedPhoto.thumbnailLink) {
+                      // Last resort: thumbnail (but warn user)
+                      target.src = selectedPhoto.thumbnailLink;
+                      console.warn('Using low-res thumbnail as fallback');
+                    }
+                    setIsModalImageLoading(false);
+                  }}
+                  className={`transition-opacity duration-300 ${isModalImageLoading ? 'opacity-0' : 'opacity-100'}`}
+                />
+              </div>
             </div>
+            
+            {/* Zoom indicator */}
+            {modalImageZoom > 1 && (
+              <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-black/60 text-white px-3 py-1 rounded-full text-sm">
+                Zoom: {modalImageZoom}x (Click to reset)
+              </div>
+            )}
           </div>
 
 
