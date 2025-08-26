@@ -55,6 +55,21 @@ interface PlaceResult {
   engine: string;
 }
 
+interface SmartSearchResult {
+  enhancedQuery: string;
+  intent: 'web' | 'images' | 'places' | 'weather' | 'news' | 'shopping';
+  confidence: number;
+  suggestions: string[];
+  summary?: string;
+}
+
+interface SearchHistory {
+  query: string;
+  timestamp: Date;
+  resultCount: number;
+  intent: string;
+}
+
 // Add this after imports for SpeechRecognition type support
 // @ts-expect-error: TypeScript does not have built-in types for SpeechRecognition in all environments
 // This alias allows useRef<SpeechRecognition | null>
@@ -71,6 +86,15 @@ export default function VoiceSearchPage() {
   const [placeResults, setPlaceResults] = useState<PlaceResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [activeTab, setActiveTab] = useState<'web' | 'images' | 'places'>('web');
+  
+  // Smart search state
+  const [smartResult, setSmartResult] = useState<SmartSearchResult | null>(null);
+  const [searchHistory, setSearchHistory] = useState<SearchHistory[]>([]);
+  const [isEnhancing, setIsEnhancing] = useState(false);
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [resultSummary, setResultSummary] = useState<string>('');
+  const [followUpQuestions, setFollowUpQuestions] = useState<string[]>([]);
+  const [detectedLanguage, setDetectedLanguage] = useState<string>('');
   
   // Voice state
   const [isRecording, setIsRecording] = useState(false);
@@ -133,7 +157,8 @@ export default function VoiceSearchPage() {
         
         recognition.continuous = false;
         recognition.interimResults = false;
-        recognition.lang = language === 'ar' ? 'ar-SA' : 'en-US';
+        // Support multiple languages for voice recognition
+        recognition.lang = getVoiceLanguageCode(language);
 
         recognition.onresult = (event: any) => {
           const transcript = event.results[0][0].transcript;
@@ -231,24 +256,254 @@ export default function VoiceSearchPage() {
     }
   }, [blobToBase64, language]);
 
-  // Perform search using SearXNG
+  // Get voice recognition language code
+  const getVoiceLanguageCode = useCallback((lang: string): string => {
+    const languageMap: { [key: string]: string } = {
+      'en': 'en-US',
+      'ar': 'ar-SA',
+      'es': 'es-ES',
+      'fr': 'fr-FR',
+      'de': 'de-DE',
+      'it': 'it-IT',
+      'pt': 'pt-BR',
+      'ru': 'ru-RU',
+      'ja': 'ja-JP',
+      'ko': 'ko-KR',
+      'zh': 'zh-CN',
+      'hi': 'hi-IN',
+      'tr': 'tr-TR',
+      'nl': 'nl-NL',
+      'sv': 'sv-SE',
+      'da': 'da-DK',
+      'no': 'nb-NO',
+      'fi': 'fi-FI',
+      'pl': 'pl-PL',
+      'cs': 'cs-CZ',
+      'hu': 'hu-HU',
+      'ro': 'ro-RO',
+      'bg': 'bg-BG',
+      'hr': 'hr-HR',
+      'sk': 'sk-SK',
+      'sl': 'sl-SI',
+      'et': 'et-EE',
+      'lv': 'lv-LV',
+      'lt': 'lt-LT',
+      'mt': 'mt-MT',
+      'el': 'el-GR',
+      'he': 'he-IL',
+      'th': 'th-TH',
+      'vi': 'vi-VN',
+      'id': 'id-ID',
+      'ms': 'ms-MY',
+      'tl': 'tl-PH',
+      'sw': 'sw-KE',
+      'am': 'am-ET',
+      'bn': 'bn-BD',
+      'gu': 'gu-IN',
+      'kn': 'kn-IN',
+      'ml': 'ml-IN',
+      'mr': 'mr-IN',
+      'ne': 'ne-NP',
+      'pa': 'pa-IN',
+      'si': 'si-LK',
+      'ta': 'ta-IN',
+      'te': 'te-IN',
+      'ur': 'ur-PK',
+      'fa': 'fa-IR',
+      'ka': 'ka-GE',
+      'hy': 'hy-AM',
+      'az': 'az-AZ',
+      'kk': 'kk-KZ',
+      'ky': 'ky-KG',
+      'mn': 'mn-MN',
+      'my': 'my-MM',
+      'km': 'km-KH',
+      'lo': 'lo-LA',
+      'is': 'is-IS'
+    };
+    
+    return languageMap[lang] || 'en-US';
+  }, []);
+
+  // Detect language from text
+  const detectLanguage = useCallback(async (text: string): Promise<string> => {
+    try {
+      const response = await fetch('/api/ai/detect-language', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text })
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        return data.language || language;
+      }
+    } catch (error) {
+      console.error('Language detection error:', error);
+    }
+    
+    return language;
+  }, [language]);
+
+  // Translate query if needed
+  const translateQuery = useCallback(async (query: string, fromLang: string, toLang: string = 'en'): Promise<string> => {
+    if (fromLang === toLang) return query;
+    
+    try {
+      const response = await fetch('/api/ai/translate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          text: query,
+          from: fromLang,
+          to: toLang
+        })
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        return data.translatedText || query;
+      }
+    } catch (error) {
+      console.error('Translation error:', error);
+    }
+    
+    return query;
+  }, []);
+
+  // Basic intent detection fallback
+  const detectIntent = useCallback((query: string): 'web' | 'images' | 'places' | 'weather' | 'news' | 'shopping' => {
+    const lowerQuery = query.toLowerCase();
+    
+    if (lowerQuery.includes('weather') || lowerQuery.includes('temperature') || lowerQuery.includes('forecast')) {
+      return 'web'; // Weather searches go to web for now
+    }
+    if (lowerQuery.includes('image') || lowerQuery.includes('photo') || lowerQuery.includes('picture')) {
+      return 'images';
+    }
+    if (lowerQuery.includes('location') || lowerQuery.includes('place') || lowerQuery.includes('near me') || 
+        lowerQuery.includes('restaurant') || lowerQuery.includes('hotel')) {
+      return 'places';
+    }
+    if (lowerQuery.includes('news') || lowerQuery.includes('latest') || lowerQuery.includes('today')) {
+      return 'web';
+    }
+    if (lowerQuery.includes('buy') || lowerQuery.includes('price') || lowerQuery.includes('shop')) {
+      return 'web';
+    }
+    
+    return 'web';
+  }, []);
+
+  // Generate search suggestions
+  const generateSuggestions = useCallback((query: string): string[] => {
+    const suggestions: string[] = [];
+    const lowerQuery = query.toLowerCase();
+    
+    if (lowerQuery.includes('weather')) {
+      suggestions.push(`${query} today`, `${query} forecast`, `${query} this week`);
+    } else if (lowerQuery.includes('restaurant')) {
+      suggestions.push(`${query} near me`, `best ${query}`, `${query} reviews`);
+    } else {
+      suggestions.push(`${query} 2024`, `latest ${query}`, `best ${query}`);
+    }
+    
+    return suggestions.slice(0, 3);
+  }, []);
+
+  // Smart query enhancement using AI
+  const enhanceQuery = useCallback(async (rawQuery: string): Promise<SmartSearchResult> => {
+    try {
+      setIsEnhancing(true);
+      
+      const response = await fetch('/api/ai/enhance-search', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          query: rawQuery,
+          language,
+          context: searchHistory.slice(-5) // Last 5 searches for context
+        })
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        return {
+          enhancedQuery: result.enhancedQuery || rawQuery,
+          intent: result.intent || 'web',
+          confidence: result.confidence || 0.5,
+          suggestions: result.suggestions || [],
+          summary: result.summary
+        };
+      }
+    } catch (error) {
+      console.error('Query enhancement error:', error);
+    } finally {
+      setIsEnhancing(false);
+    }
+    
+    // Fallback: basic intent detection
+    const intent = detectIntent(rawQuery);
+    return {
+      enhancedQuery: rawQuery,
+      intent,
+      confidence: 0.7,
+      suggestions: generateSuggestions(rawQuery)
+    };
+  }, [language, searchHistory, detectIntent, generateSuggestions]);
+
+
+  // Add to search history
+  const addToHistory = useCallback((query: string, resultCount: number, intent: string) => {
+    const newEntry: SearchHistory = {
+      query,
+      timestamp: new Date(),
+      resultCount,
+      intent
+    };
+    
+    setSearchHistory(prev => [newEntry, ...prev.slice(0, 49)]); // Keep last 50 searches
+  }, []);
+
+  // Perform search using SearXNG with smart enhancements
   const performSearch = useCallback(async (searchQuery: string = query) => {
     if (!searchQuery.trim()) return;
 
     setIsSearching(true);
     setError(null);
+    setResultSummary('');
     
     try {
+      // Detect language of the query
+      const detectedLang = await detectLanguage(searchQuery);
+      setDetectedLanguage(detectedLang);
+      
+      // Translate query to English if needed for better search results
+      const translatedQuery = detectedLang !== 'en' ? await translateQuery(searchQuery, detectedLang, 'en') : searchQuery;
+      
+      // First, enhance the query with AI
+      const smartResult = await enhanceQuery(translatedQuery);
+      setSmartResult(smartResult);
+      setSuggestions(smartResult.suggestions);
+      
+      // Use enhanced query for search
+      const enhancedQuery = smartResult.enhancedQuery;
+      
+      // Auto-switch tab based on detected intent
+      if (smartResult.confidence > 0.8) {
+        setActiveTab(smartResult.intent === 'weather' || smartResult.intent === 'news' || smartResult.intent === 'shopping' ? 'web' : smartResult.intent);
+      }
+      
       // Search for web results using local API proxy
-      const webResponse = await fetch(`/api/search?q=${encodeURIComponent(searchQuery)}&categories=general&format=json&safesearch=1`);
+      const webResponse = await fetch(`/api/search?q=${encodeURIComponent(enhancedQuery)}&categories=general&format=json&safesearch=1`);
       const webData = await webResponse.json();
       
       // Search for images
-      const imageResponse = await fetch(`/api/search?q=${encodeURIComponent(searchQuery)}&categories=images&format=json&safesearch=1`);
+      const imageResponse = await fetch(`/api/search?q=${encodeURIComponent(enhancedQuery)}&categories=images&format=json&safesearch=1`);
       const imageData = await imageResponse.json();
       
       // Search for places/maps
-      const placeResponse = await fetch(`/api/search?q=${encodeURIComponent(searchQuery)}&categories=map&format=json&safesearch=1`);
+      const placeResponse = await fetch(`/api/search?q=${encodeURIComponent(enhancedQuery)}&categories=map&format=json&safesearch=1`);
       const placeData = await placeResponse.json();
       
       // Process results with error handling for each response
@@ -298,14 +553,28 @@ export default function VoiceSearchPage() {
       }
 
       // Set results or empty arrays if there are errors
-      setSearchResults(webData.results || []);
-      setImageResults(imageData.results || []);
-      setPlaceResults(placeData.results || []);
+      const webResults = webData.results || [];
+      const imageResultsData = imageData.results || [];
+      const placeResultsData = placeData.results || [];
+      
+      setSearchResults(webResults);
+      setImageResults(imageResultsData);
+      setPlaceResults(placeResultsData);
+      
+      // Add to search history
+      const totalResults = webResults.length + imageResultsData.length + placeResultsData.length;
+      addToHistory(searchQuery, totalResults, smartResult.intent);
+      
+      // Generate AI summary and follow-up questions if we have results
+      if (totalResults > 0) {
+        generateResultSummary(webResults, smartResult.intent, enhancedQuery);
+        generateFollowUpQuestions(enhancedQuery, smartResult.intent, webResults);
+      }
       
       // Announce results if voice is enabled
       if (voiceSettings.voiceEnabled && voiceSettings.autoPlayResponses) {
-        const resultCount = (webData.results || []).length;
-        const announcement = `Found ${resultCount} results for ${searchQuery}`;
+        const announcement = smartResult.summary || 
+          `Found ${totalResults} results for ${searchQuery}. ${smartResult.confidence > 0.8 ? `I detected this is a ${smartResult.intent} search.` : ''}`;
         speakText(announcement);
       }
       
@@ -315,7 +584,58 @@ export default function VoiceSearchPage() {
     } finally {
       setIsSearching(false);
     }
-  }, [query, voiceSettings, speakText]);
+  }, [query, voiceSettings, speakText, enhanceQuery, addToHistory, detectLanguage, translateQuery]);
+
+  // Generate AI summary of search results
+  const generateResultSummary = useCallback(async (results: SearchResult[], intent: string, query: string) => {
+    try {
+      const topResults = results.slice(0, 5).map(r => ({
+        title: r.title,
+        content: r.content.substring(0, 200)
+      }));
+      
+      const response = await fetch('/api/ai/summarize-results', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          query,
+          intent,
+          results: topResults,
+          language
+        })
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setResultSummary(data.summary || '');
+      }
+    } catch (error) {
+      console.error('Summary generation error:', error);
+    }
+  }, [language]);
+
+  // Generate contextual follow-up questions
+  const generateFollowUpQuestions = useCallback(async (query: string, intent: string, results: SearchResult[]) => {
+    try {
+      const response = await fetch('/api/ai/follow-up-questions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          query,
+          intent,
+          results: results.slice(0, 3).map(r => ({ title: r.title, content: r.content.substring(0, 150) })),
+          language
+        })
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setFollowUpQuestions(data.questions || []);
+      }
+    } catch (error) {
+      console.error('Follow-up questions error:', error);
+    }
+  }, [language]);
 
   // Handle search form submission
   const handleSearch = useCallback((e: React.FormEvent) => {
@@ -398,6 +718,30 @@ export default function VoiceSearchPage() {
                     <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
                       <p className="text-sm text-blue-800">
                         <strong>Voice input:</strong> "{voiceTranscript}"
+                      </p>
+                    </div>
+                  )}
+                  
+                  {/* Smart Query Enhancement Display */}
+                  {isEnhancing && (
+                    <div className="p-3 bg-purple-50 border border-purple-200 rounded-lg flex items-center gap-2">
+                      <Loader2 className="h-4 w-4 animate-spin text-purple-600" />
+                      <p className="text-sm text-purple-800">Enhancing your search with AI...</p>
+                    </div>
+                  )}
+                  
+                  {smartResult && smartResult.enhancedQuery !== query && (
+                    <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                      <p className="text-sm text-green-800">
+                        <strong>Enhanced query:</strong> "{smartResult.enhancedQuery}"
+                        <span className="ml-2 text-xs bg-green-200 px-2 py-1 rounded">
+                          {smartResult.intent} ({Math.round(smartResult.confidence * 100)}% confidence)
+                        </span>
+                        {detectedLanguage && detectedLanguage !== language && (
+                          <span className="ml-2 text-xs bg-blue-200 px-2 py-1 rounded">
+                            Detected: {detectedLanguage.toUpperCase()}
+                          </span>
+                        )}
                       </p>
                     </div>
                   )}
@@ -500,39 +844,187 @@ export default function VoiceSearchPage() {
             </CardContent>
           </Card>
         )}
+        
+        {/* Search Suggestions */}
+        {suggestions.length > 0 && (
+          <Card className="bg-white/70 backdrop-blur-xl border-2 border-white/30 rounded-2xl mb-6">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <RefreshCw className="h-5 w-5 text-blue-600" />
+                Smart Suggestions
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-wrap gap-2">
+                {suggestions.map((suggestion, index) => (
+                  <Button
+                    key={index}
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setQuery(suggestion);
+                      performSearch(suggestion);
+                    }}
+                    className="text-sm hover:bg-blue-50"
+                  >
+                    {suggestion}
+                  </Button>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+        
+        {/* AI Result Summary */}
+        {resultSummary && (
+          <Card className="bg-gradient-to-r from-blue-50 to-purple-50 border-2 border-blue-200 rounded-2xl mb-6">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <Eye className="h-5 w-5 text-blue-600" />
+                AI Summary
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-gray-700 leading-relaxed">{resultSummary}</p>
+              {voiceSettings.voiceEnabled && (
+                <Button
+                  onClick={() => speakText(resultSummary)}
+                  variant="outline"
+                  size="sm"
+                  className="mt-3"
+                  disabled={isSpeaking}
+                >
+                  <Volume2 className="h-4 w-4 mr-2" />
+                  {isSpeaking ? 'Speaking...' : 'Read Summary'}
+                </Button>
+              )}
+            </CardContent>
+          </Card>
+        )}
+        
+        {/* Follow-up Questions */}
+        {followUpQuestions.length > 0 && (
+          <Card className="bg-gradient-to-r from-green-50 to-blue-50 border-2 border-green-200 rounded-2xl mb-6">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <RefreshCw className="h-5 w-5 text-green-600" />
+                Related Questions
+              </CardTitle>
+              <CardDescription>
+                Continue your search with these related questions
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {followUpQuestions.map((question, index) => (
+                  <Button
+                    key={index}
+                    variant="outline"
+                    className="w-full text-left justify-start h-auto p-4 bg-white/60 hover:bg-white/80 border-green-200 hover:border-green-300"
+                    onClick={() => {
+                      setQuery(question);
+                      performSearch(question);
+                    }}
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className="flex-shrink-0 w-6 h-6 bg-green-100 rounded-full flex items-center justify-center text-xs font-bold text-green-700">
+                        {index + 1}
+                      </div>
+                      <span className="text-sm font-medium text-gray-700">{question}</span>
+                    </div>
+                  </Button>
+                ))}
+              </div>
+              
+              {/* Voice Follow-up */}
+              {voiceSettings.voiceEnabled && (
+                <div className="mt-4 pt-4 border-t border-green-200">
+                  <Button
+                    onClick={() => {
+                      const randomQuestion = followUpQuestions[Math.floor(Math.random() * followUpQuestions.length)];
+                      speakText(`Here's a related question: ${randomQuestion}. Say yes to search for this, or ask your own question.`);
+                    }}
+                    variant="outline"
+                    size="sm"
+                    className="text-green-700 hover:text-green-800"
+                    disabled={isSpeaking}
+                  >
+                    <Volume2 className="h-4 w-4 mr-2" />
+                    Suggest Question
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
 
         {/* Results Tabs */}
         {(searchResults.length > 0 || imageResults.length > 0 || placeResults.length > 0) && (
           <div className="space-y-6">
-            {/* Tab Navigation */}
+            {/* Tab Navigation with Smart Intent Indicator */}
             <Card className="bg-white/70 backdrop-blur-xl border-2 border-white/30 rounded-2xl shadow-xl">
               <CardContent className="pt-6">
                 <div className="flex space-x-1">
                   <Button
                     onClick={() => setActiveTab('web')}
                     variant={activeTab === 'web' ? 'primary' : 'ghost'}
-                    className={`flex-1 ${activeTab === 'web' ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white' : ''}`}
+                    className={`flex-1 relative ${activeTab === 'web' ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white' : ''}`}
                   >
                     <Globe className="h-4 w-4 mr-2" />
                     Web ({searchResults.length})
+                    {smartResult?.intent === 'web' && smartResult.confidence > 0.8 && (
+                      <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
+                    )}
                   </Button>
                   <Button
                     onClick={() => setActiveTab('images')}
                     variant={activeTab === 'images' ? 'primary' : 'ghost'}
-                    className={`flex-1 ${activeTab === 'images' ? 'bg-gradient-to-r from-green-500 to-blue-600 text-white' : ''}`}
+                    className={`flex-1 relative ${activeTab === 'images' ? 'bg-gradient-to-r from-green-500 to-blue-600 text-white' : ''}`}
                   >
                     <ImageIcon className="h-4 w-4 mr-2" />
                     Images ({imageResults.length})
+                    {smartResult?.intent === 'images' && smartResult.confidence > 0.8 && (
+                      <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
+                    )}
                   </Button>
                   <Button
                     onClick={() => setActiveTab('places')}
                     variant={activeTab === 'places' ? 'primary' : 'ghost'}
-                    className={`flex-1 ${activeTab === 'places' ? 'bg-gradient-to-r from-orange-500 to-red-600 text-white' : ''}`}
+                    className={`flex-1 relative ${activeTab === 'places' ? 'bg-gradient-to-r from-orange-500 to-red-600 text-white' : ''}`}
                   >
                     <MapPin className="h-4 w-4 mr-2" />
                     Places ({placeResults.length})
+                    {smartResult?.intent === 'places' && smartResult.confidence > 0.8 && (
+                      <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
+                    )}
                   </Button>
                 </div>
+                
+                {/* Search History Quick Access */}
+                {searchHistory.length > 0 && (
+                  <div className="mt-4 pt-4 border-t border-white/30">
+                    <h4 className="text-sm font-medium text-gray-600 mb-2 flex items-center gap-2">
+                      <Clock className="h-4 w-4" />
+                      Recent Searches
+                    </h4>
+                    <div className="flex flex-wrap gap-2">
+                      {searchHistory.slice(0, 3).map((item, index) => (
+                        <Button
+                          key={index}
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            setQuery(item.query);
+                            performSearch(item.query);
+                          }}
+                          className="text-xs px-2 py-1 h-auto bg-white/60 hover:bg-white/80"
+                        >
+                          {item.query.substring(0, 20)}{item.query.length > 20 ? '...' : ''}
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
 
