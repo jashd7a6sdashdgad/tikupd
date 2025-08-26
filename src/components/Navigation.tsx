@@ -14,21 +14,14 @@ import {
   LogOut,
   Menu,
   X,
-  Facebook,
-  MessageCircle,
-  Globe,
-  Brain,
-  Sun,
-  Camera,
-  Share2,
-  Moon,
   Shield,
   Palette,
   Compass,
   Key,
-  Briefcase,
   Music,
-  Languages
+  Languages,
+  Mic,
+  Camera
 } from 'lucide-react';
 import { useState, ComponentType } from 'react';
 import { useAuth } from '@/hooks/useAuth';
@@ -57,6 +50,12 @@ const getNavigation = (t: (key: string) => string): NavigationItem[] => [
     name: t('chat'),
     href: '/chat',
     icon: Search
+  },
+  {
+    key: 'voice-search',
+    name: t('voiceSearch'),
+    href: '/voice-search',
+    icon: Mic
   },
   {
     key: 'voice-joke-ai',
@@ -122,31 +121,31 @@ const getNavigation = (t: (key: string) => string): NavigationItem[] => [
     key: 'weather',
     name: t('weather'),
     href: '/weather',
-    icon: Sun
+    icon: Shield
   },
   {
     key: 'islamic-settings',
     name: t('islamicSettings'),
     href: '/islamic-settings',
-    icon: Moon
+    icon: Palette
   },
   {
     key: 'security',
     name: t('security'),
     href: '/security',
-    icon: Shield
+    icon: Compass
   },
   {
     key: 'travel',
     name: t('travel'),
     href: '/travel',
-    icon: Compass
+    icon: Key
   },
   {
     key: 'customization',
     name: t('customization'),
     href: '/customization',
-    icon: Palette
+    icon: Shield
   },
   {
     key: 'api-tokens',

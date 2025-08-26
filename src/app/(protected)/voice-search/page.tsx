@@ -4,7 +4,6 @@ import { useState, useRef, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import Image from 'next/image';
 import { useSettings } from '@/contexts/SettingsContext';
 import { useTranslation } from '@/lib/translations';
 import { 
@@ -50,7 +49,7 @@ interface PlaceResult {
   title: string;
   url: string;
   content: string;
-  address?: string;
+  address?: string | Record<string, any>;
   coordinates?: [number, number];
   img_src?: string;
   engine: string;
@@ -240,19 +239,65 @@ export default function VoiceSearchPage() {
     setError(null);
     
     try {
-      // Search for web results
-      const webResponse = await fetch(`https://searxng.1000273.xyz/search?q=${encodeURIComponent(searchQuery)}&format=json&safesearch=1&categories=general`);
+      // Search for web results using local API proxy
+      const webResponse = await fetch(`/api/search?q=${encodeURIComponent(searchQuery)}&categories=general&format=json&safesearch=1`);
       const webData = await webResponse.json();
       
       // Search for images
-      const imageResponse = await fetch(`https://searxng.1000273.xyz/search?q=${encodeURIComponent(searchQuery)}&format=json&safesearch=1&categories=images`);
+      const imageResponse = await fetch(`/api/search?q=${encodeURIComponent(searchQuery)}&categories=images&format=json&safesearch=1`);
       const imageData = await imageResponse.json();
       
       // Search for places/maps
-      const placeResponse = await fetch(`https://searxng.1000273.xyz/search?q=${encodeURIComponent(searchQuery)}&format=json&safesearch=1&categories=map`);
+      const placeResponse = await fetch(`/api/search?q=${encodeURIComponent(searchQuery)}&categories=map&format=json&safesearch=1`);
       const placeData = await placeResponse.json();
       
-      // Process results
+      // Process results with error handling for each response
+      if (webData.error) {
+        console.warn('Web search error:', webData.error);
+      }
+      if (imageData.error) {
+        console.warn('Image search error:', imageData.error);
+      }
+      if (placeData.error) {
+        console.warn('Places search error:', placeData.error);
+      }
+
+      // Debug log the responses
+      console.log('Search responses:', {
+        web: webData,
+        images: imageData,
+        places: placeData
+      });
+
+      // Debug image URLs specifically
+      if (imageData.results && imageData.results.length > 0) {
+        console.log('Image search returned', imageData.results.length, 'results');
+        console.log('First few image results:', imageData.results.slice(0, 3).map(img => ({
+          title: img.title,
+          img_src: img.img_src,
+          thumbnail_src: img.thumbnail_src,
+          url: img.url,
+          engine: img.engine
+        })));
+        
+        // Count how many images have valid URLs
+        const validImages = imageData.results.filter(img => {
+          const imageUrl = img.img_src || img.thumbnail_src;
+          try {
+            if (!imageUrl || typeof imageUrl !== 'string') return false;
+            new URL(imageUrl);
+            return true;
+          } catch {
+            return false;
+          }
+        });
+        console.log(`${validImages.length} out of ${imageData.results.length} images have valid URLs`);
+      } else {
+        console.log('No image results returned or imageData.results is empty/invalid');
+        console.log('imageData structure:', imageData);
+      }
+
+      // Set results or empty arrays if there are errors
       setSearchResults(webData.results || []);
       setImageResults(imageData.results || []);
       setPlaceResults(placeData.results || []);
@@ -519,7 +564,7 @@ export default function VoiceSearchPage() {
                         </div>
                         {result.img_src && (
                           <div className="flex-shrink-0">
-                            <Image
+                            <img
                               src={result.img_src}
                               alt={result.title}
                               width={120}
@@ -540,36 +585,60 @@ export default function VoiceSearchPage() {
 
             {/* Image Results */}
             {activeTab === 'images' && imageResults.length > 0 && (
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                {imageResults.slice(0, 20).map((image, index) => (
-                  <Card key={index} className="bg-white/70 backdrop-blur-xl border-2 border-white/30 rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 overflow-hidden">
-                    <div className="relative aspect-square">
-                      <Image
-                        src={image.img_src || image.thumbnail_src}
-                        alt={image.title}
-                        fill
-                        className="object-cover"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).src = '/api/placeholder/300/300';
-                        }}
-                      />
-                      <div className="absolute inset-0 bg-black bg-opacity-0 hover:bg-opacity-50 transition-all duration-300 flex items-center justify-center">
-                        <Button
-                          onClick={() => window.open(image.url, '_blank')}
-                          className="opacity-0 hover:opacity-100 transition-opacity"
-                          size="sm"
-                        >
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                      </div>
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                {imageResults.slice(0, 20).filter(image => {
+                  const imageUrl = image.img_src || image.thumbnail_src;
+                  try {
+                    if (!imageUrl || typeof imageUrl !== 'string') return false;
+                    new URL(imageUrl); // Test if URL is valid
+                    return true;
+                  } catch {
+                    return false;
+                  }
+                }).map((image, index) => {
+                  const imageUrl = image.img_src || image.thumbnail_src;
+                  console.log(`Image ${index}:`, imageUrl); // Debug each image URL
+                  
+                  let hostname = '';
+                  try {
+                    hostname = new URL(imageUrl).hostname;
+                  } catch {
+                    hostname = 'invalid-url';
+                  }
+                  
+                  return (
+                    <div className="border rounded p-2 bg-white hover:shadow-lg transition-shadow cursor-pointer">
+                      <a href={image.url} target="_blank" rel="noopener noreferrer">
+                        <img
+                          src={imageUrl}
+                          alt={image.title}
+                          width="200"
+                          height="200"
+                          style={{display: 'block', width: '100%', height: '200px', objectFit: 'cover'}}
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src = 'https://via.placeholder.com/200x200/cccccc/000000?text=No+Image';
+                          }}
+                        />
+                        <p className="text-sm mt-1 hover:text-blue-600">{image.title}</p>
+                        <small className="text-gray-500">{image.engine}</small>
+                      </a>
                     </div>
-                    <CardContent className="pt-3">
-                      <h4 className="font-medium text-gray-800 text-sm line-clamp-2 mb-2">{image.title}</h4>
-                      <p className="text-xs text-gray-500">{image.engine}</p>
-                    </CardContent>
-                  </Card>
-                ))}
+                  );
+                })}
               </div>
+            )}
+
+            {/* No Image Results */}
+            {activeTab === 'images' && imageResults.length === 0 && !isSearching && query && (
+              <Card className="bg-white/70 backdrop-blur-xl border-2 border-white/30 rounded-2xl shadow-xl">
+                <CardContent className="pt-12 pb-12">
+                  <div className="text-center">
+                    <ImageIcon className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+                    <h3 className="text-xl font-semibold text-gray-800 mb-2">No Images Found</h3>
+                    <p className="text-gray-600">Try a different search term or check your spelling.</p>
+                  </div>
+                </CardContent>
+              </Card>
             )}
 
             {/* Place Results */}
@@ -588,7 +657,12 @@ export default function VoiceSearchPage() {
                           </h3>
                           <p className="text-gray-600 mb-3">{place.content}</p>
                           {place.address && (
-                            <p className="text-gray-500 text-sm mb-2">📍 {place.address}</p>
+                            <p className="text-gray-500 text-sm mb-2">
+                              📍 {typeof place.address === 'object' 
+                                ? Object.values(place.address).filter(Boolean).join(', ')
+                                : place.address
+                              }
+                            </p>
                           )}
                           <div className="flex items-center gap-4 text-sm text-gray-500">
                             <span className="flex items-center gap-1">
@@ -604,7 +678,7 @@ export default function VoiceSearchPage() {
                         </div>
                         {place.img_src && (
                           <div className="flex-shrink-0">
-                            <Image
+                            <img
                               src={place.img_src}
                               alt={place.title}
                               width={120}
@@ -621,6 +695,32 @@ export default function VoiceSearchPage() {
                   </Card>
                 ))}
               </div>
+            )}
+
+            {/* No Web Results */}
+            {activeTab === 'web' && searchResults.length === 0 && !isSearching && query && (
+              <Card className="bg-white/70 backdrop-blur-xl border-2 border-white/30 rounded-2xl shadow-xl">
+                <CardContent className="pt-12 pb-12">
+                  <div className="text-center">
+                    <Globe className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+                    <h3 className="text-xl font-semibold text-gray-800 mb-2">No Web Results Found</h3>
+                    <p className="text-gray-600">Try a different search term or check your spelling.</p>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* No Place Results */}
+            {activeTab === 'places' && placeResults.length === 0 && !isSearching && query && (
+              <Card className="bg-white/70 backdrop-blur-xl border-2 border-white/30 rounded-2xl shadow-xl">
+                <CardContent className="pt-12 pb-12">
+                  <div className="text-center">
+                    <MapPin className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+                    <h3 className="text-xl font-semibold text-gray-800 mb-2">No Places Found</h3>
+                    <p className="text-gray-600">Try searching for a specific location or landmark.</p>
+                  </div>
+                </CardContent>
+              </Card>
             )}
           </div>
         )}

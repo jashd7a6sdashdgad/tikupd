@@ -48,6 +48,37 @@ module.exports = {
         hostname: 'cdn.weatherapi.com',
         port: '',
         pathname: '/**',
+      },
+      // Allow search result images from common domains
+      {
+        protocol: 'https',
+        hostname: '*.com',
+        port: '',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: '*.org',
+        port: '',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: '*.net',
+        port: '',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: '*.io',
+        port: '',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: '*.edu',
+        port: '',
+        pathname: '/**',
       }
     ],
     // Fallback for older Next.js versions
